@@ -1,0 +1,3 @@
+module Sigstore::Internal::JSON
+  def self.canonical_generate: (untyped data) -> untyped
+end

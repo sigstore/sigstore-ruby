@@ -1,0 +1,51 @@
+module Sigstore
+  module Cosign
+    module Verify
+      module Policy
+        interface _Policy
+          def verify: (OpenSSL::X509::Certificate cert) -> verificationResult
+        end
+
+        class SingleX509ExtPolicy
+          @value: String
+
+          def initialize: (String value) -> void
+
+          include _Policy
+
+          attr_reader oid: String
+
+          def ext_value: (OpenSSL::X509::Extension ext) -> String
+
+          OID: String
+        end
+
+        class OIDCIssuer < SingleX509ExtPolicy
+          OID: String
+        end
+
+        class OIDCIssuerV2 < SingleX509ExtPolicy
+          OID: String
+        end
+
+        class AnyOf
+          @policies: Array[_Policy]
+
+          def initialize: (*_Policy policies) -> void
+
+          include _Policy
+        end
+
+        class Identity
+          @identity: String
+
+          @issuer: _Policy
+
+          def initialize: (identity: String, issuer: String) -> void
+
+          def verify: (OpenSSL::X509::Certificate cert) -> verificationResult
+        end
+      end
+    end
+  end
+end

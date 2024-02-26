@@ -1,0 +1,8 @@
+module Sigstore
+  module Cosign
+    module Verify
+      class Error < StandardError
+      end
+    end
+  end
+end

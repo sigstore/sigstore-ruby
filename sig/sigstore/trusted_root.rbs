@@ -1,0 +1,23 @@
+module Sigstore
+  class TrustedRoot
+    def self.production: (?offline: bool) -> untyped
+
+    def self.from_tuf: (untyped url, untyped offline) -> untyped
+
+    def self.from_file: (untyped path) -> untyped
+
+    def rekor_keys: () -> untyped
+
+    def ctfe_keys: () -> untyped
+
+    def fulcio_cert_chain: () -> untyped
+
+    private
+
+    def tlog_keys: (untyped tlogs) ?{ (untyped) -> untyped } -> untyped
+
+    def ca_keys: (untyped certificate_authorities, allow_expired: untyped) ?{ (untyped) -> untyped } -> untyped
+
+    def timerange_valid?: (untyped period, allow_expired: untyped) -> (true | false | untyped)
+  end
+end

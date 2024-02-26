@@ -1,0 +1,39 @@
+module Sigstore::Internal::TUF
+  class TrustedMetadataSet
+    @trusted_set: untyped
+
+    @reference_time: untyped
+
+    @envelope_type: untyped
+
+    def initialize: (untyped root_data, untyped envelope_type) -> void
+
+    def root: () -> untyped
+
+    def root=: (untyped data) -> untyped
+
+    def snapshot: () -> untyped
+
+    def timestamp: () -> untyped
+
+    def timestamp=: (untyped data) -> untyped
+
+    def snapshot=: (untyped data, ?trusted: bool) -> untyped
+
+    def include?: (untyped type) -> untyped
+
+    def []: (untyped role) -> untyped
+
+    def update_delegated_targets: (untyped data, untyped role, untyped parent_role) -> untyped
+
+    private
+
+    def load_trusted_root: (untyped data) -> untyped
+
+    def load_data: (untyped type, untyped data, untyped delegator, ?untyped? _role_name) -> ::Array[untyped]
+
+    def check_final_timestamp: () -> (nil | untyped)
+
+    def check_final_snapshot: () -> (nil | untyped)
+  end
+end

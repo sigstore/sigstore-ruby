@@ -1,0 +1,55 @@
+module Sigstore
+  module Rekor
+    class Client
+      @url: untyped
+
+      @rekor_keyring: untyped
+
+      @ct_keyring: untyped
+
+      @session: untyped
+
+      DEFAULT_REKOR_URL: "https://rekor.sigstore.dev"
+
+      attr_reader rekor_keyring: untyped
+
+      def initialize: (url: untyped, rekor_keyring: untyped, ct_keyring: untyped) -> void
+
+      def self.production: (trust_root: untyped) -> untyped
+
+      def log: () -> untyped
+    end
+
+    class Log
+      @url: untyped
+
+      @session: untyped
+
+      def initialize: (untyped url, session: untyped) -> void
+
+      def get: () -> untyped
+
+      def entries: () -> untyped
+    end
+
+    class Entries
+      @url: untyped
+
+      @session: untyped
+
+      def initialize: (untyped url, session: untyped) -> void
+
+      def retrieve: () -> untyped
+
+      class Retrieve
+        @url: untyped
+
+        @session: untyped
+
+        def initialize: (untyped url, session: untyped) -> void
+
+        def post: (untyped expected_entry) -> untyped
+      end
+    end
+  end
+end

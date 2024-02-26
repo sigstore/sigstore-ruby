@@ -1,0 +1,3 @@
+module Sigstore::Cosign::Verify::CommandOptions
+  def add_verify_command_options: () -> untyped
+end

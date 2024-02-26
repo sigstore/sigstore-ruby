@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+command = ARGV.shift
+
+File.open(File.expand_path("../test/conformance_invocations", __dir__), "a") do |f|
+  args = ARGV.map { |a| File.exist?(a) ? File.join("test/sigstore-conformance/test/assets", a) : a }
+  f << [command, args].inspect << "\n"
+end
+
+exec({ "BUNDLE_GEMFILE" => File.expand_path("../GEMFILE", __dir__) }, "bundle", "exec", "gem",
+     "sigstore_cosign_#{command.tr("-", "_")}", *ARGV)

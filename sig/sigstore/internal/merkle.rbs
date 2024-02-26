@@ -1,0 +1,17 @@
+module Sigstore
+  module Internal
+    module Merkle
+      def self.verify_merkle_inclusion: (Transparency::LogEntry entry) -> nil
+
+      def self.decompose_inclusion_proof: (Integer log_index, Integer tree_size) -> [Integer, Integer]
+
+      def self.hash_leaf: (Util::binaryString data) -> Util::binaryString
+
+      def self.chain_inner: (Util::binaryString seed, Array[Util::hexString] hashes, Integer log_index) -> Util::binaryString
+
+      def self.chain_border_right: (Util::binaryString seed, Array[Util::hexString] hashes) -> Util::binaryString
+
+      def self.hash_children: (Util::binaryString left, Util::binaryString right) -> Util::binaryString
+    end
+  end
+end

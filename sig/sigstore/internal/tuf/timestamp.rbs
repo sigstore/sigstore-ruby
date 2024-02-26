@@ -1,0 +1,29 @@
+module Sigstore::Internal::TUF
+  class Timestamp
+    @version: untyped
+
+    @spec_version: untyped
+
+    @expires: untyped
+
+    @snapshot_meta: untyped
+
+    @unrecognized_fields: untyped
+
+    TYPE: "timestamp"
+
+    attr_reader version: untyped
+
+    attr_reader spec_version: untyped
+
+    attr_reader expires: untyped
+
+    attr_reader snapshot_meta: untyped
+
+    attr_reader unrecognized_fields: untyped
+
+    def initialize: (untyped data) -> void
+
+    def expired?: (untyped reference_time) -> untyped
+  end
+end

@@ -1,0 +1,796 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/9.root.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 404
+      message: Not Found
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPoaHO4YsJ9ZtFheh2ROtbXnswSv6Y1gfLV7K8jM-JhcAlEie5Hl0_Bd2avjIbwZUEeaanU
+      Content-Length:
+      - '127'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Mon, 26 Feb 2024 21:39:09 GMT
+      Cache-Control:
+      - public,max-age=120
+      Content-Type:
+      - application/xml; charset=UTF-8
+      Age:
+      - '70'
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "<?xml version='1.0' encoding='UTF-8'?><Error><Code>NoSuchKey</Code><Message>The
+        specified key does not exist.</Message></Error>"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/timestamp.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPpAv79U0rfhDo_coOs3q_V4yB52uTW_SkhQpPqBhJgL2RoL3LrMSChOH0t5yba_bkLFJ_E
+      Date:
+      - Mon, 26 Feb 2024 21:40:19 GMT
+      Cache-Control:
+      - no-store
+      Expires:
+      - Tue, 25 Feb 2025 21:40:19 GMT
+      Last-Modified:
+      - Fri, 23 Feb 2024 16:37:18 GMT
+      Etag:
+      - '"1b90fb32cc4c710aaa4efbb2422337be"'
+      X-Goog-Generation:
+      - '1708706237985227'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '721'
+      Content-Type:
+      - application/json
+      X-Goog-Hash:
+      - crc32c=Eb8PeQ==
+      - md5=G5D7MsxMcQqqTvuyQiM3vg==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '721'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"timestamp\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 161,\n\t\t\"expires\": \"2024-03-01T16:04:53Z\",\n\t\t\"meta\":
+        {\n\t\t\t\"snapshot.json\": {\n\t\t\t\t\"length\": 2302,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"93dd7f2f47e3d9a316c827ed7b254703a6fa2022158d7de692ffdde6109870a6\",\n\t\t\t\t\t\"sha512\":
+        \"8975d48e6ad96581c21ee5ac6f17c5fb5b2fe097d84cb4ff4dca22157bc9dd30dc6ec0ced3131823e9edea1ba01ebfdfcebc18c71f5bc6181afec85c712c5772\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        127\n\t\t\t}\n\t\t}\n\t},\n\t\"signatures\": [\n\t\t{\n\t\t\t\"keyid\": \"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\",\n\t\t\t\"sig\":
+        \"304502202db292d93961270edee3d69532db91052b0ebe7fe8b9e37655e106326cac5322022100e39a15578a2e0695631e5449077771a139a99d15d693134bd973efe534962ffb\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/targets/4364d7724c04cc912ce2a6c45ed2610e8d8d1c4dc857fb500292738d4d9c8d2c.trusted_root.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPr1Ml3jw2lEoFvgTCUp2-DaUbqCxDKM4DNZSasAQRZPbJHdzU3kcfhE4K06g61bNDcnFCOX0Vg_
+      X-Goog-Generation:
+      - '1708706232804947'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '7014'
+      X-Goog-Hash:
+      - crc32c=0lV2sA==
+      - md5=W8EaM9v3aAjK89S2fWc1aQ==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '7014'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Mon, 26 Feb 2024 16:47:09 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Age:
+      - '17590'
+      Last-Modified:
+      - Fri, 23 Feb 2024 16:37:12 GMT
+      Etag:
+      - '"5bc11a33dbf76808caf3d4b67d673569"'
+      Content-Type:
+      - application/json
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: |
+        {
+          "mediaType": "application/vnd.dev.sigstore.trustedroot+json;version=0.1",
+          "tlogs": [
+            {
+              "baseUrl": "https://rekor.sigstore.dev",
+              "hashAlgorithm": "SHA2_256",
+              "publicKey": {
+                "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2G2Y+2tabdTV5BcGiBIx0a9fAFwrkBbmLSGtks4L3qX6yYY0zufBnhC8Ur/iy55GhWP/9A/bY2LhC30M9+RYtw==",
+                "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+                "validFor": {
+                  "start": "2021-01-12T11:53:27.000Z"
+                }
+              },
+              "logId": {
+                "keyId": "wNI9atQGlz+VWfO6LRygH4QUfY/8W4RFwiT5i5WRgB0="
+              }
+            }
+          ],
+          "certificateAuthorities": [
+            {
+              "subject": {
+                "organization": "sigstore.dev",
+                "commonName": "sigstore"
+              },
+              "uri": "https://fulcio.sigstore.dev",
+              "certChain": {
+                "certificates": [
+                  {
+                    "rawBytes": "MIIB+DCCAX6gAwIBAgITNVkDZoCiofPDsy7dfm6geLbuhzAKBggqhkjOPQQDAzAqMRUwEwYDVQQKEwxzaWdzdG9yZS5kZXYxETAPBgNVBAMTCHNpZ3N0b3JlMB4XDTIxMDMwNzAzMjAyOVoXDTMxMDIyMzAzMjAyOVowKjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTB2MBAGByqGSM49AgEGBSuBBAAiA2IABLSyA7Ii5k+pNO8ZEWY0ylemWDowOkNa3kL+GZE5Z5GWehL9/A9bRNA3RbrsZ5i0JcastaRL7Sp5fp/jD5dxqc/UdTVnlvS16an+2Yfswe/QuLolRUCrcOE2+2iA5+tzd6NmMGQwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYEFMjFHQBBmiQpMlEk6w2uSu1KBtPsMB8GA1UdIwQYMBaAFMjFHQBBmiQpMlEk6w2uSu1KBtPsMAoGCCqGSM49BAMDA2gAMGUCMH8liWJfMui6vXXBhjDgY4MwslmN/TJxVe/83WrFomwmNf056y1X48F9c4m3a3ozXAIxAKjRay5/aj/jsKKGIkmQatjI8uupHr/+CxFvaJWmpYqNkLDGRU+9orzh5hI2RrcuaQ=="
+                  }
+                ]
+              },
+              "validFor": {
+                "start": "2021-03-07T03:20:29.000Z",
+                "end": "2022-12-31T23:59:59.999Z"
+              }
+            },
+            {
+              "subject": {
+                "organization": "sigstore.dev",
+                "commonName": "sigstore"
+              },
+              "uri": "https://fulcio.sigstore.dev",
+              "certChain": {
+                "certificates": [
+                  {
+                    "rawBytes": "MIICGjCCAaGgAwIBAgIUALnViVfnU0brJasmRkHrn/UnfaQwCgYIKoZIzj0EAwMwKjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0yMjA0MTMyMDA2MTVaFw0zMTEwMDUxMzU2NThaMDcxFTATBgNVBAoTDHNpZ3N0b3JlLmRldjEeMBwGA1UEAxMVc2lnc3RvcmUtaW50ZXJtZWRpYXRlMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8RVS/ysH+NOvuDZyPIZtilgUF9NlarYpAd9HP1vBBH1U5CV77LSS7s0ZiH4nE7Hv7ptS6LvvR/STk798LVgMzLlJ4HeIfF3tHSaexLcYpSASr1kS0N/RgBJz/9jWCiXno3sweTAOBgNVHQ8BAf8EBAMCAQYwEwYDVR0lBAwwCgYIKwYBBQUHAwMwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQU39Ppz1YkEZb5qNjpKFWixi4YZD8wHwYDVR0jBBgwFoAUWMAeX5FFpWapesyQoZMi0CrFxfowCgYIKoZIzj0EAwMDZwAwZAIwPCsQK4DYiZYDPIaDi5HFKnfxXx6ASSVmERfsynYBiX2X6SJRnZU84/9DZdnFvvxmAjBOt6QpBlc4J/0DxvkTCqpclvziL6BCCPnjdlIB3Pu3BxsPmygUY7Ii2zbdCdliiow="
+                  },
+                  {
+                    "rawBytes": "MIIB9zCCAXygAwIBAgIUALZNAPFdxHPwjeDloDwyYChAO/4wCgYIKoZIzj0EAwMwKjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0yMTEwMDcxMzU2NTlaFw0zMTEwMDUxMzU2NThaMCoxFTATBgNVBAoTDHNpZ3N0b3JlLmRldjERMA8GA1UEAxMIc2lnc3RvcmUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAT7XeFT4rb3PQGwS4IajtLk3/OlnpgangaBclYpsYBr5i+4ynB07ceb3LP0OIOZdxexX69c5iVuyJRQ+Hz05yi+UF3uBWAlHpiS5sh0+H2GHE7SXrk1EC5m1Tr19L9gg92jYzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRYwB5fkUWlZql6zJChkyLQKsXF+jAfBgNVHSMEGDAWgBRYwB5fkUWlZql6zJChkyLQKsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCMWP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ"
+                  }
+                ]
+              },
+              "validFor": {
+                "start": "2022-04-13T20:06:15.000Z"
+              }
+            }
+          ],
+          "ctlogs": [
+            {
+              "baseUrl": "https://ctfe.sigstore.dev/test",
+              "hashAlgorithm": "SHA2_256",
+              "publicKey": {
+                "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbfwR+RJudXscgRBRpKX1XFDy3PyudDxz/SfnRi1fT8ekpfBd2O1uoz7jr3Z8nKzxA69EUQ+eFCFI3zeubPWU7w==",
+                "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+                "validFor": {
+                  "start": "2021-03-14T00:00:00.000Z",
+                  "end": "2022-10-31T23:59:59.999Z"
+                }
+              },
+              "logId": {
+                "keyId": "CGCS8ChS/2hF0dFrJ4ScRWcYrBY9wzjSbea8IgY2b3I="
+              }
+            },
+            {
+              "baseUrl": "https://ctfe.sigstore.dev/2022",
+              "hashAlgorithm": "SHA2_256",
+              "publicKey": {
+                "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiPSlFi0CmFTfEjCUqF9HuCEcYXNKAaYalIJmBZ8yyezPjTqhxrKBpMnaocVtLJBI1eM3uXnQzQGAJdJ4gs9Fyw==",
+                "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+                "validFor": {
+                  "start": "2022-10-20T00:00:00.000Z"
+                }
+              },
+              "logId": {
+                "keyId": "3T0wasbHETJjGR4cmWc3AqJKXrjePK3/h4pygC8p7o4="
+              }
+            }
+          ],
+          "timestampAuthorities": [
+            {
+              "subject": {
+                "organization": "GitHub, Inc.",
+                "commonName": "Internal Services Root"
+              },
+              "certChain": {
+                "certificates": [
+                  {
+                    "rawBytes": "MIIB3DCCAWKgAwIBAgIUchkNsH36Xa04b1LqIc+qr9DVecMwCgYIKoZIzj0EAwMwMjEVMBMGA1UEChMMR2l0SHViLCBJbmMuMRkwFwYDVQQDExBUU0EgaW50ZXJtZWRpYXRlMB4XDTIzMDQxNDAwMDAwMFoXDTI0MDQxMzAwMDAwMFowMjEVMBMGA1UEChMMR2l0SHViLCBJbmMuMRkwFwYDVQQDExBUU0EgVGltZXN0YW1waW5nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUD5ZNbSqYMd6r8qpOOEX9ibGnZT9GsuXOhr/f8U9FJugBGExKYp40OULS0erjZW7xV9xV52NnJf5OeDq4e5ZKqNWMFQwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMIMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUaW1RudOgVt0leqY0WKYbuPr47wAwCgYIKoZIzj0EAwMDaAAwZQIwbUH9HvD4ejCZJOWQnqAlkqURllvu9M8+VqLbiRK+zSfZCZwsiljRn8MQQRSkXEE5AjEAg+VxqtojfVfu8DhzzhCx9GKETbJHb19iV72mMKUbDAFmzZ6bQ8b54Zb8tidy5aWe"
+                  },
+                  {
+                    "rawBytes": "MIICEDCCAZWgAwIBAgIUX8ZO5QXP7vN4dMQ5e9sU3nub8OgwCgYIKoZIzj0EAwMwODEVMBMGA1UEChMMR2l0SHViLCBJbmMuMR8wHQYDVQQDExZJbnRlcm5hbCBTZXJ2aWNlcyBSb290MB4XDTIzMDQxNDAwMDAwMFoXDTI4MDQxMjAwMDAwMFowMjEVMBMGA1UEChMMR2l0SHViLCBJbmMuMRkwFwYDVQQDExBUU0EgaW50ZXJtZWRpYXRlMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEvMLY/dTVbvIJYANAuszEwJnQE1llftynyMKIMhh48HmqbVr5ygybzsLRLVKbBWOdZ21aeJz+gZiytZetqcyF9WlER5NEMf6JV7ZNojQpxHq4RHGoGSceQv/qvTiZxEDKo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUaW1RudOgVt0leqY0WKYbuPr47wAwHwYDVR0jBBgwFoAU9NYYlobnAG4c0/qjxyH/lq/wz+QwCgYIKoZIzj0EAwMDaQAwZgIxAK1B185ygCrIYFlIs3GjswjnwSMG6LY8woLVdakKDZxVa8f8cqMs1DhcxJ0+09w95QIxAO+tBzZk7vjUJ9iJgD4R6ZWTxQWKqNm74jO99o+o9sv4FI/SZTZTFyMn0IJEHdNmyA=="
+                  },
+                  {
+                    "rawBytes": "MIIB9DCCAXqgAwIBAgIUa/JAkdUjK4JUwsqtaiRJGWhqLSowCgYIKoZIzj0EAwMwODEVMBMGA1UEChMMR2l0SHViLCBJbmMuMR8wHQYDVQQDExZJbnRlcm5hbCBTZXJ2aWNlcyBSb290MB4XDTIzMDQxNDAwMDAwMFoXDTMzMDQxMTAwMDAwMFowODEVMBMGA1UEChMMR2l0SHViLCBJbmMuMR8wHQYDVQQDExZJbnRlcm5hbCBTZXJ2aWNlcyBSb290MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEf9jFAXxz4kx68AHRMOkFBhflDcMTvzaXz4x/FCcXjJ/1qEKon/qPIGnaURskDtyNbNDOpeJTDDFqt48iMPrnzpx6IZwqemfUJN4xBEZfza+pYt/iyod+9tZr20RRWSv/o0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBAjAdBgNVHQ4EFgQU9NYYlobnAG4c0/qjxyH/lq/wz+QwCgYIKoZIzj0EAwMDaAAwZQIxALZLZ8BgRXzKxLMMN9VIlO+e4hrBnNBgF7tz7Hnrowv2NetZErIACKFymBlvWDvtMAIwZO+ki6ssQ1bsZo98O8mEAf2NZ7iiCgDDU0Vwjeco6zyeh0zBTs9/7gV6AHNQ53xD"
+                  }
+                ]
+              },
+              "validFor": {
+                "start": "2023-04-14T00:00:00.000Z"
+              }
+            }
+          ]
+        }
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/6.root.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPoZf8kVHYhf92TIRdEslIjUOjL3FxH8s1CdzSabn9UlQxfgEmRZIFUiwJjNO6STE8hv5aA
+      X-Goog-Generation:
+      - '1709318094964514'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '5642'
+      X-Goog-Hash:
+      - crc32c=VA53FA==
+      - md5=4sHkAzBJWWrh+0U7G3YkLA==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '5642'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Sat, 02 Mar 2024 18:41:51 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Age:
+      - '42283'
+      Last-Modified:
+      - Fri, 01 Mar 2024 18:34:55 GMT
+      Etag:
+      - '"e2c1e4033049596ae1fb453b1b76242c"'
+      Content-Type:
+      - application/json
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"root\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 6,\n\t\t\"expires\": \"2023-08-28T07:54:10Z\",\n\t\t\"keys\":
+        {\n\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEEXsz3SZXFb8jMV42j6pJlyjbjR8K\\nN3Bwocexq6LMIb5qsWKOQvLN16NUefLc4HswOoumRsVVaajSpQS6fobkRw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0ghrh92Lw1Yr3idGV5WqCtMDB8Cx\\n+D8hdC4w2ZLNIplVRoVGLskYa3gheMyOjiJ8kPi15aQ2//7P+oj7UvJPGw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELrWvNt94v4R085ELeeCMxHp7PldF\\n0/T1GxukUh2ODuggLGJE0pc1e8CSBf6CS91Fwo9FUOuRsjBUld+VqSyCdQ==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEinikSsAQmYkNeH5eYq/CnIzLaacO\\nxlSaawQDOwqKy/tCqxq5xxPSJc21K4WIhs9GyOkKfzueY3GILzcMJZ4cWw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWRiGr5+j+3J5SsH+Ztr5nE2H2wO7\\nBV+nO3s93gLca18qTOzHY1oWyAGDykMSsGTUBSt9D+An0KfKsD2mfSM42Q==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzBzVOmHCPojMVLSI364WiiV8NPrD\\n6IgRxVliskz/v+y3JER5mcVGcONliDcWMC5J2lfHmjPNPhb4H7xm8LzfSA==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEy8XKsmhBYDI8Jc0GwzBxeKax0cm5\\nSTKEU65HPFunUn41sT8pi0FjM4IkHz/YUmwmLUO0Wt7lxhj6BkLIK4qYAw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"roles\": {\n\t\t\t\"root\":
+        {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"snapshot\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t},\n\t\t\t\"targets\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"timestamp\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t}\n\t\t},\n\t\t\"consistent_snapshot\": true\n\t},\n\t\"signatures\":
+        [\n\t\t{\n\t\t\t\"keyid\": \"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\"sig\":
+        \"3044022079941eab7035ffd603354ee9a072ad87ad24e084f2aa52a718f76b21545d90190220368a65bb4ac83a9938885f5bba6a0b9a25c9979c85d85840497a95e47466eafb\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\"sig\":
+        \"3045022100ca33d35657c55b93c827ecad61be61e6d91da886d413f5083894a70d6e9af1cd022049d2b8b50d34a4e48cb3832a17a82c1ec1ae6b61af2a6db6e7d1c63d81a0dae7\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\"sig\":
+        \"304402207875857b20d8258e0c888e55516cb50593746543cd3c34c9743efb2921cb2a660220127107a67b585e67d3df0538a6be1f5d4834857d1d88da9f8a6b8b8ac8998904\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\"sig\":
+        \"304502205c7b76ad222ffe16fed152f5bbf1c18b3df4814bf93703fea4605ae335914953022100a9d187ee02a4babe12b1646b572171bac60b23b0846ff3f067ded075194b549c\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\",\n\t\t\t\"sig\":
+        \"30440220724e672fd7a2dbd338dfea683712a77bc1579ae5061dbc501d498ade02ea3aeb022012758bd3f1d4d245d92a692d26f743ad7a1f9af0982d1983a8619186c1fbcdd4\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/7.root.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPpGR-XuUP9bZoEqTet0MLiLhQYGJAS8kluZZhIHuxSXP2UN4RamzLlr-SRXSDR2rN_pEkk
+      X-Goog-Generation:
+      - '1709318123643811'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '5404'
+      X-Goog-Hash:
+      - crc32c=sNOHPA==
+      - md5=Q1EDXfGzgt3SpaTbK4l1lg==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '5404'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Sat, 02 Mar 2024 18:41:51 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Age:
+      - '42284'
+      Last-Modified:
+      - Fri, 01 Mar 2024 18:35:23 GMT
+      Etag:
+      - '"4351035df1b382ddd2a5a4db2b897596"'
+      Content-Type:
+      - application/json
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"root\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 7,\n\t\t\"expires\": \"2023-10-04T13:08:11Z\",\n\t\t\"keys\":
+        {\n\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEEXsz3SZXFb8jMV42j6pJlyjbjR8K\\nN3Bwocexq6LMIb5qsWKOQvLN16NUefLc4HswOoumRsVVaajSpQS6fobkRw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0ghrh92Lw1Yr3idGV5WqCtMDB8Cx\\n+D8hdC4w2ZLNIplVRoVGLskYa3gheMyOjiJ8kPi15aQ2//7P+oj7UvJPGw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELrWvNt94v4R085ELeeCMxHp7PldF\\n0/T1GxukUh2ODuggLGJE0pc1e8CSBf6CS91Fwo9FUOuRsjBUld+VqSyCdQ==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEinikSsAQmYkNeH5eYq/CnIzLaacO\\nxlSaawQDOwqKy/tCqxq5xxPSJc21K4WIhs9GyOkKfzueY3GILzcMJZ4cWw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWRiGr5+j+3J5SsH+Ztr5nE2H2wO7\\nBV+nO3s93gLca18qTOzHY1oWyAGDykMSsGTUBSt9D+An0KfKsD2mfSM42Q==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzBzVOmHCPojMVLSI364WiiV8NPrD\\n6IgRxVliskz/v+y3JER5mcVGcONliDcWMC5J2lfHmjPNPhb4H7xm8LzfSA==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEy8XKsmhBYDI8Jc0GwzBxeKax0cm5\\nSTKEU65HPFunUn41sT8pi0FjM4IkHz/YUmwmLUO0Wt7lxhj6BkLIK4qYAw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"roles\": {\n\t\t\t\"root\":
+        {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"snapshot\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t},\n\t\t\t\"targets\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"timestamp\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t}\n\t\t},\n\t\t\"consistent_snapshot\": true\n\t},\n\t\"signatures\":
+        [\n\t\t{\n\t\t\t\"keyid\": \"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\"sig\":
+        \"3046022100c0610c0055ce5c4a52d054d7322e7b514d55baf44423d63aa4daa077cc60fd1f022100a097f2803f090fb66c42ead915a2c46ebe7db53a32bf18f2188275cc936f8bdd\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\"sig\":
+        \"304502203134f0468810299d5493a867c40630b341296b92e59c29821311d353343bb3a4022100e667ae3d304e7e3da0894c7425f6b9ecd917106841280e5cf6f3496ad5f8f68e\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\"sig\":
+        \"3045022037fe5f45426f21eaaf4730d2136f2b1611d6379688f79b9d1e3f61719997135c022100b63b022d7b79d4694b96f416d88aa4d7b1a3bff8a01f4fb51e0f42137c7d2d06\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\",\n\t\t\t\"sig\":
+        \"3044022007cc8fcc4940809f2751ad5b535f4c5f53f5b4952f5b5696b09668e743306ac1022006dfcdf94e94c92163eeb1b47796db62cedaa730aa13aa61b573fe23714730f2\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/8.root.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPoh3He3MzA0yr4XxTqog1Xdagk2e4f4gnCEvTJT5gwM2G1I88BbxzpV3HUdsmcr9J0-fzM
+      X-Goog-Generation:
+      - '1709318152350589'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '5406'
+      X-Goog-Hash:
+      - crc32c=5782Nw==
+      - md5=jgLw30sVLB0f3C3ovv/yXw==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '5406'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Sat, 02 Mar 2024 18:40:57 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Age:
+      - '42340'
+      Last-Modified:
+      - Fri, 01 Mar 2024 18:35:52 GMT
+      Etag:
+      - '"8e02f0df4b152c1d1fdc2de8befff25f"'
+      Content-Type:
+      - application/json
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"root\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 8,\n\t\t\"expires\": \"2024-03-26T04:38:55Z\",\n\t\t\"keys\":
+        {\n\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEEXsz3SZXFb8jMV42j6pJlyjbjR8K\\nN3Bwocexq6LMIb5qsWKOQvLN16NUefLc4HswOoumRsVVaajSpQS6fobkRw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0ghrh92Lw1Yr3idGV5WqCtMDB8Cx\\n+D8hdC4w2ZLNIplVRoVGLskYa3gheMyOjiJ8kPi15aQ2//7P+oj7UvJPGw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELrWvNt94v4R085ELeeCMxHp7PldF\\n0/T1GxukUh2ODuggLGJE0pc1e8CSBf6CS91Fwo9FUOuRsjBUld+VqSyCdQ==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEinikSsAQmYkNeH5eYq/CnIzLaacO\\nxlSaawQDOwqKy/tCqxq5xxPSJc21K4WIhs9GyOkKfzueY3GILzcMJZ4cWw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWRiGr5+j+3J5SsH+Ztr5nE2H2wO7\\nBV+nO3s93gLca18qTOzHY1oWyAGDykMSsGTUBSt9D+An0KfKsD2mfSM42Q==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzBzVOmHCPojMVLSI364WiiV8NPrD\\n6IgRxVliskz/v+y3JER5mcVGcONliDcWMC5J2lfHmjPNPhb4H7xm8LzfSA==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\":
+        {\n\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\"keyid_hash_algorithms\":
+        [\n\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\"sha512\"\n\t\t\t\t],\n\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEy8XKsmhBYDI8Jc0GwzBxeKax0cm5\\nSTKEU65HPFunUn41sT8pi0FjM4IkHz/YUmwmLUO0Wt7lxhj6BkLIK4qYAw==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"roles\": {\n\t\t\t\"root\":
+        {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"snapshot\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t},\n\t\t\t\"targets\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"ff51e17fcf253119b7033f6f57512631da4a0969442afcf9fc8b141c7f2be99c\",\n\t\t\t\t\t\"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\t\t\"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\t\t\"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\t\t\"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        3\n\t\t\t},\n\t\t\t\"timestamp\": {\n\t\t\t\t\"keyids\": [\n\t\t\t\t\t\"e1863ba02070322ebc626dcecf9d881a3a38c35c3b41a83765b6ad6c37eaec2a\"\n\t\t\t\t],\n\t\t\t\t\"threshold\":
+        1\n\t\t\t}\n\t\t},\n\t\t\"consistent_snapshot\": true\n\t},\n\t\"signatures\":
+        [\n\t\t{\n\t\t\t\"keyid\": \"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\"sig\":
+        \"3044022024b8036b374f7071723f3f2cb1979c42e5da1910f0b178835ad546e3c360836302207140ccd408afcf8720dd9bea7f00325768c3aa47c22d531c849c974fd50e45dd\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\"sig\":
+        \"3046022100dcb1a96ecbfc05768a3c73726a92d681da78eaec068a9a0cfe13a12db672e44b022100a0dae7bc2e6b953e215f57cc614eb71660b9461d6dc86264b0b74a4f2e1307e1\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\",\n\t\t\t\"sig\":
+        \"3046022100c4708d94077cb3d6dd60ebd2dd66545e7afb0464ce2593a5f23f6e3604b9f21e022100992e969cd5069eab17439b2ba60743fe422877bc1a1c46e935a6d5cb47b3cfc6\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\"sig\":
+        \"3045022051faa6b6fc373730b97c1a4cd92d03efd98b83d4c9c93bf4f404d1f88ea2eb18022100f71ac1cd73dcba950f4210b12f9a05b8140b0490247c5339191e842b868155b4\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/127.snapshot.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPpyH9wGj_BPJh5us2zyQAGn1MkzSVcAIqsgXPYfaCdd3ejStgn4wx_PqlpaT7QT__ZV7Q8LGVK9bw
+      Date:
+      - Sun, 03 Mar 2024 06:26:37 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Last-Modified:
+      - Fri, 01 Mar 2024 18:34:19 GMT
+      Etag:
+      - '"20f14c6eed6b1a70d344b33c46358a06"'
+      X-Goog-Generation:
+      - '1709318059154469'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '2302'
+      Content-Type:
+      - application/json
+      X-Goog-Hash:
+      - crc32c=5917WQ==
+      - md5=IPFMbu1rGnDTRLM8RjWKBg==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2302'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"snapshot\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 127,\n\t\t\"expires\": \"2024-03-12T16:06:18Z\",\n\t\t\"meta\":
+        {\n\t\t\t\"registry.npmjs.org.json\": {\n\t\t\t\t\"length\": 717,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"eb130d653ed6e4b3e6ea1d1cbdd1eb38da6067c8153a4ebfbd479b839cd762be\",\n\t\t\t\t\t\"sha512\":
+        \"b5667f9232900eb57fb3eac48a6b4e696eae07667b509d51d4f748347b54170a42269868df35bc02d56746fe25998ec18201391aaa1beb8ff40c9a867312ea3b\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        2\n\t\t\t},\n\t\t\t\"rekor.json\": {\n\t\t\t\t\"length\": 797,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"9d2e1a5842937d8e0d3e3759170b0ad15c56c5df36afc5cf73583ddd283a463b\",\n\t\t\t\t\t\"sha512\":
+        \"176e9e710ddddd1b357a7d7970831bae59763395a0c18976110cbd35b25e5412dc50f356ec421a7a30265670cf7aec9ed84ee944ba700ec2394b9c876645b960\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        3\n\t\t\t},\n\t\t\t\"revocation.json\": {\n\t\t\t\t\"length\": 800,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"6f60848ba8fb0955a02abfd1232fb3845dc9ee9f418bf03521a7ddb48217e040\",\n\t\t\t\t\t\"sha512\":
+        \"a965dddd0d0edef6c59e84cf02ecf5a53299f633fd339b2b61814a4219ab4df672a6390f265b8b29e1c8cea9368ea3440df013790759d50231a30df1c1f02551\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        2\n\t\t\t},\n\t\t\t\"root.json\": {\n\t\t\t\t\"length\": 5297,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"f5ad897c9414cca99629f400ac3585e41bd8ebb44c5af07fb08dd636a9eced9c\",\n\t\t\t\t\t\"sha512\":
+        \"7445ddfdd338ef786c324fc3d68f75be28cb95b7fb581d2a383e3e5dde18aa17029a5636ec0a22e9631931bbcb34057788311718ea41e21e7cdd3c0de13ede42\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        2\n\t\t\t},\n\t\t\t\"staging.json\": {\n\t\t\t\t\"length\": 401,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"cda57759abac5375397eea3531d7ca51e3a67da9a2dc93f2cdab749e2ae73149\",\n\t\t\t\t\t\"sha512\":
+        \"e9e59587bde453144c7079884a880c706f1d43f26e8bb23fac2b96a99569a2a30ae6cf51ec51c2454f760ce83d4c20915e062aede7f319b3da6a6ed1d26ca281\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        2\n\t\t\t},\n\t\t\t\"targets.json\": {\n\t\t\t\t\"length\": 5254,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"5a3137bfb141c23bba733309e71260a020052def7443e76d7f97b807e72299bc\",\n\t\t\t\t\t\"sha512\":
+        \"d3285632920302399e89f853a47feaa63bfb3f82425a58f61d44d2def5198d23b6dd7b5541c5cdc4196db0188a22c484e03ef08b6773b543ec4c0df6d8c2df2f\"\n\t\t\t\t},\n\t\t\t\t\"version\":
+        8\n\t\t\t}\n\t\t}\n\t},\n\t\"signatures\": [\n\t\t{\n\t\t\t\"keyid\": \"45b283825eb184cabd582eb17b74fc8ed404f68cf452acabdad2ed6f90ce216b\",\n\t\t\t\"sig\":
+        \"304502200fde2cc394439e34503b84cf69e4345a42e84880e910f36b6453db0e0e07cbcb0221009067c571451b616eee69f0c7452dd0d79fe7b35883f512758bf2301d5be5d2f1\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+- request:
+    method: get
+    uri: https://tuf-repo-cdn.sigstore.dev/8.targets.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - tuf-repo-cdn.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      X-Guploader-Uploadid:
+      - ABPtcPrXcn5R9v7M4kD67L8em8e2gL7yrRNzHke6c76MXleLVgERKhMpHQbjty3oqIo1ra3DjoY
+      X-Goog-Generation:
+      - '1709318154806896'
+      X-Goog-Metageneration:
+      - '1'
+      X-Goog-Stored-Content-Encoding:
+      - identity
+      X-Goog-Stored-Content-Length:
+      - '5254'
+      X-Goog-Hash:
+      - crc32c=5SdcYg==
+      - md5=HLWudHsMSYbjfCs3nLhCkQ==
+      X-Goog-Storage-Class:
+      - STANDARD
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '5254'
+      Server:
+      - UploadServer
+      Via:
+      - 1.1 google
+      Date:
+      - Sat, 02 Mar 2024 18:40:57 GMT
+      Cache-Control:
+      - public,max-age=86400
+      Age:
+      - '42341'
+      Last-Modified:
+      - Fri, 01 Mar 2024 18:35:54 GMT
+      Etag:
+      - '"1cb5ae747b0c4986e37c2b379cb84291"'
+      Content-Type:
+      - application/json
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"targets\",\n\t\t\"spec_version\":
+        \"1.0\",\n\t\t\"version\": 8,\n\t\t\"expires\": \"2024-03-26T05:51:49Z\",\n\t\t\"targets\":
+        {\n\t\t\t\"artifact.pub\": {\n\t\t\t\t\"length\": 177,\n\t\t\t\t\"hashes\":
+        {\n\t\t\t\t\t\"sha256\": \"59ebf97a9850aecec4bc39c1f5c1dc46e6490a6b5fd2a6cacdcac0c3a6fc4cbf\",\n\t\t\t\t\t\"sha512\":
+        \"308fd1d1d95d7f80aa33b837795251cc3e886792982275e062409e13e4e236ffc34d676682aa96fdc751414de99c864bf132dde71581fa651c6343905e3bf988\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"usage\":
+        \"Unknown\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ctfe.pub\": {\n\t\t\t\t\"length\":
+        177,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\": \"7fcb94a5d0ed541260473b990b99a6c39864c1fb16f3f3e594a5a3cebbfe138a\",\n\t\t\t\t\t\"sha512\":
+        \"4b20747d1afe2544238ad38cc0cc3010921b177d60ac743767e0ef675b915489bd01a36606c0ff83c06448622d7160f0d866c83d20f0c0f44653dcc3f9aa0bd4\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
+        \"https://ctfe.sigstore.dev/test\",\n\t\t\t\t\t\t\"usage\": \"CTFE\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ctfe_2022.pub\":
+        {\n\t\t\t\t\"length\": 178,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"270488a309d22e804eeb245493e87c667658d749006b9fee9cc614572d4fbbdc\",\n\t\t\t\t\t\"sha512\":
+        \"e83fa4f427b24ee7728637fad1b4aa45ebde2ba02751fa860694b1bb16059a490328f9985e51cc70e4d237545315a1bc866dc4fdeef2f6248d99cc7a6077bf85\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
+        \"https://ctfe.sigstore.dev/2022\",\n\t\t\t\t\t\t\"usage\": \"CTFE\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio.crt.pem\":
+        {\n\t\t\t\t\"length\": 744,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"f360c53b2e13495a628b9b8096455badcb6d375b185c4816d95a5d746ff29908\",\n\t\t\t\t\t\"sha512\":
+        \"0713252a7fd17f7f3ab12f88a64accf2eb14b8ad40ca711d7fe8b4ecba3b24db9e9dffadb997b196d3867b8f9ff217faf930d80e4dab4e235c7fc3f07be69224\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Expired\",\n\t\t\t\t\t\t\"uri\":
+        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio_intermediate_v1.crt.pem\":
+        {\n\t\t\t\t\"length\": 789,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"f8cbecf186db7714624a5f4e99da31a917cbef70a94dd6921f5c3ca969dfe30a\",\n\t\t\t\t\t\"sha512\":
+        \"0f99f47dbc26c5f1e3cba0bfd9af4245a26e5cb735d6ef005792ec7e603f66fdb897de985973a6e50940ca7eff5e1849719e967b5ad2dac74a29115a41cf6f21\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
+        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio_v1.crt.pem\":
+        {\n\t\t\t\t\"length\": 740,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"f989aa23def87c549404eadba767768d2a3c8d6d30a8b793f9f518a8eafd2cf5\",\n\t\t\t\t\t\"sha512\":
+        \"f2e33a6dc208cee1f51d33bbea675ab0f0ced269617497985f9a0680689ee7073e4b6f8fef64c91bda590d30c129b3070dddce824c05bc165ac9802f0705cab6\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
+        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"rekor.pub\":
+        {\n\t\t\t\t\"length\": 178,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"dce5ef715502ec9f3cdfd11f8cc384b31a6141023d3e7595e9908a81cb6241bd\",\n\t\t\t\t\t\"sha512\":
+        \"0ae7705e02db33e814329746a4a0e5603c5bdcd91c96d072158d71011a2695788866565a2fec0fe363eb72cbcaeda39e54c5fe8d416daf9f3101fdba4217ef35\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
+        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
+        \"https://rekor.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Rekor\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"trusted_root.json\":
+        {\n\t\t\t\t\"length\": 7014,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
+        \"4364d7724c04cc912ce2a6c45ed2610e8d8d1c4dc857fb500292738d4d9c8d2c\",\n\t\t\t\t\t\"sha512\":
+        \"fdebade075c4840d40f1806a14d0660ae1d22f47c0516abc4141e09f4ddf6ee6f4dbfbf08a7025bea10a4b8794658a4cd8ebb1024b963f239a9bfe02c2057fc6\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"delegations\":
+        {\n\t\t\t\"keys\": {\n\t\t\t\t\"a89d235ee2f298d757438c7473b11b0b7b42ff1a45f1dfaac4c014183d6f8c45\":
+        {\n\t\t\t\t\t\"keytype\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\t\"scheme\":
+        \"ecdsa-sha2-nistp256\",\n\t\t\t\t\t\"keyid_hash_algorithms\": [\n\t\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\t\"sha512\"\n\t\t\t\t\t],\n\t\t\t\t\t\"keyval\":
+        {\n\t\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoLrh0jmOfHWLwsyo/4oGbldF91WV\\nfXvxVlDhW8fZwP/3vTnliBkDp5sH8/Dpm1SBOHkqENVt1+4Un/sFtl2zAQ==\\n-----END
+        PUBLIC KEY-----\\n\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"roles\": [\n\t\t\t\t{\n\t\t\t\t\t\"name\":
+        \"registry.npmjs.org\",\n\t\t\t\t\t\"keyids\": [\n\t\t\t\t\t\t\"a89d235ee2f298d757438c7473b11b0b7b42ff1a45f1dfaac4c014183d6f8c45\"\n\t\t\t\t\t],\n\t\t\t\t\t\"threshold\":
+        1,\n\t\t\t\t\t\"terminating\": true,\n\t\t\t\t\t\"paths\": [\n\t\t\t\t\t\t\"registry.npmjs.org/*\"\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t]\n\t\t}\n\t},\n\t\"signatures\":
+        [\n\t\t{\n\t\t\t\"keyid\": \"f5312f542c21273d9485a49394386c4575804770667f2ddb59b3bf0669fddd2f\",\n\t\t\t\"sig\":
+        \"3045022100c973e7d5dab04e3eaf699dbba367cd6816045fde062cfc50005ab967b6a97ee902202e8c9bedc033e608c74f65aebf67e7de483dc0ac99813644c9eadabb662b9637\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"7f7513b25429a64473e10ce3ad2f3da372bbdd14b65d07bbaf547e7c8bbbe62b\",\n\t\t\t\"sig\":
+        \"3045022046f1af42d72d48106347c07f54f8309d53fbfa7c5e6a56d53b7e6d8a691e108b022100964ece326415381be9d04c39f622e71caf4e9d0ea1a8a316ff8565a0060565e7\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"2e61cd0cbf4a8f45809bda9f7f78c0d33ad11842ff94ae340873e2664dc843de\",\n\t\t\t\"sig\":
+        \"30460221008c983d56a349806c589d765dd3f05c0c72e1f07eb9d4f756ddc8efc87851c001022100a91532545f1e5e52eae690ea18a893b50f3e754c5a15aad3ce62e59911c700d6\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
+        \"25a0eb450fd3ee2bd79218c963dce3f1cc6118badf251bf149f0bd07d5cabe99\",\n\t\t\t\"sig\":
+        \"3045022044abeff8c146c62a5ea063620014304e7593eaf5b189338c150dab88541ab6040221009c5a7b1285e426e731ddfcabcc647259cb2590f1a3e3864797ed360059de7bb2\"\n\t\t}\n\t]\n}"
+  recorded_at: Mon, 26 Feb 2024 21:40:19 GMT
+recorded_with: VCR 6.2.0

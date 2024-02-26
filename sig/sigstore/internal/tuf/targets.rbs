@@ -1,0 +1,39 @@
+module Sigstore::Internal::TUF
+  class Targets
+    @version: untyped
+
+    @expires: untyped
+
+    @targets: untyped
+
+    @delegations: untyped
+
+    @unrecognized_fields: untyped
+
+    TYPE: "targets"
+
+    attr_reader version: untyped
+
+    attr_reader targets: untyped
+
+    def initialize: (untyped data) -> void
+
+    def expired?: (untyped reference_time) -> untyped
+
+    class Target
+      @path: untyped
+
+      @length: untyped
+
+      @hashes: untyped
+
+      attr_reader path: untyped
+
+      attr_reader hashes: untyped
+
+      def initialize: (untyped data, untyped path) -> void
+
+      def verify_length_and_hashes: (untyped data) -> nil
+    end
+  end
+end

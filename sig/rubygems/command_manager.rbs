@@ -1,0 +1,7 @@
+module Gem
+  class CommandManager
+    def self.instance: () -> instance
+
+    def register_command: (Symbol command) -> void
+  end
+end

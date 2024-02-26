@@ -1,0 +1,15 @@
+module Sigstore
+  module Rekor
+    module Checkpoint
+      Signature: untyped
+
+      SignedCheckpoint: untyped
+
+      SignedNote: untyped
+
+      LogCheckpoint: untyped
+
+      def self.verify_checkpoint: (untyped client, untyped entry) -> (nil | untyped)
+    end
+  end
+end

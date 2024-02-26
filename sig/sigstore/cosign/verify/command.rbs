@@ -1,0 +1,13 @@
+module Sigstore
+  module Cosign
+    module Verify
+      class VerifyCommand < Gem::Command
+        def initialize: () -> void
+      end
+
+      class VerifyBundleCommand < Gem::Command
+        def initialize: () -> void
+      end
+    end
+  end
+end

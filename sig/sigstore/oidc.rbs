@@ -1,0 +1,17 @@
+module Sigstore
+  module OIDC
+    class OpenIDConfiguration
+      @authorization_endpoint: URI::HTTPS
+
+      @token_endpoint: URI::HTTPS
+
+      def initialize: (authorization_endpoint: untyped, token_endpoint: untyped) -> void
+    end
+
+    class Issuer
+      @base_url: untyped
+
+      def initialize: (untyped base_url) -> void
+    end
+  end
+end

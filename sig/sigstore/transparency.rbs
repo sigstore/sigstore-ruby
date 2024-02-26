@@ -1,0 +1,15 @@
+module Sigstore
+  module Transparency
+    class LogEntry
+      attr_reader inclusion_proof: InclusionProof
+      attr_reader body: Internal::Util::base64String
+    end
+
+    class InclusionProof
+      attr_reader log_index: Integer
+      attr_reader tree_size: Integer
+      attr_reader hashes: Array[Internal::Util::hexString]
+      attr_reader root_hash: Internal::Util::hexString
+    end
+  end
+end
