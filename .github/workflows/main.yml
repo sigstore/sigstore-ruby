@@ -25,6 +25,11 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Clone sigstore-conformance
+        uses: actions/checkout@v4
+        with:
+          repository: sigstore/conformance
+          path: test/conformance
       - name: Run the tests
         run: bin/rake test
       - name: Run the conformance tests
