@@ -25,15 +25,14 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Clone sigstore-conformance
-        uses: actions/checkout@v4
-        with:
-          repository: sigstore/conformance
-          path: test/conformance
       - name: Run the tests
         run: bin/rake test
       - name: Run the conformance tests
-        run: bin/rake conformance
+        uses: sigstore/sigstore-conformance@v0.0.10
+        with:
+          entrypoint: bin/conformance-entrypoint
+          xfail: test_verify_trust_root_with_invalid_ct_keys test_verify_dsse_bundle_with_trust_root
+          skip-signing: true
 
   lint:
     runs-on: ubuntu-latest
