@@ -30,7 +30,7 @@ jobs:
       - name: Run the conformance tests
         uses: sigstore/sigstore-conformance@v0.0.10
         with:
-          entrypoint: bin/conformance-entrypoint
+          entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: test_verify_trust_root_with_invalid_ct_keys test_verify_dsse_bundle_with_trust_root
           skip-signing: true
 

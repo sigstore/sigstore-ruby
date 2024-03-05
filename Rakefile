@@ -26,10 +26,11 @@ end
 
 namespace :conformance do
   file "test/sigstore-conformance/.git/config" do
+    rm_rf "test/sigstore-conformance"
     sh "git", "clone", "https://github.com/sigstore/sigstore-conformance", chdir: "test"
   end
-  file "test/sigstore-conformance/.git/HEAD" => "test/sigstore-conformance/.git/config" do
-    sh "git", "checkout", "36c89ee", chdir: "test/sigstore-conformance"
+  file "test/sigstore-conformance/.git/HEAD" => %w[test/sigstore-conformance/.git/config] do
+    sh "git", "checkout", "g36c89ee", chdir: "test/sigstore-conformance"
   end
   file "test/sigstore-conformance/version" => %w[test/sigstore-conformance/.git/HEAD] do
     sh "git", "describe", "--tags", "--always", chdir: "test/sigstore-conformance",
