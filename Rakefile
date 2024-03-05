@@ -41,27 +41,4 @@ namespace :conformance do
   task setup: "test/sigstore-conformance/env/pyvenv.cfg" # rubocop:disable Rake/Desc
 end
 
-# namespace :test do
-#   task :generate do
-#     FileList["lib/**/*.rb"].each do |file|
-#       test = file.sub(/\.rb$/, "_test.rb").sub("lib", "test")
-#       next if File.exist?(test)
-
-#       mkdir_p File.dirname(test)
-
-#       File.write(test, <<~RUBY)
-#         # frozen_string_literal: true
-
-#         require "test_helper"
-
-#         class #{file.sub(/\.rb$/, "").split("/").drop(1).join("::")}Test < Test::Unit::TestCase
-#           def test_something
-#
-#           end
-#         end
-#       RUBY
-#     end
-#   end
-#
-#
-# end
+task test: %w[test/sigstore-conformance/version]
