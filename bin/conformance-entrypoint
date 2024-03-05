@@ -3,5 +3,5 @@
 
 command = ARGV.shift
 
-exec({ "BUNDLE_GEMFILE" => File.expand_path("../GEMFILE", __dir__) },
+exec({ "BUNDLE_GEMFILE" => File.expand_path("../Gemfile", __dir__) },
      "bundle", "exec", "gem", "sigstore_cosign_#{command.tr("-", "_")}", *ARGV)
