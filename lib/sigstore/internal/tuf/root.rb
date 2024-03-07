@@ -5,11 +5,11 @@ require "time"
 module Sigstore::Internal::TUF
   class Root
     TYPE = "root"
-    attr_reader :version, :consistent_snapshot
+    attr_reader :version, :consistent_snapshot, :expires
 
     def initialize(data)
       type = data.fetch("_type")
-      raise "Expected type to be #{TYPE}" unless type == TYPE
+      raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
 
       @spec_version = data.fetch("spec_version")
       @consistent_snapshot = data.fetch("consistent_snapshot")

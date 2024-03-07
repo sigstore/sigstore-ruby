@@ -14,14 +14,16 @@ module Sigstore
       def verify(key_id:, signature:, data:)
         key = @keyring.fetch(key_id) { raise KeyError, "key not found: #{key_id.inspect}, known: #{@keyring.keys}" }
 
-        case key
-        when OpenSSL::PKey::EC
-          key.verify("SHA256", signature, data)
-        when OpenSSL::PKey::RSA
-          key.verify("SHA256", signature, data, { rsa_padding_mode: "pkcs1" })
-        else
-          raise "unsupported key type #{key}"
-        end || raise("invalid signature: #{signature.inspect} over #{data.inspect} with key #{key_id}")
+        return if case key
+                  when OpenSSL::PKey::EC
+                    key.verify("SHA256", signature, data)
+                  when OpenSSL::PKey::RSA
+                    key.verify("SHA256", signature, data, { rsa_padding_mode: "pkcs1" })
+                  else
+                    raise "unsupported key type #{key}"
+                  end
+
+        raise("invalid signature: #{signature.inspect} over #{data.inspect} with key #{key_id}")
       end
     end
   end

@@ -8,9 +8,9 @@ module Sigstore::Internal::TUF
   class EqualVersionNumberError < StandardError; end
 
   class TrustedMetadataSet
-    def initialize(root_data, envelope_type)
+    def initialize(root_data, envelope_type, reference_time: Time.now.utc)
       @trusted_set = {}
-      @reference_time = Time.now.utc
+      @reference_time = reference_time
       @envelope_type = envelope_type
 
       # debug
@@ -37,17 +37,20 @@ module Sigstore::Internal::TUF
     def timestamp=(data)
       raise "cannot update timestamp after snapshot" if @trusted_set.key?("snapshot")
 
-      raise ExpiredMetadataError, "final root.json is expired" if root.expired?(@reference_time)
+      if root.expired?(@reference_time)
+        raise ExpiredMetadataError,
+              "final root.json expired at #{root.expires}, is #{@reference_time}"
+      end
 
       metadata, = load_data(Timestamp, data, root)
 
       if include?(Timestamp::TYPE)
-        raise "timestamp version incr" if metadata.version < timestamp.version
+        raise "timestamp version did not increase" if metadata.version < timestamp.version
         raise EqualVersionNumberError if metadata.version == timestamp.version
 
         snapshot_meta = timestamp.snapshot_meta
         new_snapshot_meta = metadata.snapshot_meta
-        raise "snapshot version incr" if new_snapshot_meta.version < snapshot_meta.version
+        raise "snapshot version did not increase" if new_snapshot_meta.version < snapshot_meta.version
       end
 
       @trusted_set["timestamp"] = metadata
@@ -66,10 +69,7 @@ module Sigstore::Internal::TUF
 
       new_snapshot, = load_data(Snapshot, data, root)
 
-      if include?(Snapshot::TYPE)
-        # TODO
-        # raise "snapshot version incr" if new_snapshot.version < snapshot.version
-      end
+      raise "snapshot version incr" if include?(Snapshot::TYPE) && (new_snapshot.version < snapshot.version)
 
       @trusted_set["snapshot"] = new_snapshot
       # debug "Updated snapshot v#{new_snapshot.version}"
@@ -123,7 +123,9 @@ module Sigstore::Internal::TUF
     def load_data(type, data, delegator, _role_name = nil)
       metadata = JSON.parse(data)
       signed = metadata.fetch("signed")
-      raise "Expected type to be #{type::TYPE}" unless signed.fetch("_type") == type::TYPE
+      unless signed.fetch("_type") == type::TYPE
+        raise "Expected type to be #{type::TYPE}, got #{signed.fetch("_type").inspect}"
+      end
 
       signatures = metadata.fetch("signatures")
       metadata = type.new(signed)

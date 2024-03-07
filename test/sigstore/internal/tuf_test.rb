@@ -4,5 +4,76 @@ require "test_helper"
 require "sigstore/internal/tuf"
 
 class Sigstore::Internal::TUFTest < Test::Unit::TestCase
-  def test_something; end
+  setup do
+    @xdg_data_home = ENV.fetch("XDG_DATA_HOME", nil)
+    @xdg_cache_home = ENV.fetch("XDG_CACHE_HOME", nil)
+    @home = ENV.fetch("HOME", nil) # rubocop:disable Style/EnvHome
+
+    ENV.update(
+      "XDG_DATA_HOME" => nil,
+      "XDG_CACHE_HOME" => nil,
+      "HOME" => Dir.mktmpdir
+    )
+  end
+
+  teardown do
+    FileUtils.rm_rf(Dir.home)
+    ENV.update(
+      "XDG_DATA_HOME" => @xdg_data_home,
+      "XDG_CACHE_HOME" => @xdg_cache_home,
+      "HOME" => @home
+    )
+  end
+
+  def test_initialize
+    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://example.com", true)
+    assert_equal(
+      File.join(
+        Dir.home,
+        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Fexample.com/trusted_root.json"
+      ),
+      updater.trusted_root_path
+    )
+    refute File.file?(updater.trusted_root_path)
+  end
+
+  def test_production_default_dirs
+    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true)
+    assert_equal(
+      File.join(
+        Dir.home,
+        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstore.dev/trusted_root.json"
+      ),
+      updater.trusted_root_path
+    )
+
+    assert File.file?(updater.trusted_root_path)
+
+    assert_equal File.read(updater.trusted_root_path),
+                 File.read(File.expand_path("../../../data/_store/prod/trusted_root.json", __dir__))
+  end
+
+  def test_staging_default_dirs
+    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstage.dev", true)
+    assert_equal(
+      File.join(
+        Dir.home,
+        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstage.dev/trusted_root.json"
+      ),
+      updater.trusted_root_path
+    )
+
+    assert File.file?(updater.trusted_root_path)
+
+    assert_equal File.read(updater.trusted_root_path),
+                 File.read(File.expand_path("../../../data/_store/staging/trusted_root.json", __dir__))
+  end
+
+  def test_initialize_custom_dirs
+    targets_dir = File.join(Dir.home, "custom-targets")
+    metadata_dir = File.join(Dir.home, "custom-metadata")
+    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true,
+                                                        metadata_dir: metadata_dir, targets_dir: targets_dir)
+    assert_equal(File.join(targets_dir, "trusted_root.json"), updater.trusted_root_path)
+  end
 end

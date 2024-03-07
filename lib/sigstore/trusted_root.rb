@@ -74,8 +74,10 @@ module Sigstore
       now = Time.now.utc
       return true unless period
       return false if now < period.start.to_time
+      return true if allow_expired
+      return false if period.end && now > period.end.to_time
 
-      allow_expired || !period.end || now <= period.end.to_time
+      true
     end
   end
 end

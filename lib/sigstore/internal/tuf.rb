@@ -80,8 +80,10 @@ module Sigstore
 
           repo_base = URI.encode_uri_component(url)
 
-          tuf_data_dir = File.join(Gem.data_home, app_name, app_author, "tuf")
-          tuf_cache_dir = File.join(Gem.cache_home, app_name, app_author, "tuf")
+          data_home = ENV.fetch("XDG_DATA_HOME", File.join(Dir.home, ".local", "share"))
+          cache_home = ENV.fetch("XDG_CACHE_HOME", File.join(Dir.home, ".cache"))
+          tuf_data_dir = File.join(data_home, app_name, app_author, "tuf")
+          tuf_cache_dir = File.join(cache_home, app_name, app_author, "tuf")
 
           [File.join(tuf_data_dir, repo_base), File.join(tuf_cache_dir, repo_base)]
         end

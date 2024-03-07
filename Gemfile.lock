@@ -29,6 +29,7 @@ GEM
       bigdecimal
       rexml
     csv (3.2.8)
+    docile (1.4.0)
     drb (2.2.0)
       ruby2_keywords
     ffi (1.16.3)
@@ -85,6 +86,12 @@ GEM
     sigstore_protobuf_specs (0.3.0)
       google-protobuf (~> 3.21, >= 3.21.12)
       googleapis-common-protos-types (~> 1.4)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.12.3)
+    simplecov_json_formatter (0.1.4)
     steep (1.6.0)
       activesupport (>= 5.1)
       concurrent-ruby (>= 1.1.10)
@@ -124,6 +131,7 @@ DEPENDENCIES
   rubocop (~> 1.21)
   rubocop-rake (~> 0.6.0)
   sigstore-cosign-verify!
+  simplecov (~> 0.22.0)
   steep (~> 1.6)
   test-unit (~> 3.0)
   timecop (~> 0.9.8)

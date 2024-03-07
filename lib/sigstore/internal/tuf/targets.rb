@@ -8,7 +8,7 @@ module Sigstore::Internal::TUF
 
     def initialize(data)
       type = data.fetch("_type")
-      raise "Expected type to be #{TYPE}" unless type == TYPE
+      raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
 
       @version = data.fetch("version")
       @expires = Time.iso8601 data.fetch("expires")

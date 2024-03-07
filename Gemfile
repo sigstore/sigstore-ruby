@@ -14,3 +14,5 @@ gem "vcr", "~> 6.2"
 gem "webmock", "~> 3.23"
 
 gem "timecop", "~> 0.9.8"
+
+gem "simplecov", "~> 0.22.0"

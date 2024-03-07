@@ -19,7 +19,7 @@ module Sigstore
             value = ext_value(ext)
             verified = value == @value
             unless verified
-              return VerificationFailure.new("Certificate's #{self.class.name} does not match " \
+              return VerificationFailure.new("Certificate's #{self.class.name&.[](/::([^:]+)$/, 1)} does not match " \
                                              "(got #{value}, expected #{@value})")
             end
 
