@@ -172,7 +172,7 @@ module Sigstore
 
         private
 
-        def debug(*_args, **_kwargs) = nil
+        def debug(*_args, **_kwargs); end
 
         def load_local_metadata(role_name)
           encoded_name = URI.encode_www_form_component(role_name)

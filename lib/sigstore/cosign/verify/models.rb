@@ -7,7 +7,8 @@ module Sigstore
     module Verify
       VerificationResult = Struct.new(:success, keyword_init: true) do
         # @implements VerificationResult
-        def verified? = success
+
+        alias_method :verified?, :success
       end
 
       class VerificationSuccess < VerificationResult
@@ -71,7 +72,9 @@ module Sigstore
           super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, **kwargs)
         end
 
-        def rekor_entry? = !!rekor_entry
+        def rekor_entry?
+          !!rekor_entry
+        end
 
         def find_rekor_entry(rekor_client)
           _has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise

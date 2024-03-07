@@ -10,14 +10,12 @@ Gem::Specification.new do |spec|
 
   spec.summary = "A pure-ruby implementation of the sigstore cosign verify command"
   spec.homepage = "https://github.com/segiddins/sigstore-cosign-verify"
-  spec.license = "APACHE-2.0"
+  spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = spec.homepage
-  # spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -31,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "sigstore_protobuf_specs" # TODO: DELETE
+  spec.add_runtime_dependency "sigstore_protobuf_specs", "~> 0.3.0" # TODO: DELETE
 
   spec.metadata["rubygems_mfa_required"] = "true"
 end

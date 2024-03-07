@@ -16,10 +16,9 @@ task default: %i[test conformance rubocop]
 
 desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
-  rm_rf ["/tmp/user_data_dir", "/tmp/user_cache_dir"]
   sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" =>
        "test_verify_trust_root_with_invalid_ct_keys test_verify_dsse_bundle_with_trust_root" },
-     "env/bin/pytest", "test",
+     File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
      "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
      chdir: "test/sigstore-conformance")
 end

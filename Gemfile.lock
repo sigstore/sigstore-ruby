@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     sigstore-cosign-verify (0.1.0)
-      sigstore_protobuf_specs
+      sigstore_protobuf_specs (~> 0.3.0)
 
 GEM
   remote: https://rubygems.org/
@@ -36,6 +36,7 @@ GEM
     fileutils (1.7.2)
     google-protobuf (3.25.3)
     google-protobuf (3.25.3-arm64-darwin)
+    google-protobuf (3.25.3-x86_64-linux)
     googleapis-common-protos-types (1.13.0)
       google-protobuf (~> 3.18)
     hashdiff (1.1.0)
@@ -123,8 +124,10 @@ GEM
       hashdiff (>= 0.4.0, < 2.0.0)
 
 PLATFORMS
-  arm64-darwin-23
+  arm64-darwin
+  arm64-linux
   ruby
+  x86_64-linux
 
 DEPENDENCIES
   rake (~> 13.0)

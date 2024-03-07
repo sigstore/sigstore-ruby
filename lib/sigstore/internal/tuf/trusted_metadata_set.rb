@@ -17,7 +17,9 @@ module Sigstore::Internal::TUF
       load_trusted_root(root_data)
     end
 
-    def root = @trusted_set.fetch("root")
+    def root
+      @trusted_set.fetch("root")
+    end
 
     def root=(data)
       raise "cannot update root after timestamp" if @trusted_set.key?("timestamp")
@@ -31,8 +33,13 @@ module Sigstore::Internal::TUF
       # debug
     end
 
-    def snapshot = @trusted_set.fetch("snapshot")
-    def timestamp = @trusted_set.fetch("timestamp")
+    def snapshot
+      @trusted_set.fetch("snapshot")
+    end
+
+    def timestamp
+      @trusted_set.fetch("timestamp")
+    end
 
     def timestamp=(data)
       raise "cannot update timestamp after snapshot" if @trusted_set.key?("snapshot")

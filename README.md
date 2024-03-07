@@ -1,8 +1,6 @@
 # Sigstore::Cosign::Verify
 
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/sigstore/cosign/verify`. To experiment with that code, run `bin/console` for an interactive prompt.
+This is a pure Ruby implementation of the `cosign verify` command from the [sigstore/cosign](https://sigstore.dev/projects/cosign) project. It is intended to be used as a library in other Ruby projects, in additional to a `gem` subcommand. The project also contains a TUF client implementation, given TUF is a part of the sigstore verification flow.
 
 ## Installation
 
@@ -18,7 +16,12 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
 ## Usage
 
-TODO: Write usage instructions here
+```shell
+$ gem sigstore_cosign_verify_bundle --bundle a.txt.sigstore \
+    --certificate-identity https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    a.txt
+```
 
 ## Development
 
@@ -28,12 +31,12 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/sigstore-cosign-verify. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/sigstore-cosign-verify/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/segiddins/sigstore-cosign-verify. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/segiddins/sigstore-cosign-verify/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The gem is available as open source under the terms of the [Apache 2](https://opensource.org/licenses/Apache-2.0).
 
 ## Code of Conduct
 
-Everyone interacting in the Sigstore::Cosign::Verify project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/sigstore-cosign-verify/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the Sigstore::Cosign::Verify project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/segiddins/sigstore-cosign-verify/blob/main/CODE_OF_CONDUCT.md).
