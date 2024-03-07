@@ -144,7 +144,8 @@ module Sigstore::Internal::TUF
       snapshot_meta = timestamp.snapshot_meta
       return unless snapshot.version != snapshot_meta.version
 
-      raise "snapshot version mismatch (snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
+      raise "snapshot version mismatch " \
+            "(snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
     end
   end
 end

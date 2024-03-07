@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
-require "sigstore/internal/tuf"
+require "delegate"
 require "json"
 require "sigstore_protobuf_specs"
 require "google/protobuf/well_known_types"
 require "openssl"
 
+require_relative "internal/tuf"
+
 module Sigstore
-  TrustedRoot = Sigstore::TrustRoot::V1::TrustedRoot
-  class TrustedRoot
+  class TrustedRoot < DelegateClass(Sigstore::TrustRoot::V1::TrustedRoot)
     def self.production(offline: false)
       from_tuf(Sigstore::Internal::TUF::DEFAULT_TUF_URL, offline)
     end
@@ -20,7 +21,7 @@ module Sigstore
 
     def self.from_file(path)
       contents = Gem.read_binary(path)
-      decode_json(contents)
+      new Sigstore::TrustRoot::V1::TrustedRoot.decode_json(contents)
     end
 
     def rekor_keys

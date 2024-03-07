@@ -91,7 +91,8 @@ module Sigstore
 
         return if checkpoint_hash == root_hash
 
-        raise "Inclusion proof contains invalid root hash: expected #{checkpoint_hash.inspect}, calculated #{root_hash.inspect}"
+        raise "Inclusion proof contains invalid root hash: " \
+              "expected #{checkpoint_hash.inspect}, calculated #{root_hash.inspect}"
       end
     end
   end

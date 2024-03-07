@@ -14,37 +14,43 @@ module Sigstore
       STAGING_TUF_URL = "https://tuf-repo-cdn.sigstage.dev"
 
       class TrustUpdater
-        def initialize(url, offline)
+        def initialize(url, offline, metadata_dir: nil, targets_dir: nil)
           @repo_url = url
-          @metadata_dir, @targets_dir = get_dirs(url)
+
+          default_metadata_dir, default_targets_dir = get_dirs(url) unless metadata_dir && targets_dir
+          @metadata_dir = metadata_dir || default_metadata_dir
+          @targets_dir = targets_dir || default_targets_dir
+
           @offline = offline
 
-          if @repo_url == DEFAULT_TUF_URL
-            rsrc_prefix = "prod"
-          elsif @repo_url == STAGING_TUF_URL
-            rsrc_prefix = "staging"
-          else
-            raise "Unknown TUF URL"
-          end
+          rsrc_prefix = if @repo_url == DEFAULT_TUF_URL
+                          "prod"
+                        elsif @repo_url == STAGING_TUF_URL
+                          "staging"
+                        end
 
           FileUtils.mkdir_p @metadata_dir
-          tuf_root = File.join(@metadata_dir, "root.json")
+          FileUtils.mkdir_p @targets_dir
 
-          unless File.exist?(tuf_root)
-            File.open(tuf_root, "wb") do |f|
-              File.open(File.expand_path("../../../data/_store/#{rsrc_prefix}/root.json", __dir__), "rb") do |r|
-                IO.copy_stream(r, f)
+          if rsrc_prefix
+            tuf_root = File.join(@metadata_dir, "root.json")
+
+            unless File.exist?(tuf_root)
+              File.open(tuf_root, "wb") do |f|
+                File.open(File.expand_path("../../../data/_store/#{rsrc_prefix}/root.json", __dir__), "rb") do |r|
+                  IO.copy_stream(r, f)
+                end
               end
             end
-          end
 
-          FileUtils.mkdir_p @targets_dir
-          trusted_root_target = File.join(@targets_dir, "trusted_root.json")
+            trusted_root_target = File.join(@targets_dir, "trusted_root.json")
 
-          unless File.exist?(trusted_root_target)
-            File.open(trusted_root_target, "wb") do |f|
-              File.open(File.expand_path("../../../data/_store/#{rsrc_prefix}/trusted_root.json", __dir__), "rb") do |r|
-                IO.copy_stream(r, f)
+            unless File.exist?(trusted_root_target)
+              File.open(trusted_root_target, "wb") do |f|
+                File.open(File.expand_path("../../../data/_store/#{rsrc_prefix}/trusted_root.json", __dir__),
+                          "rb") do |r|
+                  IO.copy_stream(r, f)
+                end
               end
             end
           end
@@ -74,8 +80,8 @@ module Sigstore
 
           repo_base = URI.encode_uri_component(url)
 
-          tuf_data_dir = File.join("/tmp", "user_data_dir", app_name, app_author, "tuf")
-          tuf_cache_dir = File.join("/tmp", "user_cache_dir", app_name, app_author, "tuf")
+          tuf_data_dir = File.join(Gem.data_home, app_name, app_author, "tuf")
+          tuf_cache_dir = File.join(Gem.cache_home, app_name, app_author, "tuf")
 
           [File.join(tuf_data_dir, repo_base), File.join(tuf_cache_dir, repo_base)]
         end
@@ -142,7 +148,7 @@ module Sigstore
           target_filepath = target_info.path
           consistent_snapshot = @trusted_set.root.consistent_snapshot
 
-          if consistent_snapshot && true # TODO: config.prefix_targets_with_hash
+          if consistent_snapshot # TODO: config.prefix_targets_with_hash
             hashes = target_info.hashes.values
             dir, sep, basename = target_filepath.rpartition("/")
             target_filepath = "#{dir}#{sep}#{hashes.first}.#{basename}"

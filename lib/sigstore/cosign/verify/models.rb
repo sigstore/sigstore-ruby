@@ -74,7 +74,7 @@ module Sigstore
         def rekor_entry? = !!rekor_entry
 
         def find_rekor_entry(rekor_client)
-          has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
+          _has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
           has_inclusion_proof = rekor_entry? && rekor_entry.inclusion_proof && rekor_entry.inclusion_proof.checkpoint
 
           # debug
@@ -104,7 +104,7 @@ module Sigstore
                   elsif !has_inclusion_proof
                     # debug
                     rekor_client.log.entries.retrieve.post(expected_entry)
-                  else
+                  else # rubocop:disable Lint/DuplicateBranch
                     rekor_entry
                   end
 

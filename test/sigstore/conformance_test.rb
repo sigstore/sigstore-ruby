@@ -8,7 +8,7 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
   def test_verify_signature_invalid
     VCR.use_cassette("conformance/verify_signature_invalid") do |cassette|
       Timecop.freeze(cassette.originally_recorded_at || Time.now) do
-        out, err = capture_output do
+        capture_output do
           assert_raise Gem::SystemExitException do
             Gem::Commands::SigstoreCosignVerifyCommand.new.invoke(
               "--signature", "test/sigstore-conformance/test/assets/a.txt.invalid.sig",
@@ -28,7 +28,8 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
       Gem::Commands::SigstoreCosignVerifyCommand.new.invoke(
         "--signature", "test/sigstore-conformance/test/assets/a.txt.good.sig",
         "--certificate", "test/sigstore-conformance/test/assets/a.txt.good.crt",
-        "--certificate-identity", "https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main", "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
+        "--certificate-identity", "https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main",
+        "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
         "--trusted-root", "test/sigstore-conformance/test/assets/trusted_root.public_good.json",
         "test/sigstore-conformance/test/assets/a.txt"
       )

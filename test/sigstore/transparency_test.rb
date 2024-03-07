@@ -114,9 +114,8 @@ class Sigstore::Transparency::LogEntryTest < Test::Unit::TestCase
       }
     )
 
-    assert_equal(
-      '{"body":"eyJraW5kIjoiaGFzaGVkcmVrb3JkIiwiYXBpVmVyc2lvbiI6IjAuMC4xIn0=","integratedTime":0,"logID":"1234","logIndex":1}',
-      entry.encode_canonical
-    )
+    assert_equal <<~CANONICAL.chomp, entry.encode_canonical
+      {"body":"eyJraW5kIjoiaGFzaGVkcmVrb3JkIiwiYXBpVmVyc2lvbiI6IjAuMC4xIn0=","integratedTime":0,"logID":"1234","logIndex":1}
+    CANONICAL
   end
 end

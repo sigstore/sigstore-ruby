@@ -35,7 +35,7 @@ GEM
     fileutils (1.7.2)
     google-protobuf (3.25.3)
     google-protobuf (3.25.3-arm64-darwin)
-    googleapis-common-protos-types (1.12.0)
+    googleapis-common-protos-types (1.13.0)
       google-protobuf (~> 3.18)
     hashdiff (1.1.0)
     i18n (1.14.1)
