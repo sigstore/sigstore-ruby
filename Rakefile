@@ -29,16 +29,16 @@ namespace :conformance do
     sh "git", "clone", "https://github.com/sigstore/sigstore-conformance", chdir: "test"
   end
   file "test/sigstore-conformance/.git/HEAD" => %w[test/sigstore-conformance/.git/config] do
-    sh "git", "checkout", "g36c89ee", chdir: "test/sigstore-conformance"
+    sh "git", "checkout", "main", chdir: "test/sigstore-conformance"
   end
-  file "test/sigstore-conformance/version" => %w[test/sigstore-conformance/.git/HEAD] do
+  file "test/sigstore-conformance/.git/rake-version" => %w[test/sigstore-conformance/.git/HEAD] do
     sh "git", "describe", "--tags", "--always", chdir: "test/sigstore-conformance",
-                                                out: "test/sigstore-conformance/version"
+                                                out: "test/sigstore-conformance/.git/rake-version"
   end
-  file "test/sigstore-conformance/env/pyvenv.cfg" => "test/sigstore-conformance/version" do
+  file "test/sigstore-conformance/env/pyvenv.cfg" => "test/sigstore-conformance/.git/rake-version" do
     sh "make", "dev", chdir: "test/sigstore-conformance"
   end
   task setup: "test/sigstore-conformance/env/pyvenv.cfg" # rubocop:disable Rake/Desc
 end
 
-task test: %w[test/sigstore-conformance/version]
+task test: %w[test/sigstore-conformance/.git/rake-version]

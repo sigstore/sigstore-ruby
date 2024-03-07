@@ -60,16 +60,16 @@ module Sigstore
                                          keyword_init: true) do
         # @implements VerificationMaterials
 
-        def initialize(input:, cert_pem:, **kwargs)
+        def initialize(input:, cert_pem:, offline: false, **kwargs)
           input_bytes = input.read
           digest = OpenSSL::Digest.new("SHA256")
           digest.update(input_bytes)
           hashed_input = digest
           certificate = OpenSSL::X509::Certificate.new(cert_pem)
 
-          raise "offline verification requires a rekor entry" if offline && !rekor_entry
+          raise ArgumentError, "offline verification requires a rekor entry" if offline && !rekor_entry
 
-          super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, **kwargs)
+          super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, offline: offline, **kwargs)
         end
 
         def rekor_entry?

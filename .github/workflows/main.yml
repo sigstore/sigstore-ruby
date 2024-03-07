@@ -36,6 +36,12 @@ jobs:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: test_verify_trust_root_with_invalid_ct_keys test_verify_dsse_bundle_with_trust_root
           skip-signing: true
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        if: ${{ matrix.ruby }} == "3.3.0"
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: segiddins/sigstore-cosign-verify
 
   lint:
     runs-on: ubuntu-latest

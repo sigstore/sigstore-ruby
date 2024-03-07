@@ -78,6 +78,7 @@ module Sigstore
           app_name = "sigstore-cosign-verify"
           app_author = "segiddins"
 
+          # TODO: encode_uri_component not on 3.0
           repo_base = URI.encode_uri_component(url)
 
           data_home = ENV.fetch("XDG_DATA_HOME", File.join(Dir.home, ".local", "share"))
