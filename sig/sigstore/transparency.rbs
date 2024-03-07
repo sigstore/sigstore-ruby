@@ -1,8 +1,13 @@
 module Sigstore
   module Transparency
     class LogEntry
-      attr_reader inclusion_proof: InclusionProof
+      attr_reader uuid: String
       attr_reader body: Internal::Util::base64String
+      attr_reader integrated_time: Time
+      attr_reader log_index: Integer
+      attr_reader log_id: String
+      attr_reader inclusion_proof: InclusionProof
+      attr_reader inclusion_promise: Internal::Util::base64String
     end
 
     class InclusionProof
