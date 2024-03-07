@@ -19,15 +19,19 @@ module Sigstore::Internal::TUF
         key_type = key_data.fetch("keytype")
         _scheme = key_data.fetch("scheme")
         keyval = key_data.fetch("keyval")
+        key_data = keyval.fetch("public")
 
+        # TODO: https://github.com/secure-systems-lab/securesystemslib/blob/main/securesystemslib/signer/__init__.py#L47
         key = case key_type
               when "ecdsa-sha2-nistp256"
-                OpenSSL::PKey.read(keyval.fetch("public"))
+                OpenSSL::PKey.read(key_data)
               else
                 raise "Unsupported key type: #{key_type}"
               end
 
-        # TODO: verify keyid
+        if RUBY_ENGINE == "jruby" && key.to_pem != key_data && key.to_der != key_data
+          raise "Key mismatch: #{key.to_pem.inspect} != #{key_data.inspect}"
+        end
 
         key
       end
