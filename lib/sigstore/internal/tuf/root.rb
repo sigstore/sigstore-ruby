@@ -17,16 +17,17 @@ module Sigstore::Internal::TUF
       @expires = Time.iso8601 data.fetch("expires")
       @keys = data.fetch("keys").transform_values do |key_data|
         key_type = key_data.fetch("keytype")
-        _scheme = key_data.fetch("scheme")
+        scheme = key_data.fetch("scheme")
         keyval = key_data.fetch("keyval")
         key_data = keyval.fetch("public")
 
         # TODO: https://github.com/secure-systems-lab/securesystemslib/blob/main/securesystemslib/signer/__init__.py#L47
-        key = case key_type
-              when "ecdsa-sha2-nistp256"
+        key = case [key_type, scheme]
+              when %w[ecdsa-sha2-nistp256 ecdsa-sha2-nistp256],
+                   %w[ecdsa ecdsa-sha2-nistp256]
                 OpenSSL::PKey.read(key_data)
               else
-                raise "Unsupported key type: #{key_type}"
+                raise "Unsupported scheme & key type: #{scheme}, #{key_type}"
               end
 
         if RUBY_ENGINE == "jruby" && key.to_pem != key_data && key.to_der != key_data
