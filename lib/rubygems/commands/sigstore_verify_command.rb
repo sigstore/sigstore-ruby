@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
 require "rubygems/command"
-require_relative "../../sigstore/cosign/verify/command_options"
+require_relative "../../sigstore/command_options"
 
 module Gem
   module Commands
-    class SigstoreCosignVerifyCommand < Gem::Command
-      include Sigstore::Cosign::Verify::CommandOptions
+    class SigstoreVerifyCommand < Gem::Command
+      include Sigstore::CommandOptions
 
       def initialize
         require "sigstore/rekor/client"
         require "sigstore/trusted_root"
 
-        super("sigstore-cosign-verify", "Display the contents of the installed gems",
+        super("sigstore-verify", "Display the contents of the installed gems",
           rekor_url: Sigstore::Rekor::Client::DEFAULT_REKOR_URL)
 
         add_verify_command_options
@@ -34,12 +34,12 @@ module Gem
       end
 
       def execute
-        require "sigstore/cosign/verify/verifier"
-        require "sigstore/cosign/verify/models"
-        require "sigstore/cosign/verify/policy"
+        require "sigstore/verifier"
+        require "sigstore/models"
+        require "sigstore/policy"
 
         verifier, files_with_materials = collect_verification_state
-        policy = Sigstore::Cosign::Verify::Policy::Identity.new(
+        policy = Sigstore::Policy::Identity.new(
           identity: options[:certificate_identity],
           issuer: options[:certificate_oidc_issuer]
         )
@@ -75,9 +75,9 @@ module Gem
         input_map = {}
 
         if options[:staging]
-          verifier = Sigstore::Cosign::Verify::Verifier.staging(trust_root: options[:trusted_root])
+          verifier = Sigstore::Verifier.staging(trust_root: options[:trusted_root])
         elsif options[:rekor_url] == Sigstore::Rekor::Client::DEFAULT_REKOR_URL
-          verifier = Sigstore::Cosign::Verify::Verifier.production(trust_root: options[:trusted_root])
+          verifier = Sigstore::Verifier.production(trust_root: options[:trusted_root])
         else
           unless options[:certificate_chain]
             raise Gem::CommandLineError,
@@ -88,7 +88,7 @@ module Gem
 
           # TODO: rekor_root_pubkey
 
-          verifier = Sigstore::Cosign::Verify::Verifier.new(
+          verifier = Sigstore::Verifier.new(
             rekor_client: Sigstore::Rekor::Client.new(
               url: options[:rekor_url],
               rekor_keyring: Sigstore::Internal::Keyring.new(keys: trust_root.rekor_keys),
@@ -133,14 +133,14 @@ module Gem
               bundle_bytes = Gem.read_binary(inputs[:bundle])
               bundle = Sigstore::Bundle::V1::Bundle.decode_json(bundle_bytes)
 
-              Sigstore::Cosign::Verify::VerificationMaterials.from_bundle(input: input, bundle: bundle,
-                                                                          offline: options[:offline])
+              Sigstore::VerificationMaterials.from_bundle(input: input, bundle: bundle,
+                                                          offline: options[:offline])
             else
               cert_pem = Gem.read_binary(inputs[:cert])
               b64_sig = Gem.read_binary(inputs[:sig])
               signature = b64_sig.unpack1("m")
 
-              Sigstore::Cosign::Verify::VerificationMaterials.new(
+              Sigstore::VerificationMaterials.new(
                 input: input,
                 cert_pem: cert_pem,
                 signature: signature, rekor_entry: rekor_entry,

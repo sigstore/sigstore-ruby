@@ -7,7 +7,6 @@ end
 SimpleCov.start
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "sigstore/cosign/verify"
 require "sigstore/internal/merkle"
 
 require "test-unit"

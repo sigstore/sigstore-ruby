@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in sigstore-cosign-verify.gemspec
+# Specify your gem's dependencies in sigstore.gemspec
 gemspec
 
 gem "rake", "~> 13.0"

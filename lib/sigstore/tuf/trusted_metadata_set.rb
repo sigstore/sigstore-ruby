@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "root"
-require_relative "../json"
+require_relative "../internal/json"
 
-module Sigstore::Internal::TUF
+module Sigstore::TUF
   class ExpiredMetadataError < StandardError; end
   class EqualVersionNumberError < StandardError; end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Sigstore::Cosign::Verify::CommandOptions
+module Sigstore::CommandOptions
   def add_verify_command_options
     add_option("--certificate-identity ID",
                "The identity to check for in the certificate's Subject Alternative Names") do |identity, options|

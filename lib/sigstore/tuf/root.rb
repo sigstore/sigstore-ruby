@@ -2,7 +2,7 @@
 
 require "time"
 
-module Sigstore::Internal::TUF
+module Sigstore::TUF
   class Root
     TYPE = "root"
     attr_reader :version, :consistent_snapshot, :expires
@@ -22,13 +22,16 @@ module Sigstore::Internal::TUF
         key_data = keyval.fetch("public")
 
         # TODO: https://github.com/secure-systems-lab/securesystemslib/blob/main/securesystemslib/signer/__init__.py#L47
-        key = case [key_type, scheme]
-              when %w[ecdsa-sha2-nistp256 ecdsa-sha2-nistp256],
-                   %w[ecdsa ecdsa-sha2-nistp256]
-                OpenSSL::PKey.read(key_data)
-              else
-                raise "Unsupported scheme & key type: #{scheme}, #{key_type}"
-              end
+        case [key_type, scheme]
+        when %w[ecdsa-sha2-nistp256 ecdsa-sha2-nistp256],
+             %w[ecdsa ecdsa-sha2-nistp256]
+          key = OpenSSL::PKey.read(key_data)
+          unless key.is_a?(OpenSSL::PKey::EC) && key.group.curve_name == "prime256v1"
+            raise "Expected #{scheme} key, got #{key.class} #{key.group.curve_name}"
+          end
+        else
+          raise "Unsupported scheme & key type: #{scheme}, #{key_type}"
+        end
 
         if RUBY_ENGINE == "jruby" && key.to_pem != key_data && key.to_der != key_data
           raise "Key mismatch: #{key.to_pem.inspect} != #{key_data.inspect}"

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Sigstore::Internal::TUF
+module Sigstore::TUF
   class Targets
     TYPE = "targets"
 

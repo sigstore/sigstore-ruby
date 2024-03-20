@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "lib/sigstore/cosign/verify/version"
+require_relative "lib/sigstore/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "sigstore-cosign-verify"
-  spec.version = Sigstore::Cosign::Verify::VERSION
+  spec.name = "sigstore"
+  spec.version = Sigstore::VERSION
   spec.authors = ["Samuel Giddins"]
   spec.email = ["segiddins@segiddins.me"]
 
-  spec.summary = "A pure-ruby implementation of the sigstore cosign verify command"
+  spec.summary = "A pure-ruby implementation of the sigstore verify command"
   spec.homepage = "https://github.com/segiddins/sigstore-cosign-verify"
   spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.0.0"

@@ -1,6 +1,6 @@
-# Sigstore::Cosign::Verify
+# Sigstore
 
-This is a pure Ruby implementation of the `cosign verify` command from the [sigstore/cosign](https://sigstore.dev/projects/cosign) project. It is intended to be used as a library in other Ruby projects, in additional to a `gem` subcommand. The project also contains a TUF client implementation, given TUF is a part of the sigstore verification flow.
+This is a pure Ruby implementation of the `sigstore verify` command from the [sigstore/cosign](https://sigstore.dev/projects/cosign) project. It is intended to be used as a library in other Ruby projects, in additional to a `gem` subcommand. The project also contains a TUF client implementation, given TUF is a part of the sigstore verification flow.
 
 ## Installation
 

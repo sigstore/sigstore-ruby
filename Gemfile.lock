@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sigstore-cosign-verify (0.1.0)
+    sigstore (0.1.0)
       sigstore_protobuf_specs (~> 0.3.0)
 
 GEM
@@ -35,16 +35,8 @@ GEM
       ruby2_keywords
     ffi (1.16.3)
     ffi (1.16.3-java)
-    ffi-compiler (1.0.1)
-      ffi (>= 1.0.0)
-      rake
     fileutils (1.7.2)
-    google-protobuf (3.25.3)
     google-protobuf (3.25.3-arm64-darwin)
-    google-protobuf (3.25.3-java)
-      ffi (~> 1)
-      ffi-compiler (~> 1)
-    google-protobuf (3.25.3-x86_64-linux)
     googleapis-common-protos-types (1.13.0)
       google-protobuf (~> 3.18)
     hashdiff (1.1.0)
@@ -146,7 +138,7 @@ DEPENDENCIES
   rake (~> 13.0)
   rubocop (~> 1.21)
   rubocop-rake (~> 0.6.0)
-  sigstore-cosign-verify!
+  sigstore!
   simplecov (~> 0.22.0)
   steep (~> 1.6)
   test-unit (~> 3.0)

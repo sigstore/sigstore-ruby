@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Sigstore::Internal::TUF
+module Sigstore::TUF
   # The class for the Snapshot role
   class Snapshot
     TYPE = "snapshot"

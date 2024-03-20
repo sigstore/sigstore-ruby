@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "sigstore/internal/tuf/trusted_metadata_set"
+require "sigstore/tuf/trusted_metadata_set"
 
-class Sigstore::Internal::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
+class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
   setup do
     @reference_time = Time.utc(12, 42, 2, 7, 3, 2023, 4, 67, false, "UTC")
     @priv_key = OpenSSL::PKey::RSA.new(2048)
@@ -55,12 +55,12 @@ class Sigstore::Internal::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
     }
     # TODO: need to generate a test root, with keys we can use for signing
     @root_data = JSON.dump(@root)
-    @set = Sigstore::Internal::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
+    @set = Sigstore::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
   end
 
   def test_initialize_known_good
-    @root_data = File.read(File.expand_path("../../../../data/_store/prod/root.json", __dir__))
-    Sigstore::Internal::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
+    @root_data = File.read(File.expand_path("../../../data/_store/prod/root.json", __dir__))
+    Sigstore::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
   end
 
   def test_initialize
@@ -68,7 +68,7 @@ class Sigstore::Internal::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
 
     # allows loading expired metadata from the (already truted) root
     @reference_time += 60 * 60 * 24 * 365 * 20
-    Sigstore::Internal::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
+    Sigstore::TUF::TrustedMetadataSet.new(@root_data, "json", reference_time: @reference_time)
   end
 
   def test_raises_when_updating_root_after_timestamp

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "sigstore/internal/tuf"
+require "sigstore/tuf"
 
-class Sigstore::Internal::TUFTest < Test::Unit::TestCase
+class Sigstore::TUFTest < Test::Unit::TestCase
   setup do
     @xdg_data_home = ENV.fetch("XDG_DATA_HOME", nil)
     @xdg_cache_home = ENV.fetch("XDG_CACHE_HOME", nil)
@@ -26,11 +26,11 @@ class Sigstore::Internal::TUFTest < Test::Unit::TestCase
   end
 
   def test_initialize
-    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://example.com", true)
+    updater = Sigstore::TUF::TrustUpdater.new("https://example.com", true)
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Fexample.com/trusted_root.json"
+        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Fexample.com/trusted_root.json"
       ),
       updater.trusted_root_path
     )
@@ -38,11 +38,11 @@ class Sigstore::Internal::TUFTest < Test::Unit::TestCase
   end
 
   def test_production_default_dirs
-    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true)
+    updater = Sigstore::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true)
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstore.dev/trusted_root.json"
+        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstore.dev/trusted_root.json"
       ),
       updater.trusted_root_path
     )
@@ -54,11 +54,11 @@ class Sigstore::Internal::TUFTest < Test::Unit::TestCase
   end
 
   def test_staging_default_dirs
-    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstage.dev", true)
+    updater = Sigstore::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstage.dev", true)
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-cosign-verify/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstage.dev/trusted_root.json"
+        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstage.dev/trusted_root.json"
       ),
       updater.trusted_root_path
     )
@@ -72,8 +72,8 @@ class Sigstore::Internal::TUFTest < Test::Unit::TestCase
   def test_initialize_custom_dirs
     targets_dir = File.join(Dir.home, "custom-targets")
     metadata_dir = File.join(Dir.home, "custom-metadata")
-    updater = Sigstore::Internal::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true,
-                                                        metadata_dir: metadata_dir, targets_dir: targets_dir)
+    updater = Sigstore::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true,
+                                              metadata_dir: metadata_dir, targets_dir: targets_dir)
     assert_equal(File.join(targets_dir, "trusted_root.json"), updater.trusted_root_path)
   end
 end

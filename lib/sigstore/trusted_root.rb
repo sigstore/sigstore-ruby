@@ -6,16 +6,16 @@ require "sigstore_protobuf_specs"
 require "google/protobuf/well_known_types"
 require "openssl"
 
-require_relative "internal/tuf"
+require_relative "tuf"
 
 module Sigstore
   class TrustedRoot < DelegateClass(Sigstore::TrustRoot::V1::TrustedRoot)
     def self.production(offline: false)
-      from_tuf(Sigstore::Internal::TUF::DEFAULT_TUF_URL, offline)
+      from_tuf(TUF::DEFAULT_TUF_URL, offline)
     end
 
     def self.from_tuf(url, offline)
-      path = Internal::TUF::TrustUpdater.new(url, offline).trusted_root_path
+      path = TUF::TrustUpdater.new(url, offline).trusted_root_path
       from_file(path)
     end
 
