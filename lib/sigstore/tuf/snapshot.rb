@@ -29,7 +29,7 @@ module Sigstore::TUF
         @hashes = data.fetch("hashes", nil)
         @unrecognized_fields = data.fetch("unrecognized_fields", {})
 
-        raise ArguementError, "version must be positive" if @version <= 0
+        raise ArgumentError, "version must be positive" if @version <= 0
 
         validate_length(@length) unless @length.nil?
         validate_hashes(@hashes) unless @hashes.nil?

@@ -6,6 +6,8 @@ require_relative "tuf/snapshot"
 require_relative "tuf/targets"
 require_relative "tuf/timestamp"
 require "tempfile"
+require "uri"
+require "net/http"
 
 module Sigstore
   module TUF
@@ -63,13 +65,13 @@ module Sigstore
           metadata_base_url: @repo_url,
           target_base_url: URI.join("#{@repo_url}/", "targets/"),
           target_dir: @targets_dir,
-          fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true }
+          fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true if repo_url.scheme != "http" }
         )
 
         begin
           @updater.refresh
         rescue StandardError => e
-          raise "Failed to refresh TUF metadata: #{e.class} #{e.message}"
+          raise "Failed to refresh TUF metadata: #{e.class} #{e.full_message}"
         end
       end
 
@@ -285,7 +287,7 @@ module Sigstore
 
       def preorder_depth_first_walk(target_path)
         # TODO
-        delegations_to_visit = [Targets::TYPE, Root::TYPE]
+        delegations_to_visit = [[Targets::TYPE, Root::TYPE]]
         visited_role_names = Set.new
 
         while delegations_to_visit.any? && visited_role_names.size < 100 # TODO: make this configurable

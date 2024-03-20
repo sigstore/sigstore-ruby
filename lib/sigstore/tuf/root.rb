@@ -19,16 +19,17 @@ module Sigstore::TUF
         key_type = key_data.fetch("keytype")
         scheme = key_data.fetch("scheme")
         keyval = key_data.fetch("keyval")
-        key_data = keyval.fetch("public")
+        public_key_data = keyval.fetch("public")
 
         # TODO: https://github.com/secure-systems-lab/securesystemslib/blob/main/securesystemslib/signer/__init__.py#L47
         case [key_type, scheme]
         when %w[ecdsa-sha2-nistp256 ecdsa-sha2-nistp256],
              %w[ecdsa ecdsa-sha2-nistp256]
-          key = OpenSSL::PKey.read(key_data)
+          key = OpenSSL::PKey.read(public_key_data)
           unless key.is_a?(OpenSSL::PKey::EC) && key.group.curve_name == "prime256v1"
             raise "Expected #{scheme} key, got #{key.class} #{key.group.curve_name}"
           end
+        # when %w[ed25519 ed25519]
         else
           raise "Unsupported scheme & key type: #{scheme}, #{key_type}"
         end

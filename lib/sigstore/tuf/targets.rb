@@ -4,7 +4,7 @@ module Sigstore::TUF
   class Targets
     TYPE = "targets"
 
-    attr_reader :version, :targets
+    attr_reader :version, :targets, :delegations
 
     def initialize(data)
       type = data.fetch("_type")
@@ -13,7 +13,7 @@ module Sigstore::TUF
       @version = data.fetch("version")
       @expires = Time.iso8601 data.fetch("expires")
       @targets = data.fetch("targets").to_h { |k, v| [k, Target.new(v, k)] }
-      @delegations = data.fetch("delegations")
+      @delegations = data.fetch("delegations", {})
       @unrecognized_fields = data.fetch("unrecognized_fields", {})
     end
 
