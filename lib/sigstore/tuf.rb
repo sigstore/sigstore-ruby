@@ -20,7 +20,7 @@ module Sigstore
       def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil)
         @repo_url = metadata_url
 
-        default_metadata_dir, default_targets_dir = get_dirs(url) unless metadata_dir && targets_dir
+        default_metadata_dir, default_targets_dir = get_dirs(metadata_url) unless metadata_dir && targets_dir
         @metadata_dir = metadata_dir || default_metadata_dir
         @targets_dir = targets_dir || default_targets_dir
 
@@ -65,7 +65,8 @@ module Sigstore
         @updater = Updater.new(
           metadata_dir: @metadata_dir,
           metadata_base_url: @repo_url,
-          target_base_url: URI.parse(target_base_url) || URI.join("#{@repo_url}".chomp("/") + "/", "targets/"),
+          target_base_url: (target_base_url && URI.parse(target_base_url)) ||
+                           URI.join("#{@repo_url}".chomp("/") + "/", "targets/"),
           target_dir: @targets_dir,
           fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true if repo_url.scheme != "http" }
         )

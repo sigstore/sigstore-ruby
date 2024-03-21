@@ -122,7 +122,6 @@ module Sigstore
     end
 
     def self.from_bundle(input:, bundle:, offline:)
-      # TODO: check media type
       media_type = BundleType.from_media_type(bundle.media_type)
 
       if media_type == BundleType::BUNDLE_0_3
