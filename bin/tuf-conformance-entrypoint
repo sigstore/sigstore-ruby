@@ -6,7 +6,7 @@ require "bundler/setup"
 
 require "rubygems/gem_runner"
 
-require 'optparse'
+require "optparse"
 
 tmp = nil
 
@@ -19,10 +19,19 @@ OptionParser.new do |parser|
     tmp = File.dirname(v)
     args << "--metadata-dir" << v
   end
+  parser.on("--targets-dir D") do |v|
+    args << "--targets-dir" << v
+  end
+  parser.on("--cached") do |_v|
+    args << "--cached"
+  end
+  parser.on("--target-base-url U") do |v|
+    args << "--target-base-url" << v
+  end
 end.parse!
 
 require "simplecov"
-SimpleCov.command_name "tuf-conformance:#{Digest::SHA256.hexdigest ARGV.map {|a| a.sub(tmp, "$TMPDIR")}.join(" ")}"
+SimpleCov.command_name "tuf-conformance:#{Digest::SHA256.hexdigest ARGV.map { |a| a.sub(tmp, "$TMPDIR") }.join(" ")}"
 load File.expand_path("../.simplecov", __dir__)
 
 command = ARGV.shift

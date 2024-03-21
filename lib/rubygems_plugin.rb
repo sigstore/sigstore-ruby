@@ -7,3 +7,4 @@ Gem::CommandManager.instance.register_command :sigstore_verify_bundle
 
 Gem::CommandManager.instance.register_command :sigstore_tuf_init
 Gem::CommandManager.instance.register_command :sigstore_tuf_refresh
+Gem::CommandManager.instance.register_command :sigstore_tuf_download_target

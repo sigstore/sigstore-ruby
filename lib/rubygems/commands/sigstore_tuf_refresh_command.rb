@@ -6,7 +6,6 @@ require_relative "../../sigstore/tuf"
 module Gem
   module Commands
     class SigstoreTufRefreshCommand < Gem::Command
-
       def initialize
         super("sigstore-tuf-refresh", "refresh a TUF repo")
 

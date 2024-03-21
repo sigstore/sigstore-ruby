@@ -6,7 +6,6 @@ require_relative "../../sigstore/command_options"
 module Gem
   module Commands
     class SigstoreTufInitCommand < Gem::Command
-
       def initialize
         super("sigstore-tuf-init", "initialize a TUF client")
 
@@ -22,7 +21,11 @@ module Gem
       def execute
         raise Gem::CommandLineError, "--metadata-url is required" unless @metadata_url
         raise Gem::CommandLineError, "--metadata-dir is required" unless @metadata_dir
-        raise Gem::CommandLineError, "provide a trusted TUF root" unless options[:args].size == 1 && File.exist?(options[:args].first)
+
+        unless options[:args].size == 1 && File.exist?(options[:args].first)
+          raise Gem::CommandLineError,
+                "provide a trusted TUF root"
+        end
 
         FileUtils.mkdir_p(@metadata_dir)
         FileUtils.cp(options[:args].first, File.join(@metadata_dir, "root.json"))

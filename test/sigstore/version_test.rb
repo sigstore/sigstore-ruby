@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "sigstore/version"
 
 class Sigstore::VersionTest < Test::Unit::TestCase
   def test_version

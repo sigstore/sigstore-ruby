@@ -15,8 +15,10 @@ module Sigstore
     STAGING_TUF_URL = "https://tuf-repo-cdn.sigstage.dev"
 
     class TrustUpdater
-      def initialize(url, offline, metadata_dir: nil, targets_dir: nil)
-        @repo_url = url
+      attr_reader :updater
+
+      def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil)
+        @repo_url = metadata_url
 
         default_metadata_dir, default_targets_dir = get_dirs(url) unless metadata_dir && targets_dir
         @metadata_dir = metadata_dir || default_metadata_dir
@@ -58,12 +60,12 @@ module Sigstore
 
         return if offline
 
-        repo_url = URI.parse(url)
+        repo_url = URI.parse(@repo_url)
 
         @updater = Updater.new(
           metadata_dir: @metadata_dir,
           metadata_base_url: @repo_url,
-          target_base_url: URI.join("#{@repo_url}/", "targets/"),
+          target_base_url: URI.parse(target_base_url) || URI.join("#{@repo_url}".chomp("/") + "/", "targets/"),
           target_dir: @targets_dir,
           fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true if repo_url.scheme != "http" }
         )
@@ -142,6 +144,7 @@ module Sigstore
         begin
           data = File.binread(filepath)
           target_info.verify_length_and_hashes(data)
+          filepath
         rescue Errno::ENOENT
           nil
         end
@@ -156,7 +159,7 @@ module Sigstore
         target_filepath = target_info.path
         consistent_snapshot = @trusted_set.root.consistent_snapshot
 
-        if consistent_snapshot # TODO: config.prefix_targets_with_hash
+        if consistent_snapshot && false # TODO: config.prefix_targets_with_hash
           hashes = target_info.hashes.values
           dir, sep, basename = target_filepath.rpartition("/")
           target_filepath = "#{dir}#{sep}#{hashes.first}.#{basename}"
@@ -170,7 +173,7 @@ module Sigstore
 
           File.binwrite(filepath, resp.body)
         rescue Net::HTTPClientException => e
-          raise "Failed to download target #{target_filepath.inspect} from #{full_url}: #{e.message}"
+          raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{full_url}: #{e.message}"
         end
         # debug
         filepath
