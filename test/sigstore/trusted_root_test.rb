@@ -12,7 +12,10 @@ class Sigstore::TrustedRootTest < Test::Unit::TestCase
         assert_equal ["MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2G2Y+2tabdTV5BcGiBIx0a9f\n" \
                       "AFwrkBbmLSGtks4L3qX6yYY0zufBnhC8Ur/iy55GhWP/9A/bY2LhC30M9+RY\n" \
                       "tw==\n"], production.rekor_keys.map { [_1].pack("m") }
-        assert_equal ["MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiPSlFi0CmFTfEjCUqF9HuCEc\n" \
+        assert_equal ["MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbfwR+RJudXscgRBRpKX1XFDy\n" \
+                      "3PyudDxz/SfnRi1fT8ekpfBd2O1uoz7jr3Z8nKzxA69EUQ+eFCFI3zeubPWU\n" \
+                      "7w==\n",
+                      "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiPSlFi0CmFTfEjCUqF9HuCEc\n" \
                       "YXNKAaYalIJmBZ8yyezPjTqhxrKBpMnaocVtLJBI1eM3uXnQzQGAJdJ4gs9F\n" \
                       "yw==\n"], production.ctfe_keys.map { [_1].pack("m") }
         assert_equal "-----BEGIN CERTIFICATE-----\n" \

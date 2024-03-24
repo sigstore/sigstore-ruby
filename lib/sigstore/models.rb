@@ -58,16 +58,16 @@ module Sigstore
                                      keyword_init: true) do
     # @implements VerificationMaterials
 
-    def initialize(input:, cert_pem:, offline: false, **kwargs)
+    def initialize(input:, cert_pem:, **kwargs)
       input_bytes = input.read
       digest = OpenSSL::Digest.new("SHA256")
       digest.update(input_bytes)
       hashed_input = digest
       certificate = OpenSSL::X509::Certificate.new(cert_pem)
 
-      raise ArgumentError, "offline verification requires a rekor entry" if offline && !rekor_entry
-
       super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, offline: offline, **kwargs)
+
+      raise ArgumentError, "offline verification requires a rekor entry" if offline && !rekor_entry?
     end
 
     def rekor_entry?
@@ -124,9 +124,10 @@ module Sigstore
     def self.from_bundle(input:, bundle:, offline:)
       media_type = BundleType.from_media_type(bundle.media_type)
 
-      if media_type == BundleType::BUNDLE_0_3
+      case media_type
+      when BundleType::BUNDLE_0_3
         leaf_cert = OpenSSL::X509::Certificate.new(bundle.verification_material.certificate.raw_bytes)
-      else
+      when BundleType::BUNDLE_0_1, BundleType::BUNDLE_0_2
         certs = bundle.verification_material.x509_certificate_chain.certificates.map do |cert|
           OpenSSL::X509::Certificate.new(cert.raw_bytes)
         end
@@ -138,9 +139,11 @@ module Sigstore
         certs.each do |cert|
           raise "Root CA in chain" if cert_is_root_ca?(cert)
         end
+      else
+        raise "Unsupported bundle format: #{media_type}"
       end
 
-      raise "DSSE not yet supported" if bundle.dsse_envelope
+      raise "DSSE envelope verification not yet supported" if bundle.dsse_envelope
       raise "bundle missing message signature" unless bundle.message_signature
 
       signature = bundle.message_signature.signature
@@ -151,7 +154,7 @@ module Sigstore
       tlog_entry = tlog_entries.first
 
       if media_type == BundleType::BUNDLE_0_1
-        raise unless tlog_entry.inclusion_promise
+        raise "bundle v0.1 requires an inclusion promise" unless tlog_entry.inclusion_promise
         if tlog_entry.inclusion_proof && !tlog_entry.inclusion_proof.checkpoint.envelope
           raise "0.1 bundle contains an inclusion proof without checkpoint"
         end

@@ -9,7 +9,7 @@ module Sigstore
   class Verifier
     def initialize(rekor_client:, fulcio_cert_chain:)
       @rekor_client = rekor_client
-      @fulcio_cert_chain = fulcio_cert_chain
+      @fulcio_cert_chain = fulcio_cert_chain.map { |cert| OpenSSL::X509::Certificate.new(cert) }
     end
 
     def self.production(trust_root: TrustedRoot.production)
@@ -33,7 +33,22 @@ module Sigstore
 
       store_ctx = OpenSSL::X509::StoreContext.new(store, cert_ossl)
 
-      store_ctx.verify
+      unless store_ctx.verify
+        return VerificationFailure.new(
+          "failed to validate certification from fulcio cert chain: #{store_ctx.error_string}"
+        )
+      end
+
+      chain = store_ctx.chain || raise
+      chain.drop(1)
+
+      _sct = precertificate_signed_certificate_timestamps(materials.certificate)[0]
+      # verify_sct(
+      #   sct,
+      #   materials.certificate,
+      #   chain,
+      #   @rekor_client._ct_keyring
+      # )
 
       usage_ext = materials.certificate.find_extension("keyUsage")
       unless usage_ext.value == "Digital Signature"
@@ -76,6 +91,40 @@ module Sigstore
       end
 
       VerificationSuccess.new
+    end
+
+    private
+
+    def precertificate_signed_certificate_timestamps(certificate)
+      # this is cursed. can't always find_extension(oid) because #oid can return a string or an OID
+      oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
+      precert_scts_extension = certificate.find_extension(oid)
+      unless precert_scts_extension
+        raise "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate #{certificate.extensions.join("\n")}"
+      end
+
+      # TODO: parse the extension properly
+      # https://github.com/pierky/sct-verify/blob/master/sct-verify.py
+
+      os1 = OpenSSL::ASN1.decode(precert_scts_extension.value_der)
+
+      len = os1.value.unpack1("n")
+      string = os1.value[2..]
+      raise "os1: len=#{len} #{os1.value.inspect}" unless string && string.size == len
+
+      len = string.unpack1("n")
+      string = string[2..]
+      raise "os1: len=#{len} #{string.inspect}" unless string && string.size == len
+
+      sct_version, sct_log_id, sct_timestamp, sct_extensions_len, sct_signature_alg_hash,
+      sct_signature_alg_sign, sct_signature_len, sct_signature_bytes = string.unpack("Ca32QnCCna*")
+      raise "sct extensions not supported" unless sct_extensions_len.zero?
+      unless sct_signature_bytes.bytesize == sct_signature_len
+        raise "sct_signature_bytes: #{sct_signature_bytes.inspect} sct_signature_len: #{sct_signature_len}"
+      end
+
+      # TODO: parse the SCT properly
+      [nil]
     end
   end
 end

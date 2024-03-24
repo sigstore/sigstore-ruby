@@ -31,6 +31,10 @@ module Gem
         add_option("--rekor-url URL", "URL of the Rekor server") do |url, options|
           options[:rekor_url] = url
         end
+
+        add_option("--[no-]offline", "Do not fetch the latest timestamp from the Rekor server") do |offline, options|
+          options[:offline] = offline
+        end
       end
 
       def execute
