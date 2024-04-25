@@ -37,6 +37,8 @@ module Sigstore
 
       def verify(algo, signature, data)
         @key.verify(algo, signature, data)
+      rescue OpenSSL::PKey::PKeyError
+        false
       end
 
       class EDCSA < Key

@@ -127,7 +127,7 @@ module Sigstore::TUF
       @trusted_set["root"] = root
     end
 
-    def load_data(type, data, delegator, _role_name = nil)
+    def load_data(type, data, delegator, role_name = nil)
       metadata = JSON.parse(data)
       signed = metadata.fetch("signed")
       unless signed.fetch("_type") == type::TYPE
@@ -136,7 +136,7 @@ module Sigstore::TUF
 
       signatures = metadata.fetch("signatures")
       metadata = type.new(signed)
-      delegator&.verify_delegate(type::TYPE, Sigstore::Internal::JSON.canonical_generate(signed), signatures)
+      delegator&.verify_delegate(role_name || type::TYPE, Sigstore::Internal::JSON.canonical_generate(signed), signatures)
       [metadata, signed, signatures]
     end
 

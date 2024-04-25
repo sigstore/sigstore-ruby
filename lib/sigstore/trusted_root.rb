@@ -17,6 +17,10 @@ module Sigstore
       from_tuf(TUF::DEFAULT_TUF_URL, offline)
     end
 
+    def self.staging(offline: false)
+      from_tuf(TUF::STAGING_TUF_URL, offline)
+    end
+
     def self.from_tuf(url, offline)
       path = TUF::TrustUpdater.new(url, offline).trusted_root_path
       from_file(path)
