@@ -135,7 +135,7 @@ module Gem
           materials = File.open(file, "rb") do |input|
             if inputs[:bundle]
               bundle_bytes = Gem.read_binary(inputs[:bundle])
-              bundle = Sigstore::Bundle::V1::Bundle.decode_json(bundle_bytes)
+              bundle = Sigstore::Bundle::V1::Bundle.decode_json(bundle_bytes, registry: Sigstore::REGISTRY)
 
               Sigstore::VerificationMaterials.from_bundle(input: input, bundle: bundle,
                                                           offline: options[:offline])
