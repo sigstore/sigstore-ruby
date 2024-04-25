@@ -2,12 +2,12 @@
 
 require "test_helper"
 require "sigstore/models"
-require "sigstore_protobuf_specs"
+require "sigstore/trusted_root"
 
 class Sigstore::VerificationMaterialsTest < Test::Unit::TestCase
   def test_verification_materials_from_bundle
     json = File.read("test/sigstore-conformance/test/assets/a.txt.good.sigstore")
-    bundle = Sigstore::Bundle::V1::Bundle.decode_json(json)
+    bundle = Sigstore::Bundle::V1::Bundle.decode_json(json, registry: Sigstore::REGISTRY)
     materials = File.open("test/sigstore-conformance/test/assets/a.txt.good.sigstore", "rb") do |file|
       Sigstore::VerificationMaterials.from_bundle(
         input: file,

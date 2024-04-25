@@ -2,13 +2,16 @@
 
 require "delegate"
 require "json"
-require "sigstore_protobuf_specs"
-require "google/protobuf/well_known_types"
+require "protobug_sigstore_protos"
 require "openssl"
 
 require_relative "tuf"
 
 module Sigstore
+  REGISTRY = Protobug::Registry.new do |registry|
+    Sigstore::TrustRoot::V1.register_sigstore_trustroot_protos(registry)
+    Sigstore::Bundle::V1.register_sigstore_bundle_protos(registry)
+  end
   class TrustedRoot < DelegateClass(Sigstore::TrustRoot::V1::TrustedRoot)
     def self.production(offline: false)
       from_tuf(TUF::DEFAULT_TUF_URL, offline)
@@ -21,7 +24,7 @@ module Sigstore
 
     def self.from_file(path)
       contents = Gem.read_binary(path)
-      new Sigstore::TrustRoot::V1::TrustedRoot.decode_json(contents)
+      new Sigstore::TrustRoot::V1::TrustedRoot.decode_json(contents, registry: REGISTRY)
     end
 
     def rekor_keys
