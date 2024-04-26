@@ -47,6 +47,22 @@ end
 
 task test: %w[sigstore_conformance]
 
+desc "Update the vendored data files"
+task :update_data do
+  require "sigstore/trusted_root"
+  {
+    prod: Sigstore::TUF::DEFAULT_TUF_URL,
+    staging: Sigstore::TUF::STAGING_TUF_URL
+  }.each do |name, url|
+    Dir.mktmpdir do |dir|
+      updater = Sigstore::TUF::TrustUpdater.new(url, false, metadata_dir: dir, targets_dir: dir).updater
+      updater.download_target(updater.get_targetinfo("trusted_root.json"))
+      cp File.join(dir, "trusted_root.json"), "data/_store/#{name}/trusted_root.json"
+      cp File.join(dir, "root.json"), "data/_store/#{name}/root.json"
+    end
+  end
+end
+
 require "open3"
 
 class GitRepo < Rake::Task

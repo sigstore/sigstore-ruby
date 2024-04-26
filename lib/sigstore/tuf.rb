@@ -160,7 +160,7 @@ module Sigstore
         target_filepath = target_info.path
         consistent_snapshot = @trusted_set.root.consistent_snapshot
 
-        if consistent_snapshot && false # TODO: config.prefix_targets_with_hash
+        if consistent_snapshot # TODO: config.prefix_targets_with_hash
           hashes = target_info.hashes.values
           dir, sep, basename = target_filepath.rpartition("/")
           target_filepath = "#{dir}#{sep}#{hashes.first}.#{basename}"
