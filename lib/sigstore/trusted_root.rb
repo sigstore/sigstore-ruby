@@ -2,8 +2,9 @@
 
 require "delegate"
 require "json"
-require "protobug_sigstore_protos"
 require "openssl"
+
+require "protobug_sigstore_protos"
 
 require_relative "tuf"
 
@@ -54,11 +55,13 @@ module Sigstore
 
     private
 
+    # TODO: why not return the whole Sigstore::TrustRoot::V1::TransparencyLogInstance ?
+    # it has the log id, hash algorithm, public key, and validity range
     def tlog_keys(tlogs)
       return enum_for(__method__, tlogs) unless block_given?
 
-      tlogs.each do |key|
-        key_bytes = key.public_key.raw_bytes
+      tlogs.each do |transparency_log_instance|
+        key_bytes = transparency_log_instance.public_key.raw_bytes
         yield key_bytes if key_bytes
       end
     end

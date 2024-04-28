@@ -143,10 +143,15 @@ module Sigstore
         raise "Unsupported bundle format: #{media_type}"
       end
 
-      raise "DSSE envelope verification not yet supported" if bundle.dsse_envelope
-      raise "bundle missing message signature" unless bundle.message_signature
-
-      signature = bundle.message_signature.signature
+      case bundle.content
+      when :message_signature
+        signature = bundle.message_signature.signature
+      when :dsse_envelope
+        # TODO: handle DSSE envelope
+        raise "DSSE envelope verification not yet supported: #{bundle.dsse_envelope.inspect}"
+      else
+        raise "Unsupported bundle content: #{bundle.content}"
+      end
 
       tlog_entries = bundle.verification_material.tlog_entries
       raise "Expected one tlog entry" if tlog_entries.size != 1
@@ -216,12 +221,23 @@ module Sigstore
 
       raise "invalid X.509 certificate: non-critical BasicConstraints in CA" unless basic_constraints.critical?
 
-      ca = basic_constraints.value.ca
+      seq = OpenSSL::ASN1.decode(basic_constraints.value_der)
+      raise "invalid X.509 certificate: BasicConstraints is not a sequence" unless seq.is_a?(OpenSSL::ASN1::Sequence)
+
+      ca, _path_len = seq.value
+      raise "invalid X.509 certificate: ca is not a boolean" unless ca.is_a?(OpenSSL::ASN1::Boolean)
+
+      ca = ca.value
 
       key_usage = cert.find_extension("keyUsage")
       raise "invalid X.509 certificate: missing keyUsage" unless key_usage
 
-      key_sign_cert = key_usage.value.key_sign_cert
+      key_usage_bs = OpenSSL::ASN1.decode(key_usage.value_der)
+      unless key_usage_bs.is_a?(OpenSSL::ASN1::BitString)
+        raise "invalid X.509 certificate: keyUsage is not a bit string"
+      end
+
+      key_sign_cert = key_usage_bs.value.getbyte(0).allbits?(0b00000100) # KeyUsage.keyCertSign, bit 5
 
       return true if ca && key_sign_cert
 

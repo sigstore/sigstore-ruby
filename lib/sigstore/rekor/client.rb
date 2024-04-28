@@ -9,7 +9,7 @@ module Sigstore
     class Client
       DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
 
-      attr_reader :rekor_keyring
+      attr_reader :rekor_keyring, :ct_keyring
 
       def initialize(url:, rekor_keyring:, ct_keyring:)
         @url = URI.join(url, "api/v1/")
