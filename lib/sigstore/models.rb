@@ -38,7 +38,7 @@ module Sigstore
 
     BUNDLE_0_1 = new("application/vnd.dev.sigstore.bundle+json;version=0.1")
     BUNDLE_0_2 = new("application/vnd.dev.sigstore.bundle+json;version=0.2")
-    BUNDLE_0_3 = new("application/vnd.dev.sigstore.bundle+json;version=0.3")
+    BUNDLE_0_3 = new("application/vnd.dev.sigstore.bundle.v0.3+json")
 
     def self.from_media_type(media_type)
       case media_type
@@ -46,10 +46,10 @@ module Sigstore
         BUNDLE_0_1
       when BUNDLE_0_2.media_type
         BUNDLE_0_2
-      when BUNDLE_0_3.media_type
+      when BUNDLE_0_3.media_type, "application/vnd.dev.sigstore.bundle+json;version=0.3"
         BUNDLE_0_3
       else
-        raise InvalidMaterials, "Unsupported bundle format: #{media_type}"
+        raise InvalidMaterials, "Unsupported bundle format: #{media_type.inspect}"
       end
     end
   end
@@ -148,7 +148,7 @@ module Sigstore
         signature = bundle.message_signature.signature
       when :dsse_envelope
         # TODO: handle DSSE envelope
-        raise "DSSE envelope verification not yet supported: #{bundle.dsse_envelope.inspect}"
+        raise "DSSE envelope verification not yet supported: #{JSON.pretty_generate bundle.as_json}"
       else
         raise "Unsupported bundle content: #{bundle.content}"
       end

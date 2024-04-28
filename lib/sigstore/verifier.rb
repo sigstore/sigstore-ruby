@@ -297,8 +297,8 @@ module Sigstore
       values = OpenSSL::ASN1.decode(eku.value_der).value
       raise values.inspect unless values.is_a?(Array)
 
-      values.any? do
-        _1.oid == "1.3.6.1.4.1.11129.2.4.4"
+      values.any? do |value|
+        value.oid == "1.3.6.1.4.1.11129.2.4.4"
       end
     end
   end
