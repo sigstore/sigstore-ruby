@@ -55,7 +55,7 @@ jobs:
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v4.3.0
         if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
