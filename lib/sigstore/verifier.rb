@@ -284,14 +284,14 @@ module Sigstore
       len = string.bytesize
       list = []
       while offset < len
-        sct_version, sct_log_id, sct_timestamp, sct_extensions_len = string.unpack("Ca32Q>n", offset: offset)
+        sct_version, sct_log_id, sct_timestamp, sct_extensions_len = unpack_at(string, "Ca32Q>n", offset: offset)
         offset += 1 + 32 + 8 + 2 + sct_extensions_len
         raise "expect sct version to be 0, got #{sct_version}" unless sct_version.zero?
         raise "sct_extensions_len=#{sct_extensions_len} not supported" unless sct_extensions_len.zero?
 
-        sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = string.unpack("CCn", offset: offset)
+        sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = unpack_at(string, "CCn", offset: offset)
         offset += 1 + 1 + 2
-        sct_signature_bytes = string.unpack1("a#{sct_signature_len}", offset: offset).b
+        sct_signature_bytes = unpack1_at(string, "a#{sct_signature_len}", offset: offset).b
         offset += sct_signature_len
         list << {
           sct_version: sct_version,
@@ -307,6 +307,24 @@ module Sigstore
       raise "offset=#{offset} len=#{len}" unless offset == len
 
       list
+    end
+
+    if RUBY_VERSION >= "3.1"
+      def unpack_at(string, format, offset:)
+        string.unpack1(format, offset: offset)
+      end
+
+      def unpack1_at(string, format, offset:)
+        string.unpack1(format, offset: offset)
+      end
+    else
+      def unpack_at(string, format, offset:)
+        string[offset..].unpack(format)
+      end
+
+      def unpack1_at(string, format, offset:)
+        string[offset..].unpack1(format)
+      end
     end
 
     def find_issuer_cert(chain)
