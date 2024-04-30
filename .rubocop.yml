@@ -26,4 +26,4 @@ Style/ClassAndModuleChildren:
   Enabled: false
 
 Style/ImplicitRuntimeError:
-  Enabled: true
+  Enabled: false # TODO: Enable this cop

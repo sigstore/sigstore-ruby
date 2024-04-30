@@ -5,11 +5,11 @@ require_relative "lib/sigstore/version"
 Gem::Specification.new do |spec|
   spec.name = "sigstore"
   spec.version = Sigstore::VERSION
-  spec.authors = ["Samuel Giddins"]
-  spec.email = ["segiddins@segiddins.me"]
+  spec.authors = ["The Sigstore Authors", "Samuel Giddins"]
+  spec.email = [nil, "segiddins@segiddins.me"]
 
-  spec.summary = "A pure-ruby implementation of the sigstore verify command"
-  spec.homepage = "https://github.com/segiddins/sigstore-cosign-verify"
+  spec.summary = "A pure-ruby implementation of sigstore signature verification"
+  spec.homepage = "https://github.com/sigstore/sigstore-ruby"
   spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.0.0"
 

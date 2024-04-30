@@ -1,5 +1,19 @@
 # frozen_string_literal: true
 
+# Copyright 2024 The Sigstore Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 require_relative "tuf/trusted_metadata_set"
 require_relative "tuf/root"
 require_relative "tuf/snapshot"
@@ -66,7 +80,7 @@ module Sigstore
           metadata_dir: @metadata_dir,
           metadata_base_url: @repo_url,
           target_base_url: (target_base_url && URI.parse(target_base_url)) ||
-                           URI.join("#{@repo_url}".chomp("/") + "/", "targets/"),
+                           URI.join("#{@repo_url.to_s.chomp("/")}/", "targets/"),
           target_dir: @targets_dir,
           fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true if repo_url.scheme != "http" }
         )
@@ -174,7 +188,8 @@ module Sigstore
 
           File.binwrite(filepath, resp.body)
         rescue Net::HTTPClientException => e
-          raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{full_url}: #{e.message}"
+          raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{full_url}: " \
+                "#{e.message}"
         end
         # debug
         filepath

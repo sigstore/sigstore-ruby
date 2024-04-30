@@ -35,7 +35,8 @@ end
 
 desc "Run the TUF conformance tests"
 task conformance_tuf: %w[tuf_conformance:setup] do
-  sh("test/tuf-conformance/env/bin/tuf-conformance", "bin/tuf-conformance-entrypoint")
+  sh("env/bin/pytest", "tuf_conformance", "--entrypoint", File.expand_path("bin/tuf-conformance-entrypoint"),
+     chdir: "test/tuf-conformance")
 end
 
 namespace :conformance do
@@ -120,13 +121,13 @@ end
 GitRepo.define_task(:sigstore_conformance).tap do |task|
   task.path = "test/sigstore-conformance"
   task.url = "https://github.com/sigstore/sigstore-conformance.git"
-  task.commit = "0a0196b"
+  task.commit = "bab0107"
 end
 
 GitRepo.define_task(:tuf_conformance).tap do |task|
   task.path = "test/tuf-conformance"
   task.url = "https://github.com/jku/tuf-conformance.git"
-  task.commit = "3072fdb346ce27210e5125b30c6626a9f6b34fc0"
+  task.commit = "b938daaea0e3a9b4cc5c5d743954be6a6ae32893"
 end
 
 namespace :tuf_conformance do

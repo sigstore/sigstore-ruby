@@ -46,7 +46,7 @@ GEM
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     logger (1.6.0)
-    minitest (5.22.2)
+    minitest (5.22.3)
     mutex_m (0.2.0)
     parallel (1.24.0)
     parser (3.3.0.5)
@@ -174,7 +174,7 @@ CHECKSUMS
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
   listen (3.9.0) sha256=db9e4424e0e5834480385197c139cb6b0ae0ef28cc13310cfd1ca78377d59c67
   logger (1.6.0) sha256=0ab7c120262dd8de2a18cb8d377f1f318cbe98535160a508af9e7710ff43ef3e
-  minitest (5.22.2) sha256=c5a5003fc2114a3fde506e87f377f32a0882b41d944d7b90cf4cd1f781dbc718
+  minitest (5.22.3) sha256=ea84676290cb5e2b4f31f25751af6050aa90d3e43e4337141c3e3e839611981e
   mutex_m (0.2.0) sha256=b6ef0c6c842ede846f2ec0ade9e266b1a9dac0bc151682b04835e8ebd54840d5
   parallel (1.24.0) sha256=5bf38efb9b37865f8e93d7a762727f8c5fc5deb19949f4040c76481d5eee9397
   parser (3.3.0.5) sha256=7748313e505ca87045dc0465c776c802043f777581796eb79b1654c5d19d2687
