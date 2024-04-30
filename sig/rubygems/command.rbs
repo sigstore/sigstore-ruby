@@ -1,5 +1,0 @@
-module Gem
-  class Command
-    def options: () -> Hash[Symbol, untyped]
-  end
-end

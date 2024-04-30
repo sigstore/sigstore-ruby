@@ -1,5 +1,0 @@
-module Gem
-  module Commands
-    SigstoreCosignVerifyBundleCommand: untyped
-  end
-end

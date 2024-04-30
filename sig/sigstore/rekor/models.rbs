@@ -1,7 +1,0 @@
-module Sigstore
-  module Rekor
-    class LogEntry
-      def self.from_response: (untyped response) -> nil
-    end
-  end
-end

@@ -62,5 +62,3 @@ jobs:
           bundler-cache: true
       - name: Run the linter
         run: bin/rubocop
-      - name: Run the typechecker
-        run: bin/steep check

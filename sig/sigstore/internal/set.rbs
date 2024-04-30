@@ -1,7 +1,0 @@
-module Sigstore
-  module Internal
-    module SET
-      def self.verify_set: (client: untyped, entry: untyped) -> untyped
-    end
-  end
-end
