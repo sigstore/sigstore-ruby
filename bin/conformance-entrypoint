@@ -23,4 +23,9 @@ ENV.update(
 require "rubygems/gem_runner"
 
 ARGV.unshift "sigstore_#{command.tr("-", "_")}"
-Gem::GemRunner.new.run ARGV.clone
+begin
+  Gem::GemRunner.new.run ARGV.clone
+rescue Gem::SystemExitException => e
+  # For rubygems < 3.3.0
+  exit e.exit_code
+end
