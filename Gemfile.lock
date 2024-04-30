@@ -79,6 +79,7 @@ PLATFORMS
   arm64-linux
   java
   ruby
+  universal-java-1.8
   universal-java-19
   x86_64-linux
 

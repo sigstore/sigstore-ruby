@@ -22,6 +22,8 @@ module Sigstore
         keys.each do |key_bytes|
           key = OpenSSL::PKey.read(key_bytes)
           @keyring[OpenSSL::Digest::SHA256.hexdigest(key.public_to_der)] = key
+        rescue OpenSSL::PKey::PKeyError => e
+          raise ArgumentError, "Invalid key: #{e} for #{key_bytes.inspect}"
         end
       end
 
