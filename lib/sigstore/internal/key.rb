@@ -33,7 +33,7 @@ module Sigstore
           end
         end
       rescue OpenSSL::PKey::PKeyError => e
-        raise ArgumentError, "Invalid key: #{e} for #{key_type} #{schema} #{key_id}"
+        raise OpenSSL::PKey::PKeyError, "Invalid key: #{e} for #{key_type} #{schema} #{key_id}"
       end
 
       attr_reader :key_type, :schema, :key_id

@@ -311,7 +311,7 @@ module Sigstore
 
     if RUBY_VERSION >= "3.1"
       def unpack_at(string, format, offset:)
-        string.unpack1(format, offset: offset)
+        string.unpack(format, offset: offset)
       end
 
       def unpack1_at(string, format, offset:)

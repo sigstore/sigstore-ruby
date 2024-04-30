@@ -35,7 +35,8 @@ module Sigstore
                                           inclusion_proof.log_index)
 
         calc_hash = chain_border_right(intermediate_result,
-                                       inclusion_proof.hashes[inner..] || raise("missing right hashes")).unpack1("H*").encode("utf-8")
+                                       inclusion_proof.hashes[inner..] || raise("missing right hashes"))
+                    .unpack1("H*").encode("utf-8")
 
         return if calc_hash == inclusion_proof.root_hash
 
