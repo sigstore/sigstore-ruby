@@ -31,23 +31,28 @@ jobs:
         #   - { os: windows-latest, ruby: mswin }
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@1198b074305f9356bd56dd4b311757cc0dab2f1c # v1.175.1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: Run the tests
         run: bin/rake test
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@v0.0.11
+        uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: test_verify_dsse_bundle_with_trust_root
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@v0.0.11
+        uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: test_verify_dsse_bundle_with_trust_root
@@ -55,7 +60,7 @@ jobs:
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.3.0
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -70,6 +75,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+        with:
+          egress-policy: audit
+
       - name: check test jobs
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
         with:
@@ -79,9 +89,14 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint
     steps:
-      - uses: actions/checkout@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@1198b074305f9356bd56dd4b311757cc0dab2f1c # v1.175.1
         with:
           ruby-version: "3.3.1"
           bundler-cache: true
