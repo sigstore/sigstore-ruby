@@ -196,18 +196,29 @@ module Sigstore
     end
 
     def tbs_certificate_der(certificate)
-      tbs_cert = certificate.dup
       oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
-      tbs_cert.extensions = tbs_cert.extensions.reject do |ext|
+      certificate.extensions.find do |ext|
         ext.oid == oid
+      end || raise("No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
+
+      # This uglyness is needed because there is no way to force modifying an X509 certificate
+      # in a way that it will be serialized with the modifications.
+      seq = OpenSSL::ASN1.decode(certificate.to_der).value[0]
+      seq.value = seq.value.map do |v|
+        next v unless v.tag == 3
+
+        v.value = v.value.map do |v2|
+          v2.value = v2.value.map do |v3|
+            next if v3.first.oid == "1.3.6.1.4.1.11129.2.4.2"
+
+            v3
+          end.compact!
+          v2
+        end
+        v
       end
-      # ensure the underlying certificate is marked as modified
-      tbs_cert.serial = tbs_cert.serial + 1
-      tbs_cert.serial = tbs_cert.serial - 1
 
-      raise "no #{oid} extension found" unless certificate.extensions.size == tbs_cert.extensions.size + 1
-
-      OpenSSL::ASN1.decode(tbs_cert.to_der).value[0].to_der.b
+      seq.to_der
     end
 
     # https://letsencrypt.org/2018/04/04/sct-encoding.html
