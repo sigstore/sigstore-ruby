@@ -28,10 +28,12 @@ module Sigstore
         else
           raise ArgumentError, "Unsupported key type #{key_type}"
         end.tap do |key|
-          if RUBY_ENGINE == "jruby" && key.to_pem != key_data && key.to_der != key_data
-            raise "Key mismatch: #{key.to_pem.inspect} != #{key_data.inspect}"
+          if RUBY_ENGINE == "jruby" && key.to_pem != key_bytes && key.to_der != key_bytes
+            raise "Key mismatch: #{key.to_pem.inspect} != #{key_bytes.inspect}"
           end
         end
+      rescue OpenSSL::PKey::PKeyError => e
+        raise OpenSSL::PKey::PKeyError, "Invalid key: #{e} for #{key_type} #{schema} #{key_id}"
       end
 
       attr_reader :key_type, :schema, :key_id

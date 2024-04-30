@@ -3,5 +3,5 @@
 SimpleCov.root(__dir__)
 
 SimpleCov.start do
-  enable_coverage :branch
+  enable_coverage :branch unless RUBY_ENGINE == "truffleruby"
 end

@@ -31,11 +31,12 @@ module Sigstore
 
         leaf_hash = hash_leaf(Util.base64_decode(entry.body))
 
-        intermediate_result = chain_inner(leaf_hash, (inclusion_proof.hashes[...inner] || raise),
+        intermediate_result = chain_inner(leaf_hash, (inclusion_proof.hashes[...inner] || raise("missing left hashes")),
                                           inclusion_proof.log_index)
 
         calc_hash = chain_border_right(intermediate_result,
-                                       inclusion_proof.hashes[inner..] || raise).unpack1("H*").encode("utf-8")
+                                       inclusion_proof.hashes[inner..] || raise("missing right hashes"))
+                    .unpack1("H*").encode("utf-8")
 
         return if calc_hash == inclusion_proof.root_hash
 

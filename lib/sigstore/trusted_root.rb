@@ -61,7 +61,7 @@ module Sigstore
     end
 
     def fulcio_cert_chain
-      certs = ca_keys(certificate_authorities, allow_expired: true).flat_map { OpenSSL::X509::Certificate.load(_1) }
+      certs = ca_keys(certificate_authorities, allow_expired: true).flat_map { OpenSSL::X509::Certificate.new(_1) }
       raise "Fulcio certificates not found in trusted root" if certs.empty?
 
       certs

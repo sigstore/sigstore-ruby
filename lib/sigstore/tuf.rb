@@ -96,8 +96,7 @@ module Sigstore
         app_name = "sigstore-ruby"
         app_author = "segiddins"
 
-        # TODO: encode_uri_component not on 3.0
-        repo_base = URI.encode_uri_component(url)
+        repo_base = encode_uri_component(url)
 
         data_home = ENV.fetch("XDG_DATA_HOME", File.join(Dir.home, ".local", "share"))
         cache_home = ENV.fetch("XDG_CACHE_HOME", File.join(Dir.home, ".cache"))
@@ -105,6 +104,14 @@ module Sigstore
         tuf_cache_dir = File.join(cache_home, app_name, app_author, "tuf")
 
         [File.join(tuf_data_dir, repo_base), File.join(tuf_cache_dir, repo_base)]
+      end
+
+      def encode_uri_component(str)
+        if URI.respond_to?(:encode_uri_component)
+          URI.encode_uri_component(str)
+        else
+          URI.encode_www_form_component(str).gsub("+", "%20")
+        end
       end
 
       def trusted_root_path

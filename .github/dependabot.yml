@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  - package-ecosystem: bundler
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 99
+    rebase-strategy: "disabled"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: .github/actions/upload-coverage/
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 99
+    rebase-strategy: "disabled"
+    groups:
+      actions:
+        patterns:
+          - "*"
