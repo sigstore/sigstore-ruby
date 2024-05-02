@@ -4,29 +4,25 @@ require "test_helper"
 require "sigstore/verifier"
 
 class Sigstore::VerifierTest < Test::Unit::TestCase
-  def test_tbs_certificate_der
-    certificate = OpenSSL::X509::Certificate.new(File.binread(File.join(__dir__, "data/x509/cryptography-scts.pem")))
-    expected = File.binread(File.join(__dir__, "data/x509/cryptography-scts-tbs-precert.der"))
-
-    verifier = Sigstore::Verifier.allocate
-    actual = verifier.send(:tbs_certificate_der, certificate)
-    assert_equal(expected, actual)
-  end
-
   def test_pack_digitally_signed_precertificate
     verifier = Sigstore::Verifier.allocate
     [3, 255, 1024, 16_777_215].each do |precert_bytes_len|
       precert_bytes = "x".b * precert_bytes_len
-      sct = {
+      sct = Sigstore::Internal::X509::Extension::PrecertificateSignedCertificateTimestamps::Timestamp.new(
+        log_id: nil,
+        extensions_bytes: nil,
+        hash_algorithm: nil,
+        signature_algorithm: nil,
+        signature: nil,
+
         version: 0,
         timestamp: 1234,
-        entry_type: 1,
-        sct_extensions_len: 0
-      }
+        entry_type: 1
+      )
       issuer_key_id = "iamapublickeyshatwofivesixdigest"
-      verifier.singleton_class.send(:undef_method, :tbs_certificate_der)
-      verifier.singleton_class.send(:define_method, :tbs_certificate_der) { |_| precert_bytes }
-      data = verifier.send(:pack_digitally_signed, sct, nil, issuer_key_id)
+      cert = Sigstore::Internal::X509::Certificate.allocate
+      cert.singleton_class.send(:define_method, :tbs_certificate_der) { precert_bytes }
+      data = verifier.send(:pack_digitally_signed, sct, cert, issuer_key_id)
       _, l1, l2, l3 = [precert_bytes.bytesize].pack("N").unpack("C4")
       assert_equal [
         "\x00", # version

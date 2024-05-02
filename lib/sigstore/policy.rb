@@ -22,7 +22,7 @@ module Sigstore
       end
 
       def verify(cert)
-        ext = cert.find_extension(oid)
+        ext = cert.openssl.find_extension(oid)
         unless ext
           return VerificationFailure.new("Certificate does not contain #{self.class.name&.[](/::([^:]+)$/, 1)} " \
                                          "(#{oid}) extension")
@@ -87,24 +87,14 @@ module Sigstore
         issuer_verified = @issuer.verify(cert)
         return issuer_verified unless issuer_verified.verified?
 
-        san_ext = cert.find_extension("subjectAltName")
-        raise "Certificate does not contain subjectAltName extension" unless san_ext
+        san_ext = cert.extension(Sigstore::Internal::X509::Extension::SubjectAlternativeName)
+        raise Error::InvalidCertificate, "Certificate does not contain subjectAltName extension" unless san_ext
 
-        sequence = OpenSSL::ASN1.decode(san_ext.value_der)
-        raise "subjectAltName is not a sequence" unless sequence.is_a?(OpenSSL::ASN1::Sequence)
-
-        all_sans = sequence.map do |asn1_data|
-          case asn1_data.tag
-          when 6 # URI
-            asn1_data.value
-          else
-            raise "Unknown SAN type: #{asn1_data.tag}"
-          end
-        end.compact
-
-        verified = all_sans.include?(@identity)
+        verified = san_ext.general_names.include?([:uniformResourceIdentifier, @identity])
         unless verified
-          return VerificationFailure.new("Certificate's SANs do not match #{@identity}; actual SANs: #{all_sans}")
+          return VerificationFailure.new(
+            "Certificate's SANs do not match #{@identity}; actual SANs: #{san_ext.general_names}"
+          )
         end
 
         VerificationSuccess.new

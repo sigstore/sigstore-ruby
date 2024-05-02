@@ -38,7 +38,7 @@ class Sigstore::BundleTypeTest < Test::Unit::TestCase
     assert_equal(Sigstore::BundleType::BUNDLE_0_3,
                  Sigstore::BundleType.from_media_type("application/vnd.dev.sigstore.bundle+json;version=0.3"))
 
-    assert_raise(Sigstore::InvalidMaterials) do
+    assert_raise(Sigstore::Error::InvalidBundle) do
       Sigstore::BundleType.from_media_type("application/vnd.dev.sigstore.bundle+json;version=0.0")
     end
   end
