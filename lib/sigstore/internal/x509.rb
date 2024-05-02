@@ -213,16 +213,15 @@ module Sigstore
             @signed_certificate_timestamps = unpack_sct_list(value)
           end
 
-          Timestamp = Data.define(
-            :version,
-            :log_id,
-            :timestamp,
-            :extensions_bytes,
-            :hash_algorithm,
-            :signature_algorithm,
-            :entry_type,
-            :signature
-          )
+          args = %i[version
+                    log_id
+                    timestamp
+                    extensions_bytes
+                    hash_algorithm
+                    signature_algorithm
+                    entry_type
+                    signature]
+          Timestamp = defined?(Data.define) ? Data.define(*args) : Struct.new(*args, keyword_init: true) # rubocop:disable Naming/ConstantName
 
           HASHES = {
             0 => "none",
