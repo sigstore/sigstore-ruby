@@ -38,7 +38,38 @@ module Sigstore
         end
 
         def tbs_certificate_der
-          raise NotImplementedError
+          extension(Extension::PrecertificateSignedCertificateTimestamps) ||
+            raise(Error::InvalidCertificate,
+                  "No PrecertificateSignedCertificateTimestamps found for the certificate")
+
+          # This uglyness is needed because there is no way to force modifying an X509 certificate
+          # in a way that it will be serialized with the modifications.
+          seq = OpenSSL::ASN1.decode(to_der)
+          unless seq.is_a?(OpenSSL::ASN1::Sequence) && seq.value.size == 3
+            raise Error::InvalidCertificate,
+                  "invalid X.509 certificate: #{seq.class} #{seq.value.size}"
+          end
+          seq = seq.value[0]
+          unless seq.is_a?(OpenSSL::ASN1::Sequence)
+            raise Error::InvalidCertificate,
+                  "invalid X.509 certificate: #{seq.inspect}"
+          end
+
+          seq.value = seq.value.map! do |v|
+            next v unless v.tag == 3
+
+            v.value = v.value.map! do |v2|
+              v2.value = v2.value.map! do |v3|
+                next if v3.first.oid == Extension::PrecertificateSignedCertificateTimestamps.oid.oid
+
+                v3
+              end.compact! || raise(Error::InvalidCertificate, "no SCTs found")
+              v2
+            end
+            v
+          end
+
+          seq.to_der
         end
 
         def extension(cls)
@@ -137,20 +168,6 @@ module Sigstore
           raise ArgumentError, "Invalid extension: #{v} is not a #{klass}" unless v.is_a?(klass)
 
           v.value
-        end
-
-        def shift_tag_length(value, tag: nil)
-          expected = tag
-          tag = value.slice!(0).ord
-          if expected && tag != expected
-            raise ArgumentError,
-                  "Invalid extension tag: #{tag.inspect} (expected #{expected})"
-          end
-
-          length = value.slice!(0).ord
-          raise ArgumentError, "Invalid extension length: #{length}" if length > 127
-
-          [tag, length]
         end
 
         def shift_bitstring(value)

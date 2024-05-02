@@ -40,4 +40,13 @@ class Sigstore::Internal::X509::CertificateTest < Test::Unit::TestCase
                  ],
                  ext.signed_certificate_timestamps.map(&:to_h))
   end
+
+  def test_tbs_certificate_der
+    certificate = Sigstore::Internal::X509::Certificate.read(
+      File.binread(File.join(__dir__, "../data/x509/cryptography-scts.pem"))
+    )
+    expected = File.binread(File.join(__dir__, "../data/x509/cryptography-scts-tbs-precert.der"))
+
+    assert_equal(expected, certificate.tbs_certificate_der)
+  end
 end

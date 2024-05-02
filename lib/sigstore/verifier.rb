@@ -177,7 +177,7 @@ module Sigstore
                   "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
           end
 
-          tbs_cert = tbs_certificate_der(certificate)
+          tbs_cert = certificate.tbs_certificate_der
           tbs_cert_len = tbs_cert.bytesize
           unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
           raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
@@ -195,50 +195,6 @@ module Sigstore
         a#{signed_entry.bytesize} # signed_entry
         n # extensions length
       PACK
-    end
-
-    def tbs_certificate_der(certificate)
-      oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
-      certificate.extension(Sigstore::Internal::X509::Extension::PrecertificateSignedCertificateTimestamps) ||
-        raise(Error::InvalidCertificate,
-              "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
-
-      # This uglyness is needed because there is no way to force modifying an X509 certificate
-      # in a way that it will be serialized with the modifications.
-      seq = OpenSSL::ASN1.decode(certificate.to_der).value[0]
-      seq.value = seq.value.map do |v|
-        next v unless v.tag == 3
-
-        v.value = v.value.map do |v2|
-          v2.value = v2.value.map do |v3|
-            next if v3.first.oid == "1.3.6.1.4.1.11129.2.4.2"
-
-            v3
-          end.compact!
-          v2
-        end
-        v
-      end
-
-      seq.to_der
-    end
-
-    if RUBY_VERSION >= "3.1"
-      def unpack_at(string, format, offset:)
-        string.unpack(format, offset: offset)
-      end
-
-      def unpack1_at(string, format, offset:)
-        string.unpack1(format, offset: offset)
-      end
-    else
-      def unpack_at(string, format, offset:)
-        string[offset..].unpack(format)
-      end
-
-      def unpack1_at(string, format, offset:)
-        string[offset..].unpack1(format)
-      end
     end
 
     def find_issuer_cert(chain)
