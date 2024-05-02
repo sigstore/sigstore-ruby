@@ -18,6 +18,7 @@ require "sigstore/trusted_root"
 require "sigstore/internal/merkle"
 require "sigstore/internal/set"
 require "sigstore/rekor/checkpoint"
+require "sigstore/internal/x509"
 
 module Sigstore
   class Verifier
@@ -53,11 +54,14 @@ module Sigstore
         )
       end
 
-      chain = store_ctx.chain || raise("no chain found")
+      chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
       chain.shift # remove the cert itself
 
-      sct_list = precertificate_signed_certificate_timestamps(materials.certificate)
-      raise "no SCTs found" if sct_list.empty?
+      sct_list = Internal::X509::Certificate
+                 .new(materials.certificate)
+                 .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
+                 .signed_certificate_timestamps
+      raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
 
       sct_list.each do |sct|
         verified = verify_sct(
@@ -84,9 +88,9 @@ module Sigstore
 
       signing_key = materials.certificate.public_key
 
-      raise "missing hashed input" unless materials.hashed_input
-      raise "missing signature" unless materials.signature # TODO: handle DSSE envelope
-      raise "missing input bytes" unless materials.input_bytes
+      raise Error::InvalidBundle, "missing hashed input" unless materials.hashed_input
+      raise Error::InvalidBundle, "missing signature" unless materials.signature # TODO: handle DSSE envelope
+      raise Error::InvalidBundle, "missing input bytes" unless materials.input_bytes
 
       verified = signing_key.verify(materials.hashed_input.name, materials.signature,
                                     materials.input_bytes)
@@ -116,33 +120,33 @@ module Sigstore
 
     def verify_sct(sct, certificate, chain, ct_keyring)
       # TODO: validate hash & signature algorithm match the key in the keyring
-      hash = sct.fetch(:hash)
-      signature_algorithm = sct.fetch(:signature_algorithm)
+      hash = sct.hash_algorithm
+      signature_algorithm = sct.signature_algorithm
       unless hash == "sha256" && signature_algorithm == "ecdsa"
         # TODO: support more algorithms
-        raise "only sha256 edcsa supported, got #{hash} #{signature_algorithm}"
+        raise Error::Unimplemented, "only sha256 edcsa supported, got #{hash} #{signature_algorithm}"
       end
 
       issuer_key_id = nil
-      if sct[:entry_type] == 1
+      if sct.entry_type == 1
         issuer_cert = find_issuer_cert(chain)
         issuer_pubkey = issuer_cert.public_key
         unless VerificationMaterials.cert_is_ca?(issuer_cert)
-          raise "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
+          raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
         end
-        raise "unsupported issuer pubkey" unless case issuer_pubkey
-                                                 when OpenSSL::PKey::RSA, OpenSSL::PKey::EC
-                                                   true
-                                                 else
-                                                   false
-                                                 end
+        raise Error::InvalidCertificate, "unsupported issuer pubkey" unless case issuer_pubkey
+                                                                            when OpenSSL::PKey::RSA, OpenSSL::PKey::EC
+                                                                              true
+                                                                            else
+                                                                              false
+                                                                            end
 
         issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
       end
 
       digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
 
-      ct_keyring.verify(key_id: sct[:log_id], signature: sct[:signature], data: digitally_signed)
+      ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
     end
 
     def pack_digitally_signed(sct, certificate, issuer_key_id = nil)
@@ -162,30 +166,31 @@ module Sigstore
       # };
 
       signed_entry =
-        case sct[:entry_type]
+        case sct.entry_type
         when 0 # x509_entry
           cert_der = certificate.to_public_der
           cert_len = cert_der.bytesize
           unused, len1, len2, len3 = [cert_len].pack("N").unpack("C4")
-          raise "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
+          raise Error::InvalidCertificate, "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
 
           [len1, len2, len3, cert_der].pack("CCC a#{cert_len}")
         when 1 # precert_entry
           unless issuer_key_id&.bytesize == 32
-            raise "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
+            raise Error::InvalidCertificate,
+                  "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
           end
 
           tbs_cert = tbs_certificate_der(certificate)
           tbs_cert_len = tbs_cert.bytesize
           unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
-          raise "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
+          raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
 
           [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
         else
-          raise "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
         end
 
-      [sct[:version], 0, sct[:timestamp], sct[:entry_type], signed_entry, 0].pack(<<~PACK)
+      [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
         C # version
         C # signature_type
         Q> # timestamp
@@ -199,7 +204,8 @@ module Sigstore
       oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
       certificate.extensions.find do |ext|
         ext.oid == oid
-      end || raise("No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
+      end || raise(Error::InvalidCertificate,
+                   "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
 
       # This uglyness is needed because there is no way to force modifying an X509 certificate
       # in a way that it will be serialized with the modifications.
@@ -219,94 +225,6 @@ module Sigstore
       end
 
       seq.to_der
-    end
-
-    # https://letsencrypt.org/2018/04/04/sct-encoding.html
-    def precertificate_signed_certificate_timestamps(certificate)
-      # this is cursed. can't always find_extension(oid) because #oid can return a string or an OID
-      oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
-      precert_scts_extension = certificate.find_extension(oid)
-
-      unless precert_scts_extension
-        raise "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate " \
-              "#{certificate.to_text}"
-      end
-
-      # TODO: parse the extension properly
-      # https://github.com/pierky/sct-verify/blob/master/sct-verify.py
-
-      os1 = OpenSSL::ASN1.decode(precert_scts_extension.value_der)
-
-      len = os1.value.unpack1("n")
-      string = os1.value.byteslice(2..)
-      raise "os1: len=#{len} #{os1.value.inspect}" unless string && string.bytesize == len
-
-      len = string.unpack1("n")
-      string = string.byteslice(2..)
-      raise "os2: len=#{len} #{string.inspect}" unless string && string.bytesize == len
-
-      list = unpack_sct_list(string)
-
-      list.map! do |sct|
-        hash = {
-          0 => "none",
-          1 => "md5",
-          2 => "sha1",
-          3 => "sha224",
-          4 => "sha256",
-          5 => "sha384",
-          6 => "sha512",
-          255 => "unknown"
-        }.fetch(sct[:sct_signature_alg_hash], "unknown")
-
-        signature_algorithm = {
-          0 => "anonymous",
-          1 => "rsa",
-          2 => "dsa",
-          3 => "ecdsa",
-          255 => "unknown"
-        }.fetch(sct[:sct_signature_alg_sign], "unknown")
-
-        {
-          version: sct[:sct_version],
-          log_id: sct[:sct_log_id].unpack1("H*"),
-          timestamp: sct[:sct_timestamp],
-          signature: sct[:sct_signature_bytes],
-          hash: hash,
-          signature_algorithm: signature_algorithm,
-          entry_type: 1 # precert_entry
-        }
-      end
-    end
-
-    def unpack_sct_list(string)
-      offset = 0
-      len = string.bytesize
-      list = []
-      while offset < len
-        sct_version, sct_log_id, sct_timestamp, sct_extensions_len = unpack_at(string, "Ca32Q>n", offset: offset)
-        offset += 1 + 32 + 8 + 2 + sct_extensions_len
-        raise "expect sct version to be 0, got #{sct_version}" unless sct_version.zero?
-        raise "sct_extensions_len=#{sct_extensions_len} not supported" unless sct_extensions_len.zero?
-
-        sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = unpack_at(string, "CCn", offset: offset)
-        offset += 1 + 1 + 2
-        sct_signature_bytes = unpack1_at(string, "a#{sct_signature_len}", offset: offset).b
-        offset += sct_signature_len
-        list << {
-          sct_version: sct_version,
-          sct_log_id: sct_log_id,
-          sct_timestamp: sct_timestamp,
-          sct_extensions_len: sct_extensions_len,
-          sct_signature_alg_hash: sct_signature_alg_hash,
-          sct_signature_alg_sign: sct_signature_alg_sign,
-          sct_signature_len: sct_signature_len,
-          sct_signature_bytes: sct_signature_bytes
-        }
-      end
-      raise "offset=#{offset} len=#{len}" unless offset == len
-
-      list
     end
 
     if RUBY_VERSION >= "3.1"
@@ -330,7 +248,7 @@ module Sigstore
     def find_issuer_cert(chain)
       issuer = chain[0]
       issuer = chain[1] if preissuer?(issuer)
-      raise "issuer not found" unless issuer
+      raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
 
       issuer
     end

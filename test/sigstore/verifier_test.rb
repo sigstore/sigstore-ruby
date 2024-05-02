@@ -17,12 +17,17 @@ class Sigstore::VerifierTest < Test::Unit::TestCase
     verifier = Sigstore::Verifier.allocate
     [3, 255, 1024, 16_777_215].each do |precert_bytes_len|
       precert_bytes = "x".b * precert_bytes_len
-      sct = {
+      sct = Sigstore::Internal::X509::Extension::PrecertificateSignedCertificateTimestamps::Timestamp.new(
+        log_id: nil,
+        extensions_bytes: nil,
+        hash_algorithm: nil,
+        signature_algorithm: nil,
+        signature: nil,
+
         version: 0,
         timestamp: 1234,
-        entry_type: 1,
-        sct_extensions_len: 0
-      }
+        entry_type: 1
+      )
       issuer_key_id = "iamapublickeyshatwofivesixdigest"
       verifier.singleton_class.send(:undef_method, :tbs_certificate_der)
       verifier.singleton_class.send(:define_method, :tbs_certificate_der) { |_| precert_bytes }
