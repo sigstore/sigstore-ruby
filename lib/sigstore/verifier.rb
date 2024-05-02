@@ -24,7 +24,7 @@ module Sigstore
   class Verifier
     def initialize(rekor_client:, fulcio_cert_chain:)
       @rekor_client = rekor_client
-      @fulcio_cert_chain = fulcio_cert_chain.map { |cert| OpenSSL::X509::Certificate.new(cert) }
+      @fulcio_cert_chain = fulcio_cert_chain
     end
 
     def self.production(trust_root: TrustedRoot.production)
@@ -38,15 +38,14 @@ module Sigstore
       store = OpenSSL::X509::Store.new
 
       @fulcio_cert_chain.each do |cert|
-        store.add_cert(cert)
+        store.add_cert(cert.openssl)
       end
 
       sign_date = materials.certificate.not_before
-      cert_ossl = OpenSSL::X509::Certificate.new(materials.certificate)
 
       store.time = sign_date
 
-      store_ctx = OpenSSL::X509::StoreContext.new(store, cert_ossl)
+      store_ctx = OpenSSL::X509::StoreContext.new(store, materials.certificate.openssl)
 
       unless store_ctx.verify
         return VerificationFailure.new(
@@ -56,11 +55,11 @@ module Sigstore
 
       chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
       chain.shift # remove the cert itself
+      chain.map! { Internal::X509::Certificate.new(_1) }
 
-      sct_list = Internal::X509::Certificate
-                 .new(materials.certificate)
-                 .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
-                 .signed_certificate_timestamps
+      sct_list = materials.certificate
+                          .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
+                          .signed_certificate_timestamps
       raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
 
       sct_list.each do |sct|
@@ -73,13 +72,11 @@ module Sigstore
         return VerificationFailure.new("SCT verification failed") unless verified
       end
 
-      usage_ext = materials.certificate.find_extension("keyUsage")
-      unless usage_ext.value == "Digital Signature"
-        return VerificationFailure.new("Key usage is not of type `digital signature`")
-      end
+      usage_ext = materials.certificate.extension(Internal::X509::Extension::KeyUsage)
+      return VerificationFailure.new("Key usage is not of type `digital signature`") unless usage_ext.digital_signature
 
-      extended_key_usage = materials.certificate.find_extension("extendedKeyUsage")
-      unless extended_key_usage.value == "Code Signing"
+      extended_key_usage = materials.certificate.extension(Internal::X509::Extension::ExtendedKeyUsage)
+      unless extended_key_usage.code_signing?
         return VerificationFailure.new("Extended key usage is not of type `code signing`")
       end
 
@@ -131,7 +128,7 @@ module Sigstore
       if sct.entry_type == 1
         issuer_cert = find_issuer_cert(chain)
         issuer_pubkey = issuer_cert.public_key
-        unless VerificationMaterials.cert_is_ca?(issuer_cert)
+        unless issuer_cert.ca?
           raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
         end
         raise Error::InvalidCertificate, "unsupported issuer pubkey" unless case issuer_pubkey
@@ -202,10 +199,9 @@ module Sigstore
 
     def tbs_certificate_der(certificate)
       oid = OpenSSL::X509::Extension.new("1.3.6.1.4.1.11129.2.4.2", "").oid
-      certificate.extensions.find do |ext|
-        ext.oid == oid
-      end || raise(Error::InvalidCertificate,
-                   "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
+      certificate.extension(Sigstore::Internal::X509::Extension::PrecertificateSignedCertificateTimestamps) ||
+        raise(Error::InvalidCertificate,
+              "No PrecertificateSignedCertificateTimestamps (#{oid.inspect}) found for the certificate")
 
       # This uglyness is needed because there is no way to force modifying an X509 certificate
       # in a way that it will be serialized with the modifications.
@@ -247,21 +243,10 @@ module Sigstore
 
     def find_issuer_cert(chain)
       issuer = chain[0]
-      issuer = chain[1] if preissuer?(issuer)
+      issuer = chain[1] if issuer.preissuer?
       raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
 
       issuer
-    end
-
-    def preissuer?(cert)
-      return false unless (eku = cert.find_extension("extendedKeyUsage"))
-
-      values = OpenSSL::ASN1.decode(eku.value_der).value
-      raise values.inspect unless values.is_a?(Array)
-
-      values.any? do |value|
-        value.oid == "1.3.6.1.4.1.11129.2.4.4"
-      end
     end
   end
 end

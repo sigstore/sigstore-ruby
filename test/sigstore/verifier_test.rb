@@ -5,7 +5,8 @@ require "sigstore/verifier"
 
 class Sigstore::VerifierTest < Test::Unit::TestCase
   def test_tbs_certificate_der
-    certificate = OpenSSL::X509::Certificate.new(File.binread(File.join(__dir__, "data/x509/cryptography-scts.pem")))
+    certificate = Sigstore::Internal::X509::Certificate.read(File.binread(File.join(__dir__,
+                                                                                    "data/x509/cryptography-scts.pem")))
     expected = File.binread(File.join(__dir__, "data/x509/cryptography-scts-tbs-precert.der"))
 
     verifier = Sigstore::Verifier.allocate

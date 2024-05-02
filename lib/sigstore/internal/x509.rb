@@ -18,8 +18,23 @@ module Sigstore
   module Internal
     module X509
       class Certificate
+        extend Forwardable
+
+        attr_reader :openssl
+
         def initialize(x509_certificate)
-          @x509_certificate = x509_certificate
+          unless x509_certificate.is_a?(OpenSSL::X509::Certificate)
+            raise ArgumentError,
+                  "Invalid certificate: #{x509_certificate.inspect}"
+          end
+
+          @openssl = x509_certificate
+
+          raise Error::InvalidCertificate, "invalid X.509 version: #{version.inspect}" if version != 2 # v3
+        end
+
+        def self.read(certificate_bytes)
+          new(OpenSSL::X509::Certificate.new(certificate_bytes))
         end
 
         def tbs_certificate_der
@@ -27,10 +42,64 @@ module Sigstore
         end
 
         def extension(cls)
-          @x509_certificate.extensions.each do |ext|
+          openssl.extensions.each do |ext|
             return cls.new(ext) if ext.oid == cls.oid || ext.oid == cls.oid.short_name
           end
           nil
+        end
+
+        def_delegators :openssl, :version, :not_after, :not_before, :to_pem, :to_der,
+                       :public_key, :to_text
+
+        def leaf?
+          return false if ca?
+
+          key_usage = extension(Extension::KeyUsage) ||
+                      raise(Error::InvalidCertificate,
+                            "no keyUsage in #{@x509_certificate.extensions.map(&:to_h)}")
+
+          unless key_usage.digital_signature
+            raise Error::InvalidCertificate,
+                  "invalid certificate for Sigstore purposes: missing digital signature usage: #{key_usage.to_h}"
+          end
+
+          extended_key_usage = extension(Extension::ExtendedKeyUsage)
+          return false unless extended_key_usage
+
+          extended_key_usage.code_signing?
+        end
+
+        def ca?
+          basic_constraints = extension(Extension::BasicConstraints)
+          return false unless basic_constraints
+
+          unless basic_constraints.critical?
+            raise Error::InvalidCertificate,
+                  "invalid X.509 certificate: non-critical BasicConstraints in CA"
+          end
+
+          key_usage = extension(Extension::KeyUsage)
+          raise Error::InvalidCertificate, "no keyUsage in #{openssl.inspect}" unless key_usage
+
+          ca = basic_constraints.ca
+          key_cert_sign = key_usage.key_cert_sign
+
+          return true if ca && key_cert_sign
+
+          return false unless key_cert_sign || ca
+
+          raise Error::InvalidCertificate,
+                "invalid X.509 certificate: inconsistent CA/KeyCertSign in BasicConstraints/KeyUsage " \
+                "(#{ca.inspect}, #{key_cert_sign.inspect}):" \
+                "\n#{openssl.extensions.map(&:to_h).pretty_inspect}" \
+                "\n#{key_usage.pretty_inspect}"
+        end
+
+        def preissuer?
+          extended_key_usage = extension(Extension::ExtendedKeyUsage)
+          return false unless extended_key_usage
+
+          extended_key_usage.purposes.include?(OpenSSL::ASN1::ObjectId.new("1.3.6.1.4.1.11129.2.4.4"))
         end
       end
 
@@ -57,6 +126,10 @@ module Sigstore
           raise ArgumentError, "Invalid extension: extra fields left in #{self}: #{value}" unless value.empty?
 
           parse_value(OpenSSL::ASN1.decode(contents))
+        end
+
+        def critical?
+          @extension.critical?
         end
 
         def shift_value(value, klass)
@@ -86,7 +159,7 @@ module Sigstore
           value.value.each_byte.flat_map do |byte|
             [byte & 0b1000_0000 != 0, byte & 0b0100_0000 != 0, byte & 0b0010_0000 != 0, byte & 0b0001_0000 != 0,
              byte & 0b0000_1000 != 0, byte & 0b0000_0100 != 0, byte & 0b0000_0010 != 0, byte & 0b0000_0001 != 0]
-          end[..-(value.unused_bits - 1)]
+          end[..-value.unused_bits.succ]
         end
 
         class SubjectKeyIdentifier < Extension
@@ -134,6 +207,12 @@ module Sigstore
             raise ArgumentError,
                   "Invalid extended key usage: #{value.inspect}"
           end
+
+          CODE_SIGNING = OpenSSL::ASN1::ObjectId.new("1.3.6.1.5.5.7.3.3")
+
+          def code_signing?
+            purposes.any? { |oid| oid == CODE_SIGNING }
+          end
         end
 
         class BasicConstraints < Extension
@@ -142,19 +221,23 @@ module Sigstore
           attr_reader :ca, :path_len_constraint
 
           def parse_value(value)
+            value = shift_value([value], OpenSSL::ASN1::Sequence)
+
             @ca = false
             @path_len_constraint = nil
 
-            @ca = shift_value(value, OpenSSL::ASN1::Boolean).value if value.first.is_a?(OpenSSL::ASN1::Boolean)
+            @ca = shift_value(value, OpenSSL::ASN1::Boolean) if value.first.is_a?(OpenSSL::ASN1::Boolean)
 
             return unless value.first.is_a?(OpenSSL::ASN1::Integer)
 
-            @path_len_constraint = shift_value(value, OpenSSL::ASN1::Integer).value
+            @path_len_constraint = shift_value(value, OpenSSL::ASN1::Integer)
           end
         end
 
         class SubjectAlternativeName < Extension
           self.oid = OpenSSL::ASN1::ObjectId.new("2.5.29.17")
+
+          attr_reader :general_names
 
           #  id-ce-subjectAltName OBJECT IDENTIFIER ::=  { id-ce 17 }
 
@@ -180,6 +263,22 @@ module Sigstore
           #  EDIPartyName ::= SEQUENCE {
           #       nameAssigner            [0]     DirectoryString OPTIONAL,
           #       partyName               [1]     DirectoryString }
+
+          def parse_value(value)
+            value = shift_value([value], OpenSSL::ASN1::Sequence)
+
+            @general_names = value.map do |general_name|
+              tag = general_name.tag
+
+              case tag
+              when 6
+                [:uniformResourceIdentifier, general_name.value]
+              else
+                raise Error::Unimplemented,
+                      "Unhandled general name tag: #{tag}"
+              end
+            end
+          end
         end
 
         class PrecertificateSignedCertificateTimestamps < Extension
