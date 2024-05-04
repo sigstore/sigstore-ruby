@@ -22,19 +22,41 @@ require "sigstore/internal/x509"
 
 module Sigstore
   class Verifier
-    def initialize(rekor_client:, fulcio_cert_chain:)
+    def initialize(rekor_client:, fulcio_cert_chain:, timestamp_authorities:)
       @rekor_client = rekor_client
       @fulcio_cert_chain = fulcio_cert_chain
+      @timestamp_authorities = timestamp_authorities
     end
 
     def self.production(trust_root: TrustedRoot.production)
       new(
         rekor_client: Rekor::Client.production(trust_root: trust_root),
-        fulcio_cert_chain: trust_root.fulcio_cert_chain
+        fulcio_cert_chain: trust_root.fulcio_cert_chain,
+        timestamp_authorities: trust_root.timestamp_authorities
       )
     end
 
     def verify(materials:, policy:)
+      # First, establish a time for the signature. This timestamp is required to validate the certificate chain,
+      # so this step comes first.
+
+      # 1)
+      # If the verification policy uses the Timestamping Service, the Verifier MUST verify the timestamping response
+      # using the Timestamping Service root key material, as described in Spec: Timestamping Service, with the raw bytes
+      # of the signature as the timestamped data. The Verifier MUST then extract a timestamp from the timestamping
+      # response. If verification or timestamp parsing fails, the Verifier MUST abort.
+
+      _verified_timestamp = extract_timestamp_from_verification_data(materials.timestamp_verification_data)
+
+      # 2)
+      # If the verification policy uses timestamps from the Transparency Service, the Verifier MUST verify the signature
+      # on the Transparency Service LogEntry as described in Spec: Transparency Service against the pre-distributed root
+      # key material from the transparency service. The Verifier SHOULD NOT (yet) attempt to parse the body.
+      # The Verifier MUST then parse the integratedTime as a Unix timestamp (seconds since January 1, 1970 UTC).
+      # If verification or timestamp parsing fails, the Verifier MUST abort.
+
+      # TODO: implement this step
+
       store = OpenSSL::X509::Store.new
 
       @fulcio_cert_chain.each do |cert|
@@ -85,13 +107,31 @@ module Sigstore
 
       signing_key = materials.certificate.public_key
 
+      unless materials.signature.nil? ^ materials.dsse_envelope.nil?
+        raise Error::InvalidBundle,
+              "expected either signature xor dsse envelope, got:" \
+              "\n  signature: #{materials.signature.inspect}\n  in_toto: #{materials.dsse_envelope.inspect}"
+      end
+
       raise Error::InvalidBundle, "missing hashed input" unless materials.hashed_input
-      raise Error::InvalidBundle, "missing signature" unless materials.signature # TODO: handle DSSE envelope
       raise Error::InvalidBundle, "missing input bytes" unless materials.input_bytes
 
-      verified = signing_key.verify(materials.hashed_input.name, materials.signature,
-                                    materials.input_bytes)
-      return VerificationFailure.new("Signature verification failed") unless verified
+      if materials.signature
+        verified = signing_key.verify(materials.hashed_input.name, materials.signature,
+                                      materials.input_bytes)
+        return VerificationFailure.new("Signature verification failed") unless verified
+      elsif materials.dsse_envelope
+        verify_dsse(materials.dsse_envelope, signing_key) or
+          return VerificationFailure.new("DSSE envelope verification failed")
+
+        case materials.dsse_envelope.payloadType
+        when "application/vnd.in-toto+json"
+          verify_in_toto(materials, JSON.parse(materials.dsse_envelope.payload))
+        else
+          raise Sigstore::Error::Unimplemented,
+                "unsupported DSSE payload type: #{materials.dsse_envelope.payloadType.inspect}"
+        end
+      end
 
       entry = materials.find_rekor_entry(@rekor_client)
       if entry.inclusion_proof&.checkpoint
@@ -114,6 +154,42 @@ module Sigstore
     end
 
     private
+
+    def verify_dsse(dsse_envelope, public_key)
+      payload = dsse_envelope.payload
+      payload_type = dsse_envelope.payloadType
+      signatures = dsse_envelope.signatures
+
+      pae = "DSSEv1 #{payload_type.bytesize} #{payload_type} " \
+            "#{payload.bytesize} #{payload}".b
+
+      raise Error::InvalidBundle, "DSSEv1 envelope missing signatures" if signatures.empty?
+
+      signatures.all? do |signature|
+        public_key.verify("SHA256", signature.sig, pae)
+      end
+    end
+
+    def verify_in_toto(materials, in_toto_payload)
+      type = in_toto_payload.fetch("_type")
+      raise Error::InvalidBundle, "Expected in-toto statement, got #{type.inspect}" unless type == "https://in-toto.io/Statement/v1"
+
+      subject = in_toto_payload.fetch("subject")
+      raise Error::InvalidBundle, "Expected in-toto statement with subject" unless subject && subject.size == 1
+
+      subject = subject.first
+      digest = subject.fetch("digest")
+      raise Error::InvalidBundle, "Expected in-toto statement with digest" if !digest || digest.empty?
+
+      digest.each do |name, value|
+        next if materials.hashed_input.hexdigest == value
+
+        return VerificationFailure.new(
+          "in-toto subject does not match for #{materials.hashed_input.name} of #{subject.fetch("name")}: " \
+          "expected #{name} to be #{value}, got #{materials.hashed_input.hexdigest}"
+        )
+      end
+    end
 
     def verify_sct(sct, certificate, chain, ct_keyring)
       # TODO: validate hash & signature algorithm match the key in the keyring
@@ -203,6 +279,87 @@ module Sigstore
       raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
 
       issuer
+    end
+
+    def extract_timestamp_from_verification_data(data)
+      # TODO: allow requiring a verified timestamp
+      return nil unless data
+
+      authorities = @timestamp_authorities.map do |ta|
+        store = OpenSSL::X509::Store.new
+        chain = ta.cert_chain.certificates.map do |cert|
+          Internal::X509::Certificate.read(cert.raw_bytes).openssl
+        end
+        chain.each do |cert|
+          store.add_cert(cert)
+        end
+        [ta, chain, store]
+      end
+
+      # https://www.rfc-editor.org/rfc/rfc3161.html#section-2.4.2
+      data.rfc3161_timestamps.each do |ts|
+        require "pp"
+        resp = OpenSSL::Timestamp::Response.new(ts.signed_timestamp)
+
+        req = OpenSSL::Timestamp::Request.new
+        req.cert_requested = !resp.token.certificates.empty?
+        # TODO: verify the message imprint against the signature in the bundle
+        req.message_imprint = resp.token_info.message_imprint
+        req.algorithm = resp.token_info.algorithm
+        req.policy_id = resp.token_info.policy_id
+        req.nonce = resp.token_info.nonce
+        req.version = resp.token_info.version
+
+        debug = {
+          status: resp.status,
+          failure_info: resp.failure_info,
+          status_text: resp.status_text,
+          token: {
+            type: resp.token.type,
+            data: resp.token.data,
+            error_string: resp.token.error_string,
+            signers: resp.token.signers.map do |s|
+                       { serial: s.serial, issuer: s.issuer, signed_time: s.signed_time }
+                     end,
+            recipients: resp.token.recipients,
+            certificates: resp.token.certificates,
+            crls: resp.token.crls,
+            to_s: resp.token.to_s,
+            to_text: (resp.token.to_text if resp.token.respond_to?(:to_text))
+          },
+          token_info: {
+            algorithm: resp.token_info.algorithm,
+            gen_time: resp.token_info.gen_time,
+            message_imprint: resp.token_info.message_imprint,
+            nonce: resp.token_info.nonce,
+            ordering: resp.token_info.ordering,
+            policy_id: resp.token_info.policy_id,
+            serial_number: resp.token_info.serial_number,
+            version: resp.token_info.version,
+            to_text: (resp.token_info.to_text if resp.token_info.respond_to?(:to_text))
+          },
+          tsa_certificate: resp.tsa_certificate,
+          to_text: (resp.to_text if resp.respond_to?(:to_text)),
+          time: resp.token_info.gen_time
+        }.pretty_inspect
+        _ = debug
+
+        # TODO: verify the hashed message in the message imprint
+        # against the signature in the bundle
+
+        authorities.any? do |_ta, chain, store|
+          # TODO: this does nothing
+          # the store's time is only a ruby ivar, and openssl does not properly use the timestamp's time
+          # when creating the store ctx for verification
+          store.time = resp.token_info.gen_time
+
+          resp.verify(req, store, chain)
+        rescue OpenSSL::Timestamp::TimestampError => _e
+          # raise OpenSSL::Timestamp::TimestampError, "#{e} for #{chain.map(&:to_text).join("\n")}\n#{debug}"
+          true
+        end ||
+          raise(OpenSSL::Timestamp::TimestampError, "timestamp verification failed")
+      end
     end
   end
 end

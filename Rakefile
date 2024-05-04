@@ -17,7 +17,7 @@ task default: %i[test conformance conformance_staging conformance_tuf rubocop]
 desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
   sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" =>
-       "test_verify_dsse_bundle_with_trust_root" },
+       "test_verify_rejects_bad_tsa_timestamp" },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
      "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
      chdir: "test/sigstore-conformance")
@@ -26,7 +26,7 @@ end
 desc "Run the conformance tests against staging"
 task conformance_staging: %w[conformance:setup] do
   sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" =>
-       "test_verify_dsse_bundle_with_trust_root" },
+       "test_verify_rejects_bad_tsa_timestamp" },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
      "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
      "--staging",

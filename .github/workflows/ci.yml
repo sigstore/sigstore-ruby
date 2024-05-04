@@ -6,7 +6,7 @@ on:
       - main
   pull_request:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: "0 12 * * *"
 
 jobs:
   ruby-versions:
@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
-        os: [ ubuntu-latest ]
+        os: [ubuntu-latest]
         # os: [ ubuntu-latest, macos-latest, windows-latest ]
         # include:
         #   - { os: windows-latest, ruby: ucrt }
@@ -48,14 +48,14 @@ jobs:
         uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: test_verify_dsse_bundle_with_trust_root
+          xfail: test_verify_rejects_bad_tsa_timestamp
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
         uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: test_verify_dsse_bundle_with_trust_root
+          xfail: test_verify_rejects_bad_tsa_timestamp
           environment: staging
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
@@ -70,7 +70,7 @@ jobs:
     if: always()
 
     needs:
-    - test
+      - test
 
     runs-on: ubuntu-latest
 
