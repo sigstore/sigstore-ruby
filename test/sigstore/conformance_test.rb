@@ -56,4 +56,19 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
       end
     end
   end
+
+  def test_verify_dsse_bundle_with_trust_root
+    capture_output do
+      assert_nothing_raised do
+        Gem::Commands::SigstoreVerifyBundleCommand.new.invoke(
+          "--bundle", "test/sigstore-conformance/test/assets/d.txt.good.sigstore",
+          "--certificate-identity", "https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main",
+          "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
+          "--trusted-root", "test/sigstore-conformance/test/assets/trusted_root.d.json",
+          "--offline",
+          "test/sigstore-conformance/test/assets/d.txt"
+        )
+      end
+    end
+  end
 end

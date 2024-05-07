@@ -67,14 +67,15 @@ module Sigstore
   end
 
   VerificationMaterials = Struct.new(:hashed_input, :certificate, :signature, :offline, :rekor_entry, :input_bytes,
+                                     :dsse_envelope, :timestamp_verification_data,
                                      keyword_init: true) do
     # @implements VerificationMaterials
 
     def initialize(input:, cert_pem:, **kwargs)
-      input_bytes = input.read
+      input_bytes = input.read.freeze
       digest = OpenSSL::Digest.new("SHA256")
       digest.update(input_bytes)
-      hashed_input = digest
+      hashed_input = digest.freeze
       certificate = Internal::X509::Certificate.read(cert_pem)
 
       super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, offline: offline, **kwargs)
@@ -92,24 +93,55 @@ module Sigstore
 
       # debug
 
-      expected_entry = {
-        "spec" => {
-          "signature" => {
-            "content" => [signature].pack("m0"),
-            "publicKey" => {
-              "content" => [certificate.to_pem].pack("m0")
+      if signature
+        expected_entry = {
+          "spec" => {
+            "signature" => {
+              "content" => [signature].pack("m0"),
+              "publicKey" => {
+                "content" => [certificate.to_pem].pack("m0")
+              }
+            },
+            "data" => {
+              "hash" => {
+                "algorithm" => hashed_input.name.downcase,
+                "value" => hashed_input.hexdigest
+              }
             }
           },
-          "data" => {
-            "hash" => {
-              "algorithm" => hashed_input.name.downcase,
-              "value" => hashed_input.hexdigest
+          "kind" => "hashedrekord",
+          "apiVersion" => "0.0.1"
+        }
+      elsif dsse_envelope
+        expected_entry = {
+          "apiVersion" => "0.0.2",
+          "kind" => "intoto",
+          "spec" => {
+            "content" => {
+              "envelope" => {
+                "payloadType" => dsse_envelope.payloadType,
+                "payload" => [[dsse_envelope.payload].pack("m0")].pack("m0"),
+                "signatures" => dsse_envelope.signatures.map do |sig|
+                  {
+                    "publicKey" => [
+                      # needed because #to_pem packs the key in base64 with m*
+                      "-----BEGIN CERTIFICATE-----\n#{[certificate.to_der].pack("m0")}\n-----END CERTIFICATE-----\n"
+                    ].pack("m0"),
+                    "sig" => [[sig.sig].pack("m0")].pack("m0")
+                  }
+                end
+              },
+              "payloadHash" => {
+                "algorithm" => "sha256",
+                "value" => OpenSSL::Digest::SHA256.hexdigest(dsse_envelope.payload)
+              }
             }
           }
-        },
-        "kind" => "hashedrekord",
-        "apiVersion" => "0.0.1"
-      }
+        }
+      else
+        raise Error::InvalidBundle,
+              "expected either signature xor in-toto payload"
+      end
 
       entry = if offline
                 # debug
@@ -126,8 +158,56 @@ module Sigstore
       # debug
 
       actual_body = JSON.parse(entry.body.unpack1("m0"))
-      if actual_body != expected_entry.to_h
-        raise Error::InvalidRekorEntry, "Invalid rekor entry: expected #{expected_entry.to_h}, got #{actual_body}"
+      if dsse_envelope
+        # since the hash is over the uncanonicalized envelope, we need to remove it
+        #
+        # NOTE(sigstore-python): This is very slightly weaker than the consistency check
+        # for hashedrekord entries, due to how inclusion is recorded for DSSE:
+        # the included entry for DSSE includes an envelope hash that we
+        # *cannot* verify, since the envelope is uncanonicalized JSON.
+        # Instead, we manually pick apart the entry body below and verify
+        # the parts we can (namely the payload hash and signature list).
+        actual_body["spec"]["content"].delete("hash")
+      end
+
+      if actual_body != expected_entry
+        json_hash_diff = lambda do |a, b|
+          return if a == b
+
+          return [a, b] if a.class != b.class
+
+          case a
+          when Hash
+            (a.keys | b.keys).to_h do |k|
+              [k, json_hash_diff[a[k], b[k]]]
+            end.compact
+          when Array
+            a.zip(b).map { |x, y| json_hash_diff[x, y] }.compact
+          when String
+            begin
+              require "base64"
+              da = a.unpack1("m0")
+              db = b.unpack1("m0")
+
+              [{
+                "decoded" => da,
+                "base64" => a
+              },
+               {
+                 "decoded" => db,
+                 "base64" => b
+               }]
+            rescue ArgumentError
+              [a, b]
+            end
+          else
+            [a, b]
+          end
+        end
+
+        raise Error::InvalidRekorEntry, "Invalid rekor entry:\n\n" \
+                                        "Envelope:\n#{dsse_envelope.inspect}\n\n" \
+                                        "Diff:\n#{json_hash_diff[expected_entry, actual_body].inspect}"
       end
 
       entry
@@ -159,9 +239,7 @@ module Sigstore
       when :message_signature
         signature = bundle.message_signature.signature
       when :dsse_envelope
-        # TODO: handle DSSE envelope
-        raise Error::Unimplemented,
-              "DSSE envelope verification not yet supported: #{JSON.pretty_generate bundle.as_json}"
+        dsse_envelope = bundle.dsse_envelope
       else
         raise Error::Unimplemented, "Unsupported bundle content: #{bundle.content}"
       end
@@ -205,8 +283,10 @@ module Sigstore
         input: input,
         cert_pem: leaf_cert.to_pem,
         signature: signature,
+        dsse_envelope: dsse_envelope,
         offline: offline,
-        rekor_entry: entry
+        rekor_entry: entry,
+        timestamp_verification_data: bundle.verification_material.timestamp_verification_data
       )
     end
   end

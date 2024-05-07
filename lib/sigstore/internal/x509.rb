@@ -38,6 +38,16 @@ module Sigstore
         end
 
         def tbs_certificate_der
+          if openssl.respond_to?(:tbs_bytes)
+            cert = openssl.dup
+            short_name = Extension::PrecertificateSignedCertificateTimestamps.oid.short_name
+            cert.extensions = cert.extensions.reject! do |ext|
+              ext.oid == short_name
+            end || raise(Error::InvalidCertificate,
+                         "No PrecertificateSignedCertificateTimestamps found for the certificate")
+            return cert.tbs_bytes
+          end
+
           extension(Extension::PrecertificateSignedCertificateTimestamps) ||
             raise(Error::InvalidCertificate,
                   "No PrecertificateSignedCertificateTimestamps found for the certificate")

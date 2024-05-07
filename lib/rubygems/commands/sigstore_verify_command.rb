@@ -112,7 +112,8 @@ module Gem
               rekor_keyring: Sigstore::Internal::Keyring.new(keys: trust_root.rekor_keys),
               ct_keyring: Sigstore::Internal::Keyring.new(keys: trusted_root.ctfe_keys)
             ),
-            fulcio_cert_chain: cert_chain
+            fulcio_cert_chain: cert_chain,
+            timestamp_authorities: trusted_root.timestamp_authorities
           )
         end
 
