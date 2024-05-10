@@ -43,7 +43,7 @@ GEM
     rake (13.2.1)
     regexp_parser (2.9.0)
     rexml (3.2.6)
-    rubocop (1.63.4)
+    rubocop (1.63.5)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
@@ -122,7 +122,7 @@ CHECKSUMS
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
   regexp_parser (2.9.0) sha256=81a00ba141cec0d4b4bf58cb80cd9193e5180836d3fa6ef623f7886d3ba8bdd9
   rexml (3.2.6) sha256=e0669a2d4e9f109951cb1fde723d8acd285425d81594a2ea929304af50282816
-  rubocop (1.63.4) sha256=abae93da9dc08f4fce8eeb50a5c58ad1cf84b8c9ad0ccdeabe1a7ae6ad1bd229
+  rubocop (1.63.5) sha256=a3270524ba00ce93f58e41e980feba80374070ae97d92c78b9aa57b8e1ec6dfe
   rubocop-ast (1.31.3) sha256=1b07d618d8776993ec6053a706d1c09f0bf15139fd69415924656cbff07e7818
   rubocop-rake (0.6.0) sha256=56b6f22189af4b33d4f4e490a555c09f1281b02f4d48c3a61f6e8fe5f401d8db
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
