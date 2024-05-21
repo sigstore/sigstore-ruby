@@ -36,9 +36,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Set up Ruby
-        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
+        uses: ruby/setup-ruby@7dc18ff0ca6e3630d3f29d2a85ebf6cc27ae9d6c # v1.177.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -60,7 +60,7 @@ jobs:
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@6d798873df2b1b8e5846dba6fb86631229fbcb17 # v4.4.0
+        uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c # v4.4.1
         if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -94,9 +94,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Set up Ruby
-        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
+        uses: ruby/setup-ruby@7dc18ff0ca6e3630d3f29d2a85ebf6cc27ae9d6c # v1.177.0
         with:
           ruby-version: "3.3.1"
           bundler-cache: true
