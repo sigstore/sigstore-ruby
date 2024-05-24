@@ -37,13 +37,14 @@ GEM
     protobug_well_known_protos (0.1.0)
       protobug (= 0.1.0)
     public_suffix (5.0.4)
-    racc (1.7.3)
-    racc (1.7.3-java)
+    racc (1.8.0)
+    racc (1.8.0-java)
     rainbow (3.1.1)
     rake (13.2.1)
-    regexp_parser (2.9.0)
-    rexml (3.2.6)
-    rubocop (1.63.4)
+    regexp_parser (2.9.2)
+    rexml (3.2.8)
+      strscan (>= 3.0.9)
+    rubocop (1.64.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
@@ -65,6 +66,8 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
+    strscan (3.1.0)
+    strscan (3.1.0-java)
     test-unit (3.6.2)
       power_assert
     timecop (0.9.8)
@@ -87,7 +90,7 @@ PLATFORMS
 DEPENDENCIES
   base64 (~> 0.2.0)
   rake (~> 13.2)
-  rubocop (~> 1.63)
+  rubocop (~> 1.64)
   rubocop-rake (~> 0.6.0)
   sigstore!
   simplecov (~> 0.22.0)
@@ -116,13 +119,13 @@ CHECKSUMS
   protobug_sigstore_protos (0.1.0) sha256=4ad1eebaf6454131b6f432dda50ad0e513773613474b92470847614a5acacce1
   protobug_well_known_protos (0.1.0) sha256=356757f562453bb34a28f12e8e9fa357346cca35a6807a549837c3fe256bb5b3
   public_suffix (5.0.4) sha256=35cd648e0d21d06b8dce9331d19619538d1d898ba6d56a6f2258409d2526d1ae
-  racc (1.7.3) sha256=b785ab8a30ec43bce073c51dbbe791fd27000f68d1c996c95da98bf685316905
-  racc (1.7.3-java) sha256=b2ad737e788cfa083263ce7c9290644bb0f2c691908249eb4f6eb48ed2815dbf
+  racc (1.8.0) sha256=09349a65c37c4fe710a435f25c9f1652e39f29ad6b1fa08d4a8d30c0553d3a08
+  racc (1.8.0-java) sha256=3688448632150682bbd708b199961129aed2266107e26fcacb45c997395c19f9
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
-  regexp_parser (2.9.0) sha256=81a00ba141cec0d4b4bf58cb80cd9193e5180836d3fa6ef623f7886d3ba8bdd9
-  rexml (3.2.6) sha256=e0669a2d4e9f109951cb1fde723d8acd285425d81594a2ea929304af50282816
-  rubocop (1.63.4) sha256=abae93da9dc08f4fce8eeb50a5c58ad1cf84b8c9ad0ccdeabe1a7ae6ad1bd229
+  regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
+  rexml (3.2.8) sha256=0908a86381d9f973824680df4e0a75422766272f03b1c0e49db7e79c23db1135
+  rubocop (1.64.0) sha256=c67d0821334c9f603ce7623f65fa7b1dd6e7202046ef31e7f2013f1de970e245
   rubocop-ast (1.31.3) sha256=1b07d618d8776993ec6053a706d1c09f0bf15139fd69415924656cbff07e7818
   rubocop-rake (0.6.0) sha256=56b6f22189af4b33d4f4e490a555c09f1281b02f4d48c3a61f6e8fe5f401d8db
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
@@ -130,6 +133,8 @@ CHECKSUMS
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
+  strscan (3.1.0) sha256=01b8a81d214fbf7b5308c6fb51b5972bbfc4a6aa1f166fd3618ba97e0fcd5555
+  strscan (3.1.0-java) sha256=8645aa76e017e21764c6df572d2d79fcc1672284014f5bdbd806278cdbcd11b0
   test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
   timecop (0.9.8) sha256=89996da54eafb25c007d309099ae18a1cb1c6a59fe42f7f1ab4148e21e98f563
   unicode-display_width (2.5.0) sha256=7e7681dcade1add70cb9fda20dd77f300b8587c81ebbd165d14fd93144ff0ab4
