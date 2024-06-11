@@ -70,7 +70,7 @@ GEM
     strscan (3.1.0-java)
     test-unit (3.6.2)
       power_assert
-    timecop (0.9.8)
+    timecop (0.9.9)
     unicode-display_width (2.5.0)
     vcr (6.2.0)
     webmock (3.23.1)
@@ -95,7 +95,7 @@ DEPENDENCIES
   sigstore!
   simplecov (~> 0.22.0)
   test-unit (~> 3.0)
-  timecop (~> 0.9.8)
+  timecop (~> 0.9.9)
   vcr (~> 6.2)
   webmock (~> 3.23)
 
@@ -136,7 +136,7 @@ CHECKSUMS
   strscan (3.1.0) sha256=01b8a81d214fbf7b5308c6fb51b5972bbfc4a6aa1f166fd3618ba97e0fcd5555
   strscan (3.1.0-java) sha256=8645aa76e017e21764c6df572d2d79fcc1672284014f5bdbd806278cdbcd11b0
   test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
-  timecop (0.9.8) sha256=89996da54eafb25c007d309099ae18a1cb1c6a59fe42f7f1ab4148e21e98f563
+  timecop (0.9.9) sha256=2cdec6cc23bf8df4f1f5056ada8a41975101a1a3a9aaac09e3d85c05dde320a5
   unicode-display_width (2.5.0) sha256=7e7681dcade1add70cb9fda20dd77f300b8587c81ebbd165d14fd93144ff0ab4
   vcr (6.2.0) sha256=f960a9a08f904f3577ba212de771171b7e934a319478aa397636daabfcf9490a
   webmock (3.23.1) sha256=0fa738c0767d1c4ec8cc57f6b21998f0c238c8a5b32450df1c847f2767140d95
