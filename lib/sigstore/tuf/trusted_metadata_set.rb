@@ -20,6 +20,7 @@ require_relative "../internal/json"
 module Sigstore::TUF
   class ExpiredMetadataError < StandardError; end
   class EqualVersionNumberError < StandardError; end
+  class BadVersionNumberError < StandardError; end
 
   class TrustedMetadataSet
     def initialize(root_data, envelope_type, reference_time: Time.now.utc)
@@ -168,7 +169,8 @@ module Sigstore::TUF
       snapshot_meta = timestamp.snapshot_meta
       return unless snapshot.version != snapshot_meta.version
 
-      raise "snapshot version mismatch " \
+      raise BadVersionNumberError,
+            "snapshot version mismatch " \
             "(snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
     end
   end

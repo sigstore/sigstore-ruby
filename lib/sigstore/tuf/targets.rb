@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "file"
+
 module Sigstore::TUF
   class Targets
     TYPE = "targets"
@@ -38,6 +40,8 @@ module Sigstore::TUF
     class Target
       attr_reader :path, :hashes
 
+      include BaseFile
+
       def initialize(data, path)
         @path = path
         @length = data.fetch("length")
@@ -45,7 +49,8 @@ module Sigstore::TUF
       end
 
       def verify_length_and_hashes(data)
-        # TODO
+        self.class.verify_length(data, @length)
+        self.class.verify_hashes(data, @hashes)
       end
     end
   end

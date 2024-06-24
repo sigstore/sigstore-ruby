@@ -14,32 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative "file"
+require_relative "../error"
 
 module Sigstore::TUF
-  # The class for the Snapshot role
-  class Snapshot
-    TYPE = "snapshot"
-
-    attr_reader :version, :meta
-
-    def initialize(data)
-      type = data.fetch("_type")
-      raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
-
-      @version = data.fetch("version")
-      @expires = Time.iso8601 data.fetch("expires")
-      @meta = data.fetch("meta").transform_values { Meta.from_hash(_1) }
-    end
-
-    def expired?(reference_time)
-      @expires < reference_time
-    end
-
-    class Meta
-      include MetaFile
-
-      attr_reader :version
-    end
+  class Error < ::Sigstore::Error
+    class LengthOrHashMismatch < Error; end
   end
 end

@@ -174,7 +174,7 @@ module Sigstore
           data = File.binread(filepath)
           target_info.verify_length_and_hashes(data)
           filepath
-        rescue Errno::ENOENT
+        rescue Errno::ENOENT, Error::LengthOrHashMismatch
           nil
         end
       end
