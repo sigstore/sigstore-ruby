@@ -222,7 +222,7 @@ module Sigstore
               [k, json_hash_diff[a[k], b[k]]]
             end.compact
           when Array
-            a.zip(b).map { |x, y| json_hash_diff[x, y] }.compact
+            a.zip(b).filter_map { |x, y| json_hash_diff[x, y] }
           when String
             begin
               require "base64"
