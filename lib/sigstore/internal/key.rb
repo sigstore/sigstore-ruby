@@ -17,6 +17,8 @@
 module Sigstore
   module Internal
     class Key
+      include Loggable
+
       def self.read(key_type, schema, key_bytes, key_id: nil)
         case key_type
         when "ecdsa", "ecdsa-sha2-nistp256"
@@ -55,7 +57,8 @@ module Sigstore
 
       def verify(algo, signature, data)
         @key.verify(algo, signature, data)
-      rescue OpenSSL::PKey::PKeyError
+      rescue OpenSSL::PKey::PKeyError => e
+        logger.debug { "Verification failed: #{e}" }
         false
       end
 

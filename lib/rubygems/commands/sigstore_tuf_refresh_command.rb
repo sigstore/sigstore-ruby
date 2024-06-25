@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require "rubygems/command"
+require_relative "../../sigstore"
 require_relative "../../sigstore/tuf"
 
 module Gem

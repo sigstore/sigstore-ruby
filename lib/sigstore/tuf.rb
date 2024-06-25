@@ -30,6 +30,8 @@ module Sigstore
     STAGING_TUF_URL = "https://tuf-repo-cdn.sigstage.dev"
 
     class TrustUpdater
+      include Loggable
+
       attr_reader :updater
 
       def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil)
@@ -117,7 +119,7 @@ module Sigstore
 
       def trusted_root_path
         unless @updater
-          # debug
+          logger.info { "Offline mode: using cached trusted root" }
           return File.join(@targets_dir, "trusted_root.json")
         end
 
@@ -127,12 +129,13 @@ module Sigstore
         path = @updater.find_cached_target(root_info)
         path ||= @updater.download_target(root_info)
 
-        # debug
         path
       end
     end
 
     class Updater
+      include Loggable
+
       def initialize(metadata_dir:, metadata_base_url:, target_base_url:, target_dir:, fetcher:,
                      config: UpdaterConfig.new)
         @dir = metadata_dir
@@ -205,13 +208,11 @@ module Sigstore
           raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{full_url}: " \
                 "#{e.message}"
         end
-        # debug
+        logger.info { "Downloaded #{target_filepath} to #{filepath}" }
         filepath
       end
 
       private
-
-      def debug(*_args, **_kwargs); end
 
       def load_local_metadata(role_name)
         encoded_name = URI.encode_www_form_component(role_name)
@@ -238,7 +239,7 @@ module Sigstore
         begin
           data = load_local_metadata(Timestamp::TYPE)
         rescue Errno::ENOENT => e
-          debug "Local timestamp not valid as final: #{e.class} #{e.message}"
+          logger.debug "Local timestamp not valid as final: #{e.class} #{e.message}"
         else
           @trusted_set.timestamp = data
         end
@@ -257,9 +258,9 @@ module Sigstore
       def load_snapshot
         data = load_local_metadata(Snapshot::TYPE)
         @trusted_set.snapshot = data
-        debug "Loaded snapshot from local metadata"
+        logger.debug "Loaded snapshot from local metadata"
       rescue Errno::ENOENT => e
-        debug "Local snapshot not valid as final: #{e.class} #{e.message}"
+        logger.debug "Local snapshot not valid as final: #{e.class} #{e.message}"
 
         snapshot_meta = @trusted_set.timestamp.snapshot_meta
         version = snapshot_meta.version if @trusted_set.root.consistent_snapshot
@@ -274,11 +275,11 @@ module Sigstore
 
         begin
           data = load_local_metadata(role)
-          @trusted_set.update_delegated_targets(data, role, parent_role)
-
-          # debug
+          @trusted_set.update_delegated_targets(data, role, parent_role).tap do
+            logger.debug { "Loaded targets for #{role} from local metadata" }
+          end
         rescue Errno::ENOENT
-          # debug
+          logger.debug { "No local targets for #{role}, fetching" }
 
           snapshot = @trusted_set.snapshot
           metainfo = snapshot.meta.fetch("#{role}.json")
@@ -342,7 +343,7 @@ module Sigstore
             child_roles_to_visit << [child_name, role_name]
             next unless terminating
 
-            # debug
+            logger.debug { "Terminating delegation found for #{child_name}" }
             delegations_to_visit.clear
             break
           end
@@ -350,9 +351,7 @@ module Sigstore
           delegations_to_visit.concat child_roles_to_visit.reverse
         end
 
-        if delegations_to_visit.any?
-          # debug
-        end
+        logger.warn { "Max delegations reached, stopping search" } if delegations_to_visit.any?
 
         nil
       end
