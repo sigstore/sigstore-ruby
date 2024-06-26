@@ -98,6 +98,8 @@ module Sigstore
           case @schema
           when "rsassa-pss-sha256"
             @key.verify_pss("sha256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+          else
+            raise ArgumentError, "Unsupported schema #{schema}"
           end
         end
       end

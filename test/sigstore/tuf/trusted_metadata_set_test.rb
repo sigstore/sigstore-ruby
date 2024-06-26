@@ -39,7 +39,11 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
         "spec_version" => "1.0.0",
         "expires" => "2023-07-03T12:42:02Z",
         "meta" => {
-          "snapshot.json" => {}
+          "snapshot.json" => {
+            "version" => 137,
+            "length" => 104,
+            "hashes" => {}
+          }
         }
       },
       "signatures" => []
@@ -47,7 +51,7 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
     @snapshot = {
       "signed" => {
         "_type" => "snapshot",
-        "version" => 1,
+        "version" => 137,
         "expires" => "2023-07-03T12:42:02Z",
         "meta" => {}
       },

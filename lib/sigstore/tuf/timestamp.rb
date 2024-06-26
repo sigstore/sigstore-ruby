@@ -27,7 +27,8 @@ module Sigstore::TUF
       @version = data.fetch("version")
       @spec_version = data.fetch("spec_version")
       @expires = Time.iso8601 data.fetch("expires")
-      @snapshot_meta = Snapshot::Meta.new(data.dig("meta", "snapshot.json") || { "version" => 1 })
+      meta_dict = data.fetch("meta")
+      @snapshot_meta = Snapshot::Meta.from_hash(meta_dict["snapshot.json"])
       @unrecognized_fields = data.fetch("unrecognized_fields", {})
     end
 
