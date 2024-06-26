@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "tuf/config"
 require_relative "tuf/trusted_metadata_set"
 require_relative "tuf/root"
 require_relative "tuf/snapshot"
@@ -132,13 +133,19 @@ module Sigstore
     end
 
     class Updater
-      def initialize(metadata_dir:, metadata_base_url:, target_base_url:, target_dir:, fetcher:)
+      def initialize(metadata_dir:, metadata_base_url:, target_base_url:, target_dir:, fetcher:,
+                     config: UpdaterConfig.new)
         @dir = metadata_dir
         @metadata_base_url = "#{metadata_base_url.to_s.chomp("/")}/"
         @target_dir = target_dir
         @target_base_url = target_base_url && "#{target_base_url.to_s.chomp("/")}/"
 
         @fetcher = fetcher
+        @config = config
+
+        unless %i[metadata simple].include? @config.envelope_type
+          raise ArgumentError, "Unsupported envelope type: #{@config[:envelope_type].inspect}"
+        end
 
         begin
           data = load_local_metadata("root")
@@ -181,7 +188,7 @@ module Sigstore
         target_filepath = target_info.path
         consistent_snapshot = @trusted_set.root.consistent_snapshot
 
-        if consistent_snapshot # TODO: config.prefix_targets_with_hash
+        if consistent_snapshot && @config.prefix_targets_with_hash
           hashes = target_info.hashes.values
           dir, sep, basename = target_filepath.rpartition("/")
           target_filepath = "#{dir}#{sep}#{hashes.first}.#{basename}"
@@ -214,7 +221,7 @@ module Sigstore
 
       def load_root
         lower_bound = @trusted_set.root.version + 1
-        upper_bound = lower_bound + 100 # TODO: make this configurable
+        upper_bound = lower_bound + @config.max_root_rotations
 
         lower_bound.upto(upper_bound) do |version|
           data = download_metadata("root", version)
@@ -316,7 +323,7 @@ module Sigstore
         delegations_to_visit = [[Targets::TYPE, Root::TYPE]]
         visited_role_names = Set.new
 
-        while delegations_to_visit.any? && visited_role_names.size < 100 # TODO: make this configurable
+        while delegations_to_visit.any? && visited_role_names.size < @config.max_delegations
           role_name, parent_role = delegations_to_visit.shift
           next if visited_role_names.include?(role_name)
 
