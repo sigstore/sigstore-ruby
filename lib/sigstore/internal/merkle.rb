@@ -19,28 +19,58 @@ require_relative "util"
 module Sigstore
   module Internal
     module Merkle
+      class MissingInclusionProofError < StandardError; end
+      class MissingHashError < StandardError; end
+      class InvalidInclusionProofError < StandardError; end
+      class InclusionProofSizeError < StandardError; end
+
       def self.verify_merkle_inclusion(entry)
         inclusion_proof = entry.inclusion_proof
-        raise "Rekor entry has no inclusion proof" unless inclusion_proof
-
-        inner, border = decompose_inclusion_proof(inclusion_proof.log_index, inclusion_proof.tree_size)
-
-        if inclusion_proof.hashes.size != inner + border
-          raise "Inclusion proof has wrong size, expected #{inner + border} hashes, got #{inclusion_proof.hashes.size}"
-        end
+        raise MissingInclusionProofError, "Rekor entry has no inclusion proof" unless inclusion_proof
 
         leaf_hash = hash_leaf(Util.base64_decode(entry.body))
+        verify_inclusion(inclusion_proof.log_index, inclusion_proof.tree_size, inclusion_proof.hashes,
+                         [inclusion_proof.root_hash].pack("H*"), leaf_hash)
+      end
 
-        intermediate_result = chain_inner(leaf_hash, (inclusion_proof.hashes[...inner] || raise("missing left hashes")),
-                                          inclusion_proof.log_index)
+      def self.verify_inclusion(index, tree_size, proof, root, leaf_hash)
+        calc_hash = root_from_inclusion_proof(index, tree_size, proof, leaf_hash)
 
-        calc_hash = chain_border_right(intermediate_result,
-                                       inclusion_proof.hashes[inner..] || raise("missing right hashes"))
-                    .unpack1("H*").encode("utf-8")
+        return if calc_hash == root
 
-        return if calc_hash == inclusion_proof.root_hash
+        raise InvalidInclusionProofError,
+              "Inclusion proof contains invalid root hash: " \
+              "expected #{root.unpack1("H*")}, calculated #{calc_hash.unpack1("H*")}"
+      end
 
-        raise "Inclusion proof contains invalid root hash: expected #{inclusion_proof}, calculated #{calc_hash}"
+      def self.root_from_inclusion_proof(log_index, tree_size, proof, leaf_hash)
+        if log_index >= tree_size
+          raise InclusionProofSizeError,
+                "Log index #{log_index} is greater than tree size #{tree_size}"
+        end
+
+        if leaf_hash.size != 32
+          raise InvalidInclusionProofError,
+                "Leaf hash has wrong size, expected 32 bytes, got #{leaf_hash.size}"
+        end
+
+        inner, border = decompose_inclusion_proof(log_index, tree_size)
+
+        if proof.size != inner + border
+          raise InclusionProofSizeError,
+                "Inclusion proof has wrong size, expected #{inner + border} hashes, got #{proof.size}"
+        end
+
+        intermediate_result = chain_inner(
+          leaf_hash,
+          (proof[...inner] || raise(MissingHashError, "missing left hashes")),
+          log_index
+        )
+
+        chain_border_right(
+          intermediate_result,
+          proof[inner..] || raise(MissingHashError, "missing right hashes")
+        )
       end
 
       def self.decompose_inclusion_proof(log_index, tree_size)
@@ -52,7 +82,7 @@ module Sigstore
 
       def self.hash_leaf(data)
         data = "\u0000#{data}".b
-        OpenSSL::Digest.new("SHA256").digest(data) # : String & Util::binaryString
+        OpenSSL::Digest.new("SHA256").digest(data)
       end
 
       def self.chain_inner(seed, hashes, log_index)
@@ -76,7 +106,7 @@ module Sigstore
 
       def self.hash_children(left, right)
         data = "\u0001#{left}#{right}".b
-        OpenSSL::Digest.new("SHA256").digest(data) # : String & Util::binaryString
+        OpenSSL::Digest.new("SHA256").digest(data)
       end
     end
   end
