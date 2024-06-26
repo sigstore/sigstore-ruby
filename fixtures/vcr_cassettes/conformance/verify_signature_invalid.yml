@@ -110,4 +110,42 @@ http_interactions:
         137\n\t\t\t}\n\t\t}\n\t},\n\t\"signatures\": [\n\t\t{\n\t\t\t\"keyid\": \"923bb39e60dd6fa2c31e6ea55473aa93b64dd4e53e16fbe42f6a207d3f97de2d\",\n\t\t\t\"sig\":
         \"304602210098c329ab4dab127270dd2f56150bdc1ea3c0bee78d6f231fcededa0704b5a37302210095ec5cb338ab53b3b6463c581d0ffd9134d23272572ac9ca69ad3b190041d5d8\"\n\t\t}\n\t]\n}"
   recorded_at: Thu, 25 Apr 2024 23:31:15 GMT
+- request:
+    method: post
+    uri: https://rekor.sigstore.dev/api/v1/log/entries/retrieve/
+    body:
+      encoding: UTF-8
+      string: '{"entries":[{"spec":{"signature":{"content":"MGYCMQC4JASdu7Gx4GHFMauOoAQTb5gUYIO1d8ruB2yDemDA66KJcaMrEqBdSMKjl86c4cwCMQCOs2PROY/qEwg/Wsra+taofoTE3y31FD4Ef2TAIb2uAvXCp0U1JQdc1qCteRS/veM=","publicKey":{"content":"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN4akNDQWt1Z0F3SUJBZ0lVRjQ3MHR4ZDFZOGErRE8vZ2ErTHdLMnBJeTJNd0NnWUlLb1pJemowRUF3TXcKTnpFVk1CTUdBMVVFQ2hNTWMybG5jM1J2Y21VdVpHVjJNUjR3SEFZRFZRUURFeFZ6YVdkemRHOXlaUzFwYm5SbApjbTFsWkdsaGRHVXdIaGNOTWpJeE1UQTRNRFV5TkRJeVdoY05Nakl4TVRBNE1EVXpOREl5V2pBQU1IWXdFQVlICktvWkl6ajBDQVFZRks0RUVBQ0lEWWdBRWN5cC8wUUZJbkNZaWlod2d5ZUtHUlhhbEdmMmZWSzZTQlk0eDhTcmcKQy9EZE5XMHdxUjRTVkNIREpSU2pHR1JuRWtOaGpWUk82NGxZK3pCRWVBSkFialNoNkRkdVJ6QnNJQVRFRWdlaQpFSFJKVFB3enFaTEU1ejNYRnJHREtyeTNvNElCVFRDQ0FVa3dEZ1lEVlIwUEFRSC9CQVFEQWdlQU1CTUdBMVVkCkpRUU1NQW9HQ0NzR0FRVUZCd01ETUIwR0ExVWREZ1FXQkJTOFRKbzIzd3BmRVVaaFlDLzhtT3N6V1JRSzB6QWYKQmdOVkhTTUVHREFXZ0JSeGhqQ21GSHhpYi9uMzF2UUZHbjlmLyt0dnJEQXFCZ05WSFJFQkFmOEVJREFlZ1J4aApiR1Y0TG1OaGJXVnliMjVBZEhKaGFXeHZabUpwZEhNdVkyOXRNQ2tHQ2lzR0FRUUJnNzh3QVFFRUcyaDBkSEJ6Ck9pOHZZV05qYjNWdWRITXVaMjl2WjJ4bExtTnZiVENCaWdZS0t3WUJCQUhXZVFJRUFnUjhCSG9BZUFCMkFDc3cKdk54b2lNbmk0ZGdtS1Y1MEgwZzVNWllDOHB3enkxNURRUDZ5cklaNkFBQUJoRld5V0tRQUFBUURBRWN3UlFJZwpWUzdvN1BmSXRHbHh4Y1Zwd2swa3lkMVBhUThhYW5PcEk3dE9ra0VnSDNBQ0lRRFN6bFhnY0NuQWlXRnVEZ3NmClpTR1FCWHFnaEFFWFRuaWxQZThFTTlZMVREQUtCZ2dxaGtqT1BRUURBd05wQURCbUFqRUE1dU4zZkRhN3BrUTYKZFRNS29yd2ZHMk9wcXdaRHZOVzNFKytUM3FWd3pNNVh3aEhVYWoxVytaQ25WdjU0TUkwOEFqRUE2aXJoY2gxSgplRWZ4VkMzV3RWZmtYbUNHQ3UxQU1mUkdFT08wdUpBYllsNE9HQ2NwRlVtV0hEZW1HZlVwYlJFVgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="}},"data":{"hash":{"algorithm":"sha256","value":"a0cfc71271d6e278e57cd332ff957c3f7043fdda354c4cbb190a30d56efa01bf"}}},"kind":"hashedrekord","apiVersion":"0.0.1"}]}'
+    headers:
+      Content-Type:
+      - application/json
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      User-Agent:
+      - Ruby
+      Host:
+      - rekor.sigstore.dev
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      Vary:
+      - Origin
+      Date:
+      - Wed, 26 Jun 2024 18:15:44 GMT
+      Content-Length:
+      - '3'
+      Via:
+      - 1.1 google
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+    body:
+      encoding: UTF-8
+      string: "[]\n"
+  recorded_at: Thu, 25 Apr 2024 23:31:15 GMT
 recorded_with: VCR 6.2.0

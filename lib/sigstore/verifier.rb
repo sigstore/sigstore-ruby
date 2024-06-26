@@ -48,11 +48,7 @@ module Sigstore
       # of the signature as the timestamped data. The Verifier MUST then extract a timestamp from the timestamping
       # response. If verification or timestamp parsing fails, the Verifier MUST abort.
 
-      extract_timestamp_from_verification_data(materials.timestamp_verification_data)&.each do |timestamp|
-        if timestamp < materials.certificate.not_before || timestamp > materials.certificate.not_after
-          return VerificationFailure.new("invalid signing cert: expired at time of timestamp (#{timestamp})")
-        end
-      end
+      timestamps = extract_timestamp_from_verification_data(materials.timestamp_verification_data) || []
 
       # 2)
       # If the verification policy uses timestamps from the Transparency Service, the Verifier MUST verify the signature
@@ -60,6 +56,27 @@ module Sigstore
       # key material from the transparency service. The Verifier SHOULD NOT (yet) attempt to parse the body.
       # The Verifier MUST then parse the integratedTime as a Unix timestamp (seconds since January 1, 1970 UTC).
       # If verification or timestamp parsing fails, the Verifier MUST abort.
+
+      begin
+        # TODO: should this instead be an input to the verify method?
+        # See https://docs.google.com/document/d/1kbhK2qyPPk8SLavHzYSDM8-Ueul9_oxIMVFuWMWKz0E/edit?disco=AAABQVV-gT0
+        entry = materials.find_rekor_entry(@rekor_client)
+      rescue Sigstore::Error::MissingRekorEntry
+        return VerificationFailure.new("Rekor entry not found")
+      else
+        if entry.inclusion_proof&.checkpoint
+          Internal::Merkle.verify_merkle_inclusion(entry)
+          Rekor::Checkpoint.verify_checkpoint(@rekor_client, entry)
+        elsif !materials.offline
+          return VerificationFailure.new("Missing Rekor inclusion proof")
+        else
+          warn "inclusion proof not present in bundle: skipping due to offline verification"
+        end
+      end
+
+      Internal::SET.verify_set(client: @rekor_client, entry: entry) if entry.inclusion_promise
+
+      timestamps << Time.at(entry.integrated_time).utc
 
       # TODO: implement this step
 
@@ -69,22 +86,41 @@ module Sigstore
         store.add_cert(cert.openssl)
       end
 
-      sign_date = materials.certificate.not_before
+      # 3)
+      # The Verifier MUST perform certification path validation (RFC 5280 §6) of the certificate chain with the
+      # pre-distributed Fulcio root certificate(s) as a trust anchor, but with a fake “current time.”
+      # If a timestamp from the timestamping service is available, the Verifier MUST perform path validation using the
+      # timestamp from the Timestamping Service. If a timestamp from the Transparency Service is available, the Verifier
+      # MUST perform path validation using the timestamp from the Transparency Service. If both are available, the
+      # Verifier performs path validation twice. If either fails, verification fails.
+      chains = timestamps.map do |ts|
+        store_ctx = OpenSSL::X509::StoreContext.new(store, materials.certificate.openssl)
+        store_ctx.time = ts
 
-      store.time = sign_date
+        unless store_ctx.verify
+          return VerificationFailure.new(
+            "failed to validate certification from fulcio cert chain: #{store_ctx.error_string}"
+          )
+        end
 
-      store_ctx = OpenSSL::X509::StoreContext.new(store, materials.certificate.openssl)
-
-      unless store_ctx.verify
-        return VerificationFailure.new(
-          "failed to validate certification from fulcio cert chain: #{store_ctx.error_string}"
-        )
+        chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
+        chain.shift # remove the cert itself
+        chain.map! { Internal::X509::Certificate.new(_1) }
       end
 
-      chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
-      chain.shift # remove the cert itself
-      chain.map! { Internal::X509::Certificate.new(_1) }
+      chains.uniq! { |chain| chain.map(&:to_der) }
+      unless chains.size == 1
+        raise "expected exactly one certificate chain, got #{chains.size} chains:\n" +
+              chains.map do |chain|
+                chain.map(&:to_text).join("\n")
+              end.join("\n\n")
+      end
 
+      # 4)
+      # Unless performing online verification (see §Alternative Workflows), the Verifier MUST extract the
+      # SignedCertificateTimestamp embedded in the leaf certificate, and verify it as in RFC 9162 §8.1.3,
+      # using the verification key from the Certificate Transparency Log.
+      chain = chains.first
       sct_list = materials.certificate
                           .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
                           .signed_certificate_timestamps
@@ -100,6 +136,9 @@ module Sigstore
         return VerificationFailure.new("SCT verification failed") unless verified
       end
 
+      # 5)
+      # The Verifier MUST then check the certificate against the verification policy.
+
       usage_ext = materials.certificate.extension(Internal::X509::Extension::KeyUsage)
       return VerificationFailure.new("Key usage is not of type `digital signature`") unless usage_ext.digital_signature
 
@@ -110,6 +149,19 @@ module Sigstore
 
       policy_check = policy.verify(materials.certificate)
       return policy_check unless policy_check.verified?
+
+      # 6)
+      # By this point, the Verifier has already verified the signature by the Transparency Service (§Establishing a Time
+      #  for the Signature). The Verifier MUST parse body: body is a base64-encoded JSON document with keys apiVersion
+      #  and kind. The Verifier implementation contains a list of known Transparency Service formats (by apiVersion and
+      #  kind); if no type is found, abort. The Verifier MUST parse body as the given type.
+      #
+      # Then, the Verifier MUST check the following; exactly how to do this will be specified by each type in Spec:
+      # Sigstore Registries (§Signature Metadata Formats):
+      #
+      #  * The signature from the parsed body is the same as the provided signature.
+      #  * The key or certificate from the parsed body is the same as in the input certificate.
+      #  * The “subject” of the parsed body matches the artifact.
 
       signing_key = materials.certificate.public_key
 
@@ -137,23 +189,6 @@ module Sigstore
           raise Sigstore::Error::Unimplemented,
                 "unsupported DSSE payload type: #{materials.dsse_envelope.payloadType.inspect}"
         end
-      end
-
-      entry = materials.find_rekor_entry(@rekor_client)
-      if entry.inclusion_proof&.checkpoint
-        Internal::Merkle.verify_merkle_inclusion(entry)
-        Rekor::Checkpoint.verify_checkpoint(@rekor_client, entry)
-      elsif !materials.offline
-        return VerificationFailure.new("Missing Rekor inclusion proof")
-      else
-        warn "inclusion proof not present in bundle: skipping due to offline verification"
-      end
-
-      Internal::SET.verify_set(client: @rekor_client, entry: entry) if entry.inclusion_promise
-
-      integrated_time = Time.at(entry.integrated_time).utc
-      if integrated_time < materials.certificate.not_before || integrated_time > materials.certificate.not_after
-        return VerificationFailure.new("invalid signing cert: expired at time of Rekor entry")
       end
 
       VerificationSuccess.new

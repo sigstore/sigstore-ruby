@@ -69,7 +69,10 @@ module Sigstore
             raise ArgumentError,
                   "key_type must be edcsa, given #{@key_type}"
           end
-          raise ArgumentError, "key must be an OpenSSL::PKey::EC" unless @key.is_a?(OpenSSL::PKey::EC)
+          unless @key.is_a?(OpenSSL::PKey::EC)
+            raise ArgumentError,
+                  "key must be an OpenSSL::PKey::EC, is #{@key.inspect}"
+          end
           raise ArgumentError, "schema must be #{schema}" unless @schema == schema
 
           case @schema
