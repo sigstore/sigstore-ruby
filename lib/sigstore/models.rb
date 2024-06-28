@@ -69,6 +69,7 @@ module Sigstore
   VerificationMaterials = Struct.new(:hashed_input, :certificate, :signature, :offline, :rekor_entry, :input_bytes,
                                      :dsse_envelope, :timestamp_verification_data,
                                      keyword_init: true) do
+    include Loggable
     # @implements VerificationMaterials
 
     def initialize(input:, cert_pem:, **kwargs)
@@ -80,7 +81,10 @@ module Sigstore
 
       super(hashed_input: hashed_input, certificate: certificate, input_bytes: input_bytes, offline: offline, **kwargs)
 
-      raise ArgumentError, "offline verification requires a rekor entry" if offline && !rekor_entry?
+      return unless offline && !rekor_entry?
+
+      raise ArgumentError,
+            "offline verification requires a rekor entry"
     end
 
     def rekor_entry?
@@ -88,10 +92,13 @@ module Sigstore
     end
 
     def find_rekor_entry(rekor_client)
-      _has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
+      has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
       has_inclusion_proof = rekor_entry? && rekor_entry.inclusion_proof && rekor_entry.inclusion_proof.checkpoint
 
-      # debug
+      logger.debug do
+        "Looking for rekor entry, " \
+          "has_inclusion_promise=#{!!has_inclusion_promise} has_inclusion_proof=#{!!has_inclusion_proof}" # rubocop:disable Style/DoubleNegation
+      end
 
       if signature
         expected_entry = {
@@ -144,18 +151,19 @@ module Sigstore
       end
 
       entry = if offline
-                # debug
+                logger.debug { "Offline verification, skipping rekor" }
                 rekor_entry
               elsif !has_inclusion_proof
-                # debug
+                logger.debug { "No inclusion proof, searching rekor" }
                 rekor_client.log.entries.retrieve.post(expected_entry)
-              else # rubocop:disable Lint/DuplicateBranch
+              else
+                logger.debug { "Using rekor entry in sigstore bundle" }
                 rekor_entry
               end
 
       raise Error::MissingRekorEntry, "Rekor entry not found" unless entry
 
-      # debug
+      logger.debug { "Found rekor entry: #{entry}" }
 
       actual_body = JSON.parse(entry.body.unpack1("m0"))
       if dsse_envelope
@@ -250,13 +258,23 @@ module Sigstore
       tlog_entry = tlog_entries.first
 
       if media_type == BundleType::BUNDLE_0_1
-        raise Error::InvalidBundle, "bundle v0.1 requires an inclusion promise" unless tlog_entry.inclusion_promise
+        unless tlog_entry.inclusion_promise
+          raise Error::InvalidBundle,
+                "bundle v0.1 requires an inclusion promise"
+        end
         if tlog_entry.inclusion_proof && !tlog_entry.inclusion_proof.checkpoint.envelope
-          raise Error::InvalidBundle, "0.1 bundle contains an inclusion proof without checkpoint"
+          raise Error::InvalidBundle,
+                "0.1 bundle contains an inclusion proof without checkpoint"
         end
       else
-        raise Error::InvalidBundle, "must contain an inclusion proof" unless tlog_entry.inclusion_proof
-        raise Error::InvalidBundle, "must contain a checkpoint" unless tlog_entry.inclusion_proof.checkpoint.envelope
+        unless tlog_entry.inclusion_proof
+          raise Error::InvalidBundle,
+                "must contain an inclusion proof"
+        end
+        unless tlog_entry.inclusion_proof.checkpoint.envelope
+          raise Error::InvalidBundle,
+                "must contain a checkpoint"
+        end
       end
 
       if tlog_entry.inclusion_proof&.checkpoint&.envelope

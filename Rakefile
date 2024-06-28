@@ -14,10 +14,13 @@ RuboCop::RakeTask.new
 
 task default: %i[test conformance conformance_staging conformance_tuf rubocop]
 
+require "openssl"
+# Checks for https://github.com/ruby/openssl/pull/770
+xfail = OpenSSL::X509::Store.new.instance_variable_defined?(:@time) ? "test_verify_rejects_bad_tsa_timestamp" : ""
+
 desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
-  sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" =>
-       "test_verify_rejects_bad_tsa_timestamp" },
+  sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" => xfail },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
      "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
      chdir: "test/sigstore-conformance")
@@ -25,8 +28,7 @@ end
 
 desc "Run the conformance tests against staging"
 task conformance_staging: %w[conformance:setup] do
-  sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" =>
-       "test_verify_rejects_bad_tsa_timestamp" },
+  sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" => xfail },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
      "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
      "--staging",

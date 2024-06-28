@@ -23,6 +23,8 @@ module Sigstore::TUF
   class BadVersionNumberError < StandardError; end
 
   class TrustedMetadataSet
+    include Sigstore::Loggable
+
     def initialize(root_data, envelope_type, reference_time: Time.now.utc)
       @trusted_set = {}
       @reference_time = reference_time
@@ -94,7 +96,7 @@ module Sigstore::TUF
       raise "snapshot version incr" if include?(Snapshot::TYPE) && (new_snapshot.version < snapshot.version)
 
       @trusted_set["snapshot"] = new_snapshot
-      # debug "Updated snapshot v#{new_snapshot.version}"
+      logger.debug { "Updated snapshot v#{new_snapshot.version}" }
       check_final_snapshot
     end
 
@@ -114,7 +116,7 @@ module Sigstore::TUF
       delegator = @trusted_set.fetch(parent_role)
       raise "cannot load targets before delegator" unless delegator
 
-      # debug "Updating #{role} delegated by #{parent_role}"
+      logger.debug { "Updating #{role} delegated by #{parent_role}" }
 
       meta = snapshot.meta.fetch("#{role}.json")
       raise "No metadata for role: #{role}" unless meta
@@ -128,7 +130,7 @@ module Sigstore::TUF
       raise "expired delegated targets" if new_delegate.expired?(@reference_time)
 
       @trusted_set[role] = new_delegate
-      # debug "Updated #{role} v#{version}"
+      logger.debug { "Updated #{role} v#{version}" }
       new_delegate
     end
 

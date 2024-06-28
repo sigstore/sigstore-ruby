@@ -15,12 +15,29 @@
 # limitations under the License.
 
 module Sigstore
-  module Internal
-    module Debug
-      def debug(*args, **kwargs)
-        return unless ENV["SIGSTORE_DEBUG"]
+  class << self
+    attr_writer :logger
 
-        puts(*args, **kwargs)
+    def logger
+      @logger ||= begin
+        require "logger"
+        Logger.new($stderr)
+      end
+    end
+  end
+
+  module Loggable
+    def logger
+      self.class.logger
+    end
+
+    def self.included(base)
+      base.extend(ClassMethods)
+    end
+
+    module ClassMethods
+      def logger
+        Sigstore.logger
       end
     end
   end

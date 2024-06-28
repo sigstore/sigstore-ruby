@@ -7,7 +7,7 @@ end
 SimpleCov.start
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "sigstore/internal/merkle"
+require "sigstore"
 
 require "test-unit"
 require "webmock/test_unit"

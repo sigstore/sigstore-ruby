@@ -23,6 +23,7 @@ module Gem
       include Sigstore::CommandOptions
 
       def initialize
+        require "sigstore"
         require "sigstore/rekor/client"
         require "sigstore/trusted_root"
 

@@ -22,6 +22,8 @@ require "sigstore/internal/x509"
 
 module Sigstore
   class Verifier
+    include Loggable
+
     def initialize(rekor_client:, fulcio_cert_chain:, timestamp_authorities:)
       @rekor_client = rekor_client
       @fulcio_cert_chain = fulcio_cert_chain
@@ -46,7 +48,11 @@ module Sigstore
       # of the signature as the timestamped data. The Verifier MUST then extract a timestamp from the timestamping
       # response. If verification or timestamp parsing fails, the Verifier MUST abort.
 
-      _verified_timestamp = extract_timestamp_from_verification_data(materials.timestamp_verification_data)
+      extract_timestamp_from_verification_data(materials.timestamp_verification_data)&.each do |timestamp|
+        if timestamp < materials.certificate.not_before || timestamp > materials.certificate.not_after
+          return VerificationFailure.new("invalid signing cert: expired at time of timestamp (#{timestamp})")
+        end
+      end
 
       # 2)
       # If the verification policy uses timestamps from the Transparency Service, the Verifier MUST verify the signature
@@ -283,7 +289,19 @@ module Sigstore
 
     def extract_timestamp_from_verification_data(data)
       # TODO: allow requiring a verified timestamp
-      return nil unless data
+      unless data
+        logger.debug { "no timestamp verification data" }
+        return nil
+      end
+
+      # Checks for https://github.com/ruby/openssl/pull/770
+      if OpenSSL::X509::Store.new.instance_variable_defined?(:@time)
+        logger.warn do
+          "OpenSSL::X509::Store on this version of openssl (#{OpenSSL::VERSION}) does not set time properly, " \
+            "this breaks TSA verification"
+        end
+        return
+      end
 
       authorities = @timestamp_authorities.map do |ta|
         store = OpenSSL::X509::Store.new
@@ -297,8 +315,7 @@ module Sigstore
       end
 
       # https://www.rfc-editor.org/rfc/rfc3161.html#section-2.4.2
-      data.rfc3161_timestamps.each do |ts|
-        require "pp"
+      data.rfc3161_timestamps.map do |ts|
         resp = OpenSSL::Timestamp::Response.new(ts.signed_timestamp)
 
         req = OpenSSL::Timestamp::Request.new
@@ -310,55 +327,22 @@ module Sigstore
         req.nonce = resp.token_info.nonce
         req.version = resp.token_info.version
 
-        debug = {
-          status: resp.status,
-          failure_info: resp.failure_info,
-          status_text: resp.status_text,
-          token: {
-            type: resp.token.type,
-            data: resp.token.data,
-            error_string: resp.token.error_string,
-            signers: resp.token.signers.map do |s|
-                       { serial: s.serial, issuer: s.issuer, signed_time: s.signed_time }
-                     end,
-            recipients: resp.token.recipients,
-            certificates: resp.token.certificates,
-            crls: resp.token.crls,
-            to_s: resp.token.to_s,
-            to_text: (resp.token.to_text if resp.token.respond_to?(:to_text))
-          },
-          token_info: {
-            algorithm: resp.token_info.algorithm,
-            gen_time: resp.token_info.gen_time,
-            message_imprint: resp.token_info.message_imprint,
-            nonce: resp.token_info.nonce,
-            ordering: resp.token_info.ordering,
-            policy_id: resp.token_info.policy_id,
-            serial_number: resp.token_info.serial_number,
-            version: resp.token_info.version,
-            to_text: (resp.token_info.to_text if resp.token_info.respond_to?(:to_text))
-          },
-          tsa_certificate: resp.tsa_certificate,
-          to_text: (resp.to_text if resp.respond_to?(:to_text)),
-          time: resp.token_info.gen_time
-        }.pretty_inspect
-        _ = debug
-
         # TODO: verify the hashed message in the message imprint
         # against the signature in the bundle
 
-        authorities.any? do |_ta, chain, store|
-          # TODO: this does nothing
-          # the store's time is only a ruby ivar, and openssl does not properly use the timestamp's time
-          # when creating the store ctx for verification
+        authorities.any? do |ta, chain, store|
           store.time = resp.token_info.gen_time
 
-          resp.verify(req, store, chain)
-        rescue OpenSSL::Timestamp::TimestampError => _e
-          # raise OpenSSL::Timestamp::TimestampError, "#{e} for #{chain.map(&:to_text).join("\n")}\n#{debug}"
-          true
+          resp.verify(req, store, chain) &&
+            (logger.debug do
+               "timestamp (#{resp.to_text}) verified for #{ta}"
+             end || true)
+        rescue OpenSSL::Timestamp::TimestampError => e
+          logger.error { "timestamp verification failed (#{e})" }
+          false
         end ||
           raise(OpenSSL::Timestamp::TimestampError, "timestamp verification failed")
+        resp.token_info.gen_time
       end
     end
   end

@@ -37,6 +37,8 @@ module Sigstore::Internal
           k.encode("utf-16").codepoints
         end
         contents.map! do |k, v|
+          raise ArgumentError, "Non-string key in hash" unless k.is_a?(String)
+
           "#{canonical_generate(k)}:#{canonical_generate(v)}"
         end
         "{#{contents.join(",")}}"
