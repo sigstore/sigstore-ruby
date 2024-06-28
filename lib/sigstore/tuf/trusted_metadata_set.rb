@@ -14,14 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "error"
 require_relative "root"
 require_relative "../internal/json"
 
 module Sigstore::TUF
-  class ExpiredMetadataError < StandardError; end
-  class EqualVersionNumberError < StandardError; end
-  class BadVersionNumberError < StandardError; end
-
   class TrustedMetadataSet
     include Sigstore::Loggable
 
@@ -30,7 +27,7 @@ module Sigstore::TUF
       @reference_time = reference_time
       @envelope_type = envelope_type
 
-      # debug
+      logger.debug { "Loading trusted root" }
       load_trusted_root(root_data)
     end
 
@@ -39,15 +36,15 @@ module Sigstore::TUF
     end
 
     def root=(data)
-      raise "cannot update root after timestamp" if @trusted_set.key?("timestamp")
+      raise Error::BadUpdateOrder, "cannot update root after timestamp" if @trusted_set.key?("timestamp")
 
-      metadata, signed, signatures = load_data(Root, data, root)
-      metadata.verify_delegate("root", Sigstore::Internal::JSON.canonical_generate(signed), signatures)
-      raise "root version incr" if metadata.version != root.version + 1
+      metadata, canonical_signed, signatures = load_data(Root, data, root)
+      metadata.verify_delegate("root", canonical_signed, signatures)
+      raise Error::BadVersionNumber, "root version did not increment by one" if metadata.version != root.version + 1
 
       @trusted_set["root"] = metadata
 
-      # debug
+      logger.debug { "Updated root v#{metadata.version}" }
     end
 
     def snapshot
@@ -59,18 +56,21 @@ module Sigstore::TUF
     end
 
     def timestamp=(data)
-      raise "cannot update timestamp after snapshot" if @trusted_set.key?("snapshot")
+      raise Error::BadUpdateOrder, "cannot update timestamp after snapshot" if @trusted_set.key?("snapshot")
 
       if root.expired?(@reference_time)
-        raise ExpiredMetadataError,
+        raise Error::ExpiredMetadata,
               "final root.json expired at #{root.expires}, is #{@reference_time}"
       end
 
       metadata, = load_data(Timestamp, data, root)
 
       if include?(Timestamp::TYPE)
-        raise "timestamp version did not increase" if metadata.version < timestamp.version
-        raise EqualVersionNumberError if metadata.version == timestamp.version
+        if metadata.version < timestamp.version
+          raise Error::BadVersionNumber,
+                "timestamp version less than metadata version"
+        end
+        raise Error::EqualVersionNumber if metadata.version == timestamp.version
 
         snapshot_meta = timestamp.snapshot_meta
         new_snapshot_meta = metadata.snapshot_meta
@@ -82,8 +82,8 @@ module Sigstore::TUF
     end
 
     def snapshot=(data, trusted: false)
-      raise "cannot update snapshot before timestamp" unless @trusted_set.key?("timestamp")
-      raise "cannot update snapshot after targets" if @trusted_set.key?("targets")
+      raise Error::BadUpdateOrder, "cannot update snapshot before timestamp" unless @trusted_set.key?("timestamp")
+      raise Error::BadUpdateOrder, "cannot update snapshot after targets" if @trusted_set.key?("targets")
 
       check_final_timestamp
 
@@ -93,7 +93,10 @@ module Sigstore::TUF
 
       new_snapshot, = load_data(Snapshot, data, root)
 
-      raise "snapshot version incr" if include?(Snapshot::TYPE) && (new_snapshot.version < snapshot.version)
+      if include?(Snapshot::TYPE) && (new_snapshot.version < snapshot.version)
+        raise Error::BadVersionNumber,
+              "snapshot version decreased"
+      end
 
       @trusted_set["snapshot"] = new_snapshot
       logger.debug { "Updated snapshot v#{new_snapshot.version}" }
@@ -109,12 +112,12 @@ module Sigstore::TUF
     end
 
     def update_delegated_targets(data, role, parent_role)
-      raise "cannot update targets before snapshot" unless @trusted_set.key?("snapshot")
+      raise Error::BadUpdateOrder, "cannot update targets before snapshot" unless @trusted_set.key?("snapshot")
 
       check_final_snapshot
 
       delegator = @trusted_set.fetch(parent_role)
-      raise "cannot load targets before delegator" unless delegator
+      raise Error::BadUpdateOrder, "cannot load targets before delegator" unless delegator
 
       logger.debug { "Updating #{role} delegated by #{parent_role}" }
 
@@ -125,9 +128,9 @@ module Sigstore::TUF
 
       new_delegate, = load_data(Targets, data, delegator, role)
       version = new_delegate.version
-      raise "delegated targets version incr" if version != meta.version
+      raise Error::BadVersionNumber, "delegated targets version does not match meta version" if version != meta.version
 
-      raise "expired delegated targets" if new_delegate.expired?(@reference_time)
+      raise Error::ExpiredMetadata, "expired delegated targets" if new_delegate.expired?(@reference_time)
 
       @trusted_set[role] = new_delegate
       logger.debug { "Updated #{role} v#{version}" }
@@ -137,9 +140,9 @@ module Sigstore::TUF
     private
 
     def load_trusted_root(data)
-      root, signed, signatures = load_data(Root, data, nil)
+      root, canonical_signed, signatures = load_data(Root, data, nil)
       # verify the new root is signed by itself
-      root.verify_delegate("root", Sigstore::Internal::JSON.canonical_generate(signed), signatures)
+      root.verify_delegate("root", canonical_signed, signatures)
 
       @trusted_set["root"] = root
     end
@@ -153,25 +156,25 @@ module Sigstore::TUF
 
       signatures = metadata.fetch("signatures")
       metadata = type.new(signed)
-      delegator&.verify_delegate(role_name || type::TYPE,
-                                 Sigstore::Internal::JSON.canonical_generate(signed), signatures)
-      [metadata, signed, signatures]
+      canonical_signed = Sigstore::Internal::JSON.canonical_generate(signed)
+      delegator&.verify_delegate(role_name || type::TYPE, canonical_signed, signatures)
+      [metadata, canonical_signed, signatures]
     end
 
     def check_final_timestamp
       return unless timestamp.expired?(@reference_time)
 
-      raise ExpiredMetadataError,
+      raise Error::ExpiredMetadata,
             "final timestamp.json is expired (expired at #{timestamp.expires} vs reference time #{@reference_time})"
     end
 
     def check_final_snapshot
-      raise ExpiredMetadataError, "final snapshot.json is expired" if snapshot.expired?(@reference_time)
+      raise Error::ExpiredMetadata, "final snapshot.json is expired" if snapshot.expired?(@reference_time)
 
       snapshot_meta = timestamp.snapshot_meta
       return unless snapshot.version != snapshot_meta.version
 
-      raise BadVersionNumberError,
+      raise Error::BadVersionNumber,
             "snapshot version mismatch " \
             "(snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
     end

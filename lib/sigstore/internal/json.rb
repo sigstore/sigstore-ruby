@@ -17,6 +17,9 @@
 module Sigstore::Internal
   module JSON
     # Implements https://wiki.laptop.org/go/Canonical_JSON
+    #
+    # TODO: This is a naive implementation. Performance can be improved by
+    #       serializing into a buffer instead of concatenating strings.
     def self.canonical_generate(data)
       case data
       when NilClass
@@ -34,11 +37,11 @@ module Sigstore::Internal
         "[#{contents}]"
       when Hash
         contents = data.sort_by do |k, _|
+          raise ArgumentError, "Non-string key in hash" unless k.is_a?(String)
+
           k.encode("utf-16").codepoints
         end
         contents.map! do |k, v|
-          raise ArgumentError, "Non-string key in hash" unless k.is_a?(String)
-
           "#{canonical_generate(k)}:#{canonical_generate(v)}"
         end
         "{#{contents.join(",")}}"
