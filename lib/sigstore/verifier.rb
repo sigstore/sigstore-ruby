@@ -70,7 +70,7 @@ module Sigstore
         elsif !materials.offline
           return VerificationFailure.new("Missing Rekor inclusion proof")
         else
-          warn "inclusion proof not present in bundle: skipping due to offline verification"
+          logger.warn "inclusion proof not present in bundle: skipping due to offline verification"
         end
       end
 
