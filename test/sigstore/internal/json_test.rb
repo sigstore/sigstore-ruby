@@ -12,6 +12,11 @@ class Sigstore::Internal::JSONTest < Test::Unit::TestCase
     end
     assert_equal "Unsupported data type: Float", e.message
 
+    e = assert_raise(ArgumentError) do
+      Sigstore::Internal::JSON.canonical_generate({ 1 => [] })
+    end
+    assert_equal "Non-string key in hash", e.message
+
     hash = {
       "empty" => "",
       "a" => "b",
