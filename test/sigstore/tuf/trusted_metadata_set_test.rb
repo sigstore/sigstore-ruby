@@ -77,7 +77,7 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
 
   def test_raises_when_updating_root_after_timestamp
     @set.timestamp = JSON.dump(@timestamp)
-    e = assert_raise(RuntimeError) do
+    e = assert_raise(Sigstore::TUF::Error::BadUpdateOrder) do
       @set.root = @root_data
     end
 
@@ -85,7 +85,7 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
   end
 
   def test_raises_when_updating_snapshot_before_timestamp
-    e = assert_raise(RuntimeError) do
+    e = assert_raise(Sigstore::TUF::Error::BadUpdateOrder) do
       @set.snapshot = JSON.dump(@snapshot)
     end
 
@@ -95,7 +95,7 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
   def test_raises_when_updating_timestamp_after_snapshot
     @set.timestamp = JSON.dump(@timestamp)
     @set.snapshot = JSON.dump(@snapshot)
-    e = assert_raise(RuntimeError) do
+    e = assert_raise(Sigstore::TUF::Error::BadUpdateOrder) do
       @set.timestamp = JSON.dump(@timestamp)
     end
 
