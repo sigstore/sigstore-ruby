@@ -120,31 +120,56 @@ module Sigstore
           "apiVersion" => "0.0.1"
         }
       elsif dsse_envelope
-        expected_entry = {
-          "apiVersion" => "0.0.2",
-          "kind" => "intoto",
-          "spec" => {
-            "content" => {
-              "envelope" => {
-                "payloadType" => dsse_envelope.payloadType,
-                "payload" => [[dsse_envelope.payload].pack("m0")].pack("m0"),
-                "signatures" => dsse_envelope.signatures.map do |sig|
-                  {
-                    "publicKey" => [
-                      # needed because #to_pem packs the key in base64 with m*
-                      "-----BEGIN CERTIFICATE-----\n#{[certificate.to_der].pack("m0")}\n-----END CERTIFICATE-----\n"
-                    ].pack("m0"),
-                    "sig" => [[sig.sig].pack("m0")].pack("m0")
-                  }
-                end
-              },
+        raise "need rekor entry for DSSE verification" unless rekor_entry?
+
+        case t = JSON.parse(rekor_entry.body.unpack1("m0")).values_at("kind", "apiVersion")
+        when %w[dsse 0.0.1]
+          expected_entry = {
+            "apiVersion" => "0.0.1",
+            "kind" => "dsse",
+            "spec" => {
               "payloadHash" => {
                 "algorithm" => "sha256",
                 "value" => OpenSSL::Digest::SHA256.hexdigest(dsse_envelope.payload)
+              },
+              "signatures" => dsse_envelope.signatures.map do |sig|
+                {
+                  "signature" => [sig.sig].pack("m0"),
+                  "verifier" => [certificate.to_pem].pack("m0")
+                }
+              end
+            }
+          }
+
+        when %w[intoto 0.0.2]
+          expected_entry = {
+            "apiVersion" => "0.0.2",
+            "kind" => "intoto",
+            "spec" => {
+              "content" => {
+                "envelope" => {
+                  "payloadType" => dsse_envelope.payloadType,
+                  "payload" => [[dsse_envelope.payload].pack("m0")].pack("m0"),
+                  "signatures" => dsse_envelope.signatures.map do |sig|
+                    {
+                      "publicKey" => [
+                        # needed because #to_pem packs the key in base64 with m*
+                        "-----BEGIN CERTIFICATE-----\n#{[certificate.to_der].pack("m0")}\n-----END CERTIFICATE-----\n"
+                      ].pack("m0"),
+                      "sig" => [[sig.sig].pack("m0")].pack("m0")
+                    }
+                  end
+                },
+                "payloadHash" => {
+                  "algorithm" => "sha256",
+                  "value" => OpenSSL::Digest::SHA256.hexdigest(dsse_envelope.payload)
+                }
               }
             }
           }
-        }
+        else
+          raise Error::InvalidRekorEntry, "Unhandled rekor entry kind/version: #{t.inspect}"
+        end
       else
         raise Error::InvalidBundle,
               "expected either signature xor in-toto payload"
@@ -175,7 +200,14 @@ module Sigstore
         # *cannot* verify, since the envelope is uncanonicalized JSON.
         # Instead, we manually pick apart the entry body below and verify
         # the parts we can (namely the payload hash and signature list).
-        actual_body["spec"]["content"].delete("hash")
+        case actual_body["kind"]
+        when "intoto"
+          actual_body["spec"]["content"].delete("hash")
+        when "dsse"
+          actual_body["spec"].delete("envelopeHash")
+        else
+          raise Error::InvalidRekorEntry, "Unknown kind: #{actual_body["kind"]}"
+        end
       end
 
       if actual_body != expected_entry
@@ -213,9 +245,10 @@ module Sigstore
           end
         end
 
+        require "pp"
         raise Error::InvalidRekorEntry, "Invalid rekor entry:\n\n" \
-                                        "Envelope:\n#{dsse_envelope.inspect}\n\n" \
-                                        "Diff:\n#{json_hash_diff[expected_entry, actual_body].inspect}"
+                                        "Envelope:\n#{dsse_envelope.pretty_inspect}\n\n" \
+                                        "Diff:\n#{json_hash_diff[expected_entry, actual_body].pretty_inspect}"
       end
 
       entry
