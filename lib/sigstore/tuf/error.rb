@@ -23,5 +23,20 @@ module Sigstore::TUF
     class EqualVersionNumber < Error; end
     class BadVersionNumber < Error; end
     class BadUpdateOrder < Error; end
+    class TooFewSignatures < Error; end
+    class MetaVersionLower < Error; end
+    class MetaVersionHigher < Error; end
+
+    class Fetch < Error; end
+    class RemoteConnection < Fetch; end
+
+    class UnsuccessfulResponse < Fetch
+      attr_reader :response
+
+      def initialize(message, response)
+        super(message)
+        @response = response
+      end
+    end
   end
 end

@@ -128,7 +128,10 @@ module Sigstore::TUF
 
       new_delegate, = load_data(Targets, data, delegator, role)
       version = new_delegate.version
-      raise Error::BadVersionNumber, "delegated targets version does not match meta version" if version != meta.version
+      if (comp = version <=> meta.version).nonzero?
+        cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
+        raise cls, "delegated targets version (#{version}) does not match meta version (#{meta.version})"
+      end
 
       raise Error::ExpiredMetadata, "expired delegated targets" if new_delegate.expired?(@reference_time)
 
@@ -174,9 +177,11 @@ module Sigstore::TUF
       snapshot_meta = timestamp.snapshot_meta
       return unless snapshot.version != snapshot_meta.version
 
-      raise Error::BadVersionNumber,
-            "snapshot version mismatch " \
-            "(snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
+      version = snapshot.version
+      return unless (comp = version <=> snapshot_meta.version).nonzero?
+
+      cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
+      raise cls, "snapshot version (#{version}) does not match meta version (#{snapshot_meta.version})"
     end
   end
 end

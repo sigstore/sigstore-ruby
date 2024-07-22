@@ -24,6 +24,10 @@ module Sigstore
         when "ecdsa", "ecdsa-sha2-nistp256"
           pkey = OpenSSL::PKey.read(key_bytes)
           EDCSA.new(key_type, schema, pkey, key_id: key_id)
+        when "ed25519"
+          raw = [key_bytes].pack("H*")
+          pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)
+          ED25519.new(key_type, schema, pkey, key_id: key_id)
         when "rsa"
           pkey = OpenSSL::PKey.read(key_bytes)
           RSA.new(key_type, schema, pkey, key_id: key_id)
@@ -107,6 +111,32 @@ module Sigstore
           else
             raise ArgumentError, "Unsupported schema #{schema}"
           end
+        end
+      end
+
+      class ED25519 < Key
+        def initialize(...)
+          super
+          unless @key_type == "ed25519"
+            raise ArgumentError,
+                  "key_type must be ed25519, given #{@key_type}"
+          end
+          unless @key.is_a?(OpenSSL::PKey::PKey) && @key.oid == "ED25519"
+            raise ArgumentError,
+                  "key must be an OpenSSL::PKey::PKey with oid ED25519, is #{@key.inspect}"
+          end
+          raise ArgumentError, "schema must be #{schema}" unless @schema == schema
+
+          case @schema
+          when "ed25519"
+            # supported
+          else
+            raise ArgumentError, "Unsupported schema #{schema}"
+          end
+        end
+
+        def verify(_algo, signature, data)
+          super(nil, signature, data)
         end
       end
     end
