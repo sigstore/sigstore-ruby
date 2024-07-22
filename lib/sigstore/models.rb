@@ -93,11 +93,11 @@ module Sigstore
 
     def find_rekor_entry(rekor_client)
       has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
-      has_inclusion_proof = rekor_entry? && rekor_entry.inclusion_proof && rekor_entry.inclusion_proof.checkpoint
+      has_inclusion_proof = rekor_entry? && !rekor_entry.inclusion_proof&.checkpoint.nil?
 
       logger.debug do
         "Looking for rekor entry, " \
-          "has_inclusion_promise=#{!!has_inclusion_promise} has_inclusion_proof=#{!!has_inclusion_proof}" # rubocop:disable Style/DoubleNegation
+          "has_inclusion_promise=#{has_inclusion_promise} has_inclusion_proof=#{has_inclusion_proof}"
       end
 
       if signature

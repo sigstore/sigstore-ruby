@@ -127,10 +127,11 @@ module Gem
           cert = options[:certificate]
           bundle = options[:bundle]
 
-          sig ||= File.dirname(file) + "/#{file}.sig"
-          cert ||= File.dirname(file) + "/#{file}.cert"
+          directory = File.dirname(file)
 
-          bundle = File.dirname(file) + "/#{file}.sigstore.json" if bundle.nil?
+          sig ||= File.join(directory, "#{file}.sig")
+          cert ||= File.join(directory, "#{file}.cert")
+          bundle = File.join(directory, "#{file}.sigstore.json") if bundle.nil?
 
           missing = []
 
@@ -148,6 +149,7 @@ module Gem
 
         input_map.each do |file, inputs|
           rekor_entry = nil
+          # TODO: replace verification materials with Sigstore::Verification::V1::Input
           materials = File.open(file, "rb") do |input|
             if inputs[:bundle]
               bundle_bytes = Gem.read_binary(inputs[:bundle])

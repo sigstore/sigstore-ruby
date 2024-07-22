@@ -156,7 +156,8 @@ module Sigstore
 
           unless @extension.is_a?(OpenSSL::X509::Extension) && @oid == self.class.oid
             raise ArgumentError,
-                  "Invalid extension: #{@extension} is not a #{@oid} (#{self.class})"
+                  "Invalid extension: #{@extension.inspect} is not a #{@oid.inspect}" \
+                  "(#{self.class} / #{self.class.oid.inspect})"
           end
 
           @critical = false
