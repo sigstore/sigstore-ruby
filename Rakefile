@@ -52,6 +52,7 @@ task test: %w[sigstore_conformance]
 
 desc "Update the vendored data files"
 task :update_data do
+  require "sigstore"
   require "sigstore/trusted_root"
   {
     prod: Sigstore::TUF::DEFAULT_TUF_URL,
@@ -96,7 +97,7 @@ class GitRepo < Rake::Task
     head.strip!
     return true if status.success? && head == commit
 
-    desired, status = Open3.capture2(*%w[git rev-parse], "#{commit}^{commit}", chdir: path)
+    desired, status = Open3.capture2(*%w[git rev-parse], "#{commit}^{commit}", "--", chdir: path)
     desired.strip!
     status.success? && desired == head
   end
@@ -113,7 +114,7 @@ class GitRepo < Rake::Task
 
     sh "git", "-C", path, "switch", "--detach", commit do |ok, _|
       unless ok
-        sh "git", "-C", path, "fetch", "origin", commit
+        sh "git", "-C", path, "fetch", "origin", "#{commit}:#{commit}"
         sh "git", "-C", path, "switch", "--detach", commit
       end
     end
@@ -128,8 +129,8 @@ end
 
 GitRepo.define_task(:tuf_conformance).tap do |task|
   task.path = "test/tuf-conformance"
-  task.url = "https://github.com/jku/tuf-conformance.git"
-  task.commit = "b938daaea0e3a9b4cc5c5d743954be6a6ae32893"
+  task.url = "https://github.com/theupdateframework/tuf-conformance.git"
+  task.commit = "refs/pull/99/head"
 end
 
 namespace :tuf_conformance do
