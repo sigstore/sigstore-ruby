@@ -19,5 +19,9 @@ require_relative "../error"
 module Sigstore::TUF
   class Error < ::Sigstore::Error
     class LengthOrHashMismatch < Error; end
+    class ExpiredMetadata < Error; end
+    class EqualVersionNumber < Error; end
+    class BadVersionNumber < Error; end
+    class BadUpdateOrder < Error; end
   end
 end
