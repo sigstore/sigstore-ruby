@@ -123,7 +123,7 @@ end
 GitRepo.define_task(:sigstore_conformance).tap do |task|
   task.path = "test/sigstore-conformance"
   task.url = "https://github.com/sigstore/sigstore-conformance.git"
-  task.commit = "bab0107"
+  task.commit = "52311dc3b1d7aba6fb2c4b468791fbb119e7f022"
 end
 
 GitRepo.define_task(:tuf_conformance).tap do |task|

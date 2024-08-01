@@ -29,7 +29,6 @@ jobs:
         #   - { os: windows-latest, ruby: ucrt }
         #   - { os: windows-latest, ruby: mingw }
         #   - { os: windows-latest, ruby: mswin }
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0d381219ddf674d61a7572ddd19d7941e271515c # v2.9.0
@@ -45,17 +44,17 @@ jobs:
       - name: Run the tests
         run: bin/rake test
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
+        uses: sigstore/sigstore-conformance@52311dc3b1d7aba6fb2c4b468791fbb119e7f022
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: test_verify_rejects_bad_tsa_timestamp
+          xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@ee4de0e602873beed74cf9e49d5332529fe69bf6 # v0.0.11
+        uses: sigstore/sigstore-conformance@52311dc3b1d7aba6fb2c4b468791fbb119e7f022
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: test_verify_rejects_bad_tsa_timestamp
+          xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           environment: staging
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
