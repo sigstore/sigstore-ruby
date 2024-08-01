@@ -26,7 +26,14 @@ module Sigstore
           EDCSA.new(key_type, schema, pkey, key_id: key_id)
         when "ed25519"
           raw = [key_bytes].pack("H*")
-          pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)
+          # needed because older versions of OpenSSL don't implement OpenSSL::PKey.new_raw_public_key
+          pem = <<~PEM
+            -----BEGIN PUBLIC KEY-----
+            MCowBQYDK2VwAyEA#{[raw].pack("m0")}
+            -----END PUBLIC KEY-----
+          PEM
+          # pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)
+          pkey = OpenSSL::PKey.read(pem)
           ED25519.new(key_type, schema, pkey, key_id: key_id)
         when "rsa"
           pkey = OpenSSL::PKey.read(key_bytes)
