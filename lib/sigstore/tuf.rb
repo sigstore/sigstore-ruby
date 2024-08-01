@@ -28,6 +28,8 @@ module Sigstore
     class TrustUpdater
       include Loggable
 
+      Net = defined?(Gem::Net) ? Gem::Net : Net
+
       attr_reader :updater
 
       def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil,
@@ -88,15 +90,15 @@ module Sigstore
 
             fetcher = Gem::RemoteFetcher.fetcher
             begin
-              response = fetcher.request(uri, Gem::Net::HTTP::Get, nil) do
+              response = fetcher.request(uri, Net::HTTP::Get, nil) do
                 nil
               end
               response.uri = uri
               case response
-              when Gem::Net::HTTPOK
+              when Net::HTTPOK
                 nil
-              when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
-                Gem::Net::HTTPTemporaryRedirect
+              when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
+                Net::HTTPTemporaryRedirect
                 raise Error::UnsuccessfulResponse.new("should redirects be supported?", response)
               else
                 raise Error::UnsuccessfulResponse.new("FetchError: #{response.code}", response)
