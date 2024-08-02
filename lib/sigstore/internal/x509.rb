@@ -230,7 +230,7 @@ module Sigstore
             end
 
             @purposes = value.value
-            return if @purposes.all? { |v| v.is_a?(OpenSSL::ASN1::ObjectId) }
+            return if @purposes.all?(OpenSSL::ASN1::ObjectId)
 
             raise ArgumentError,
                   "Invalid extended key usage: #{value.inspect}"
@@ -239,7 +239,7 @@ module Sigstore
           CODE_SIGNING = OpenSSL::ASN1::ObjectId.new("1.3.6.1.5.5.7.3.3")
 
           def code_signing?
-            purposes.any? { |oid| oid == CODE_SIGNING }
+            purposes.any?(CODE_SIGNING)
           end
         end
 
