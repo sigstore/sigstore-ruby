@@ -46,7 +46,7 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
         capture_output do
           assert_nothing_raised do
             Gem::Commands::SigstoreVerifyBundleCommand.new.invoke(
-              "--bundle", "test/sigstore-conformance/test/assets/a.txt.good.sigstore",
+              "--bundle", "test/sigstore-conformance/test/assets/a.txt.good.sigstore.json",
               "--certificate-identity", "https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main",
               "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
               "test/sigstore-conformance/test/assets/a.txt"
@@ -61,7 +61,7 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
     capture_output do
       assert_nothing_raised do
         Gem::Commands::SigstoreVerifyBundleCommand.new.invoke(
-          "--bundle", "test/sigstore-conformance/test/assets/d.txt.good.sigstore",
+          "--bundle", "test/sigstore-conformance/test/assets/d.txt.good.sigstore.json",
           "--certificate-identity", "https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main",
           "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
           "--trusted-root", "test/sigstore-conformance/test/assets/trusted_root.d.json",
