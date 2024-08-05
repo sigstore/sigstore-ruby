@@ -2,8 +2,12 @@ AllCops:
   TargetRubyVersion: 3.0
   NewCops: enable
   Exclude:
-    - 'test/sigstore-conformance/**/*'
-    - 'test/tuf-conformance/**/*'
+    - "test/sigstore-conformance/**/*"
+    - "test/tuf-conformance/**/*"
+    - "node_modules/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
+    - ".git/**/*"
 
 require:
   - rubocop-performance
