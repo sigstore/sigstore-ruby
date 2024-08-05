@@ -168,7 +168,7 @@ module Sigstore::TUF
         @trusted_set.update_delegated_targets(data, role, parent_role).tap do
           logger.debug { "Loaded targets for #{role} from local metadata" }
         end
-      rescue Errno::ENOENT, Error::MetaVersionHigher, Error::MetaVersionLower => e
+      rescue Errno::ENOENT, Error::MetaVersionHigher, Error::MetaVersionLower, Error::TooFewSignatures => e
         logger.debug { "No local targets for #{role}, fetching: #{e.class} #{e.message}" }
 
         snapshot = @trusted_set.snapshot
