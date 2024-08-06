@@ -27,7 +27,6 @@ OptionParser.new do |parser|
   end
   parser.on("--target-base-url U") do |v|
     args << "--target-base-url" << v
-    args << "--no-prefix-targets-with-hash"
   end
   parser.on("--target-name N") do |v|
     args << v

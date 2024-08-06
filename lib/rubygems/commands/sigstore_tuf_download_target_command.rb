@@ -23,7 +23,6 @@ module Gem
     class SigstoreTufDownloadTargetCommand < Gem::Command
       def initialize
         super("sigstore-tuf-download-target", "download a target from a TUP repo")
-        @prefix_targets_with_hash = true
 
         add_option("--metadata-url url", String) do |v|
           @metadata_url = v
@@ -42,9 +41,6 @@ module Gem
         add_option("--target-base-url url", String, "base url for target download") do |url|
           @target_base_url = url
         end
-        add_option("--[no-]prefix-targets-with-hash") do |prefix_targets_with_hash|
-          @prefix_targets_with_hash = prefix_targets_with_hash
-        end
       end
 
       def execute
@@ -54,13 +50,10 @@ module Gem
 
         kwargs = {}
         kwargs[:target_base_url] = @target_base_url if @target_base_url
-        config = Sigstore::TUF::UpdaterConfig.new(
-          prefix_targets_with_hash: @prefix_targets_with_hash
-        )
         trust_updater = Sigstore::TUF::TrustUpdater.new(
           @metadata_url, false,
           metadata_dir: @metadata_dir, targets_dir: @targets_dir, target_base_url: @target_base_url,
-          config: config, **kwargs
+          **kwargs
         )
 
         options[:args].each do |target|
