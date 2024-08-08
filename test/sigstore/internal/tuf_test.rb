@@ -4,27 +4,6 @@ require "test_helper"
 require "sigstore/tuf"
 
 class Sigstore::TUFTest < Test::Unit::TestCase
-  setup do
-    @xdg_data_home = ENV.fetch("XDG_DATA_HOME", nil)
-    @xdg_cache_home = ENV.fetch("XDG_CACHE_HOME", nil)
-    @home = ENV.fetch("HOME", nil) # rubocop:disable Style/EnvHome
-
-    ENV.update(
-      "XDG_DATA_HOME" => nil,
-      "XDG_CACHE_HOME" => nil,
-      "HOME" => Dir.mktmpdir
-    )
-  end
-
-  teardown do
-    FileUtils.rm_rf(Dir.home)
-    ENV.update(
-      "XDG_DATA_HOME" => @xdg_data_home,
-      "XDG_CACHE_HOME" => @xdg_cache_home,
-      "HOME" => @home
-    )
-  end
-
   def test_initialize
     updater = Sigstore::TUF::TrustUpdater.new("https://example.com", true)
     assert_equal(

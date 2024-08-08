@@ -20,6 +20,8 @@ require_relative "../internal/key"
 
 module Sigstore::TUF
   class Root
+    include Sigstore::Loggable
+
     TYPE = "root"
     attr_reader :version, :consistent_snapshot, :expires
 
@@ -52,17 +54,26 @@ module Sigstore::TUF
 
       verified_key_ids = Set.new
 
-      count = signatures.count do |signature|
-        next unless keyids.include?(signature.fetch("keyid"))
+      signatures.each do |signature|
+        key_id = signature.fetch("keyid")
+        unless keyids.include?(key_id)
+          logger.warn "Unknown key_id=#{key_id.inspect} missing from #{keyids}"
+          next
+        end
 
-        key = @keys.fetch(signature.fetch("keyid"))
+        key = @keys.fetch(key_id)
         signature_bytes = [signature.fetch("sig")].pack("H*")
         verified = key.verify("sha256", signature_bytes, bytes)
 
-        verified_key_ids.add?(signature.fetch("keyid")) if verified
+        added = verified_key_ids.add?(key_id) if verified
+        logger.debug { "key_id=#{key_id.inspect} type=#{type} verified=#{verified} added=#{added.inspect}" }
       end
+      count = verified_key_ids.size
 
-      raise "Not enough signatures: found #{count} out of threshold=#{threshold}" if count < threshold
+      return unless count < threshold
+
+      raise Error::TooFewSignatures,
+            "Not enough signatures: found #{count} out of threshold=#{threshold} for #{type}"
     end
 
     def expired?(reference_time)
