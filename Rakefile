@@ -130,7 +130,7 @@ end
 GitRepo.define_task(:tuf_conformance).tap do |task|
   task.path = "test/tuf-conformance"
   task.url = "https://github.com/theupdateframework/tuf-conformance.git"
-  task.commit = "ac4e663cb0120e15e7dad5131dd968092e131ee6"
+  task.commit = "e91d44c8c6103827cdc482ce00c90081897758dc"
 end
 
 namespace :tuf_conformance do

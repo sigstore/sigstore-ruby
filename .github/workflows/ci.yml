@@ -59,9 +59,10 @@ jobs:
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@649423d80c91dd5f803b7bbe691d9e2b304b1384
+        uses: theupdateframework/tuf-conformance@e91d44c8c6103827cdc482ce00c90081897758dc
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
+          artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
