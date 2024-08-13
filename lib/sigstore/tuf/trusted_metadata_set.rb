@@ -32,7 +32,7 @@ module Sigstore::TUF
     end
 
     def root
-      @trusted_set.fetch("root")
+      @trusted_set.fetch("root") { raise Error::InvalidData, "missing root metadata" }
     end
 
     def root=(data)
@@ -74,7 +74,9 @@ module Sigstore::TUF
 
         snapshot_meta = timestamp.snapshot_meta
         new_snapshot_meta = metadata.snapshot_meta
-        raise "snapshot version did not increase" if new_snapshot_meta.version < snapshot_meta.version
+        if new_snapshot_meta.version < snapshot_meta.version
+          raise Error::BadVersionNumber, "snapshot version did not increase"
+        end
       end
 
       @trusted_set["timestamp"] = metadata
@@ -153,8 +155,9 @@ module Sigstore::TUF
     def load_data(type, data, delegator, role_name = nil)
       metadata = JSON.parse(data)
       signed = metadata.fetch("signed")
-      unless signed.fetch("_type") == type::TYPE
-        raise "Expected type to be #{type::TYPE}, got #{signed.fetch("_type").inspect}"
+      unless signed["_type"] == type::TYPE
+        raise Error::InvalidData,
+              "Expected type to be #{type::TYPE}, got #{signed["_type"].inspect}"
       end
 
       signatures = metadata.fetch("signatures")

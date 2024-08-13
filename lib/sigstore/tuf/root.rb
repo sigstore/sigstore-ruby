@@ -29,10 +29,12 @@ module Sigstore::TUF
       type = data.fetch("_type")
       raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
 
-      @spec_version = data.fetch("spec_version")
-      @consistent_snapshot = data.fetch("consistent_snapshot")
-      @version = data.fetch("version")
-      @expires = Time.iso8601 data.fetch("expires")
+      @spec_version = data.fetch("spec_version") { raise Error::InvalidData, "root missing spec_version" }
+      @consistent_snapshot = data.fetch("consistent_snapshot") do
+        raise Error::InvalidData, "root missing consistent_snapshot"
+      end
+      @version = data.fetch("version") { raise Error::InvalidData, "root missing version" }
+      @expires = Time.iso8601(data.fetch("expires") { raise Error::InvalidData, "root missing expires" })
       @keys = data.fetch("keys").to_h do |key_id, key_data|
         key_type = key_data.fetch("keytype")
         scheme = key_data.fetch("scheme")

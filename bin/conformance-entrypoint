@@ -13,6 +13,11 @@ tmp = Dir.mktmpdir
 require "simplecov"
 SimpleCov.command_name "conformance:#{Digest::SHA256.hexdigest ARGV.join(" ")}"
 load File.expand_path("../.simplecov", __dir__)
+SimpleCov::Formatter::HTMLFormatter.module_eval do
+  def puts(...)
+    # Suppress output
+  end
+end
 
 ENV.update(
   "HOME" => tmp,

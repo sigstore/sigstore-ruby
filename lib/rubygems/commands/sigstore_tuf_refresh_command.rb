@@ -43,8 +43,9 @@ module Gem
           metadata_dir: @metadata_dir
         )
       rescue Sigstore::Error => e
-        alert_error "Error: #{e.full_message}"
-        terminate_interaction 1
+        alert_error e.message
+        ui.backtrace e
+        ui.terminate_interaction 1
       end
     end
   end

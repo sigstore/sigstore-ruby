@@ -254,6 +254,7 @@ module Sigstore::TUF
 
     def generate_target_file_path(target_info)
       raise ArgumentError, "target_dir not set" unless @target_dir
+      raise ArgumentError, "target_info required" unless target_info
 
       filename = URI.encode_www_form_component(target_info.path)
       File.join(@target_dir, filename)

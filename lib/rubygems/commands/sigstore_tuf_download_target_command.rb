@@ -58,6 +58,10 @@ module Gem
 
         options[:args].each do |target|
           target_info = trust_updater.updater.get_targetinfo(target)
+          unless target_info
+            alert_error "No such target: #{target}"
+            terminate_interaction 1
+          end
           path = if @cached
                    trust_updater.updater.find_cached_target(target_info)
                  else

@@ -26,6 +26,7 @@ module Sigstore::TUF
     class TooFewSignatures < Error; end
     class MetaVersionLower < Error; end
     class MetaVersionHigher < Error; end
+    class InvalidData < Error; end
 
     class Fetch < Error; end
     class RemoteConnection < Fetch; end
