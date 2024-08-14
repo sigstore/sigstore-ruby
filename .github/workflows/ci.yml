@@ -19,13 +19,12 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: Test Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
     strategy:
       fail-fast: false
       matrix:
         ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
         os: [ubuntu-latest]
-        allow_failures:
-          - { ruby: jruby-* }
         # os: [ ubuntu-latest, macos-latest, windows-latest ]
         # include:
         #   - { os: windows-latest, ruby: ucrt }
@@ -57,14 +56,13 @@ jobs:
   sigstore-conformance:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
     name: Sigstore Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
         os: [ubuntu-latest]
-        allow_failures:
-          - { ruby: jruby-* }
         # os: [ ubuntu-latest, macos-latest, windows-latest ]
         # include:
         #   - { os: windows-latest, ruby: ucrt }
@@ -109,13 +107,12 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
     strategy:
       fail-fast: false
       matrix:
         ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
         os: [ubuntu-latest]
-        allow_failures:
-          - { ruby: jruby-* }
         # os: [ ubuntu-latest, macos-latest, windows-latest ]
         # include:
         #   - { os: windows-latest, ruby: ucrt }
@@ -134,8 +131,11 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
+      - name: Touch requirements.txt
+        run: touch requirements.txt
+
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@refs/pull/149/head
+        uses: theupdateframework/tuf-conformance@main
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
