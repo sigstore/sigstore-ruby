@@ -18,7 +18,7 @@ jobs:
   test:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    name: Test Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +57,7 @@ jobs:
   sigstore-conformance:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    name: Sigstore Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +108,7 @@ jobs:
   tuf-conformance:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +135,7 @@ jobs:
           bundler-cache: true
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@e91d44c8c6103827cdc482ce00c90081897758dc
+        uses: theupdateframework/tuf-conformance@refs/pull/149/head
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"

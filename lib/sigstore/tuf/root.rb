@@ -16,6 +16,8 @@
 
 require "time"
 
+require_relative "keys"
+require_relative "roles"
 require_relative "../internal/key"
 
 module Sigstore::TUF
@@ -35,47 +37,13 @@ module Sigstore::TUF
       end
       @version = data.fetch("version") { raise Error::InvalidData, "root missing version" }
       @expires = Time.iso8601(data.fetch("expires") { raise Error::InvalidData, "root missing expires" })
-      @keys = data.fetch("keys").to_h do |key_id, key_data|
-        key_type = key_data.fetch("keytype")
-        scheme = key_data.fetch("scheme")
-        keyval = key_data.fetch("keyval")
-        public_key_data = keyval.fetch("public")
-
-        key = Sigstore::Internal::Key.read(key_type, scheme, public_key_data, key_id: key_id)
-
-        [key_id, key]
-      end
-      @roles = data.fetch("roles")
+      keys = Keys.new data.fetch("keys")
+      @roles = Roles.new data.fetch("roles"), keys
       @unrecognized_fields = data.fetch("unrecognized_fields", {})
     end
 
     def verify_delegate(type, bytes, signatures)
-      role = @roles.fetch(type)
-      keyids = role.fetch("keyids")
-      threshold = role.fetch("threshold")
-
-      verified_key_ids = Set.new
-
-      signatures.each do |signature|
-        key_id = signature.fetch("keyid")
-        unless keyids.include?(key_id)
-          logger.warn "Unknown key_id=#{key_id.inspect} missing from #{keyids}"
-          next
-        end
-
-        key = @keys.fetch(key_id)
-        signature_bytes = [signature.fetch("sig")].pack("H*")
-        verified = key.verify("sha256", signature_bytes, bytes)
-
-        added = verified_key_ids.add?(key_id) if verified
-        logger.debug { "key_id=#{key_id.inspect} type=#{type} verified=#{verified} added=#{added.inspect}" }
-      end
-      count = verified_key_ids.size
-
-      return unless count < threshold
-
-      raise Error::TooFewSignatures,
-            "Not enough signatures: found #{count} out of threshold=#{threshold} for #{type}"
+      @roles.verify_delegate(type, bytes, signatures)
     end
 
     def expired?(reference_time)

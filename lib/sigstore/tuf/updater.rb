@@ -235,9 +235,9 @@ module Sigstore::TUF
 
         child_roles_to_visit = []
 
-        targets.delegations.roles_for_target(target_path).each do |child_name, terminating|
+        targets.delegations.roles_for_target(target_path).each do |child_name, delegated_role|
           child_roles_to_visit << [child_name, role_name]
-          next unless terminating
+          next unless delegated_role.terminating?
 
           logger.debug { "Terminating delegation found for #{child_name}" }
           delegations_to_visit.clear

@@ -82,34 +82,7 @@ module Sigstore
           target_base_url: (target_base_url && URI.parse(target_base_url)) ||
                            URI.join("#{@repo_url.to_s.chomp("/")}/", "targets/"),
           target_dir: @targets_dir,
-          fetcher: lambda do |uri|
-            uri = Gem::Uri.new uri
-            unless %w[http https].include?(uri.scheme)
-              raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
-            end
-
-            fetcher = Gem::RemoteFetcher.fetcher
-            begin
-              response = fetcher.request(uri, Net::HTTP::Get, nil) do
-                nil
-              end
-              response.uri = uri
-              case response
-              when Net::HTTPOK
-                nil
-              when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
-                Net::HTTPTemporaryRedirect
-                raise Error::UnsuccessfulResponse.new("should redirects be supported?", response)
-              else
-                raise Error::UnsuccessfulResponse.new("FetchError: #{response.code}", response)
-              end
-              response.body
-            rescue (defined?(Gem::Timeout::Error) ? Gem::Timeout::Error : Timeout::Error),
-                   IOError, SocketError, SystemCallError,
-                   *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
-              raise Error::RemoteConnection, e.message
-            end
-          end,
+          fetcher: method(:fetch),
           config: config
         )
 
@@ -153,6 +126,35 @@ module Sigstore
         path ||= @updater.download_target(root_info)
 
         path
+      end
+
+      private
+
+      def fetch(uri)
+        uri = Gem::Uri.new uri
+        raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}" unless %w[http https].include?(uri.scheme)
+
+        fetcher = Gem::RemoteFetcher.fetcher
+        begin
+          response = fetcher.request(uri, Net::HTTP::Get, nil) do
+            nil
+          end
+          response.uri = uri
+          case response
+          when Net::HTTPOK
+            nil
+          when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
+            Net::HTTPTemporaryRedirect
+            raise Error::UnsuccessfulResponse.new("should redirects be supported?", response)
+          else
+            raise Error::UnsuccessfulResponse.new("FetchError: #{response.code}", response)
+          end
+          response.body
+        rescue (defined?(Gem::Timeout::Error) ? Gem::Timeout::Error : Timeout::Error),
+               IOError, SocketError, SystemCallError,
+               *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+          raise Error::RemoteConnection, e.message
+        end
       end
     end
   end
