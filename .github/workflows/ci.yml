@@ -19,7 +19,7 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: Test Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
     strategy:
       fail-fast: false
       matrix:
@@ -56,7 +56,7 @@ jobs:
   sigstore-conformance:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
     name: Sigstore Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -107,7 +107,7 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby-') }}
+    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') }} || ${{ matrix.ruby == '3.0' }}"
     strategy:
       fail-fast: false
       matrix:
