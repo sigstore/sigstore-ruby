@@ -107,7 +107,7 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') }} || ${{ matrix.ruby == '3.0' }}"
+    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') || (matrix.ruby == '3.0') }}"
     strategy:
       fail-fast: false
       matrix:
