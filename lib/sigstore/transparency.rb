@@ -68,8 +68,62 @@ module Sigstore
           logIndex: log_index
         )
       end
+
+      def as_transparency_log_entry
+        entry = Rekor::V1::TransparencyLogEntry.new
+        entry.log_index = log_index
+        entry.log_id = Common::V1::LogId.new.tap { |id| id.key_id = [log_id].pack("H*") }
+        entry.kind_version = Rekor::V1::KindVersion.new.tap do |kind_version|
+          kind_version.kind = "hashedrekord"
+          kind_version.version = "0.0.1"
+        end
+        entry.integrated_time = integrated_time
+        entry.inclusion_promise = Rekor::V1::InclusionPromise.new.tap do |promise|
+          promise.signed_entry_timestamp = inclusion_promise.unpack1("m0")
+        end
+        entry.inclusion_proof = inclusion_proof.as_proto
+        entry.canonicalized_body = body.unpack1("m0")
+        entry
+      end
+
+      def self.from_proto(tlog_entry)
+        if tlog_entry.inclusion_proof&.checkpoint&.envelope
+          parsed_inclusion_proof = InclusionProof.from_proto(tlog_entry.inclusion_proof)
+        end
+
+        new(
+          uuid: nil,
+          body: [tlog_entry.canonicalized_body].pack("m0"),
+          integrated_time: tlog_entry.integrated_time,
+          log_id: tlog_entry.log_id.key_id.unpack1("H*"),
+          log_index: tlog_entry.log_index,
+          inclusion_proof: parsed_inclusion_proof,
+          inclusion_promise: [tlog_entry.inclusion_promise.signed_entry_timestamp].pack("m0")
+        )
+      end
     end
 
-    InclusionProof = Struct.new(:checkpoint, :hashes, :log_index, :root_hash, :tree_size, keyword_init: true)
+    InclusionProof = Struct.new(:checkpoint, :hashes, :log_index, :root_hash, :tree_size, keyword_init: true) do
+      def self.from_proto(inclusion_proof)
+        new(
+          checkpoint: inclusion_proof.checkpoint.envelope,
+          hashes: inclusion_proof.hashes.map { |h| h.unpack1("H*") },
+          log_index: inclusion_proof.log_index,
+          root_hash: inclusion_proof.root_hash.unpack1("H*"),
+          tree_size: inclusion_proof.tree_size
+        )
+      end
+
+      def as_proto
+        inclusion_proof = Rekor::V1::InclusionProof.new
+        inclusion_proof.checkpoint = Rekor::V1::Checkpoint.new
+        inclusion_proof.checkpoint.envelope = checkpoint
+        inclusion_proof.hashes = hashes.map { |h| [h].pack("H*") }
+        inclusion_proof.log_index = log_index
+        inclusion_proof.root_hash = [root_hash].pack("H*")
+        inclusion_proof.tree_size = tree_size
+        inclusion_proof
+      end
+    end
   end
 end

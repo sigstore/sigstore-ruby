@@ -92,7 +92,7 @@ module Sigstore
     end
 
     def find_rekor_entry(rekor_client)
-      has_inclusion_promise = rekor_entry? && rekor_entry.inclusion_promise
+      has_inclusion_promise = rekor_entry? && !rekor_entry.inclusion_promise.nil?
       has_inclusion_proof = rekor_entry? && !rekor_entry.inclusion_proof&.checkpoint.nil?
 
       logger.debug do
@@ -306,29 +306,11 @@ module Sigstore
         end
         unless tlog_entry.inclusion_proof.checkpoint.envelope
           raise Error::InvalidBundle,
-                "must contain a checkpoint"
+                "inclusion proof must contain a checkpoint"
         end
       end
 
-      if tlog_entry.inclusion_proof&.checkpoint&.envelope
-        parsed_inclusion_proof = Sigstore::Transparency::InclusionProof.new(
-          checkpoint: tlog_entry.inclusion_proof.checkpoint.envelope,
-          hashes: tlog_entry.inclusion_proof.hashes.map { |h| h.unpack1("H*") },
-          log_index: tlog_entry.inclusion_proof.log_index,
-          root_hash: tlog_entry.inclusion_proof.root_hash.unpack1("H*"),
-          tree_size: tlog_entry.inclusion_proof.tree_size
-        )
-      end
-
-      entry = Sigstore::Transparency::LogEntry.new(
-        uuid: nil,
-        body: [tlog_entry.canonicalized_body].pack("m0"),
-        integrated_time: tlog_entry.integrated_time,
-        log_id: tlog_entry.log_id.key_id.unpack1("H*"),
-        log_index: tlog_entry.log_index,
-        inclusion_proof: parsed_inclusion_proof,
-        inclusion_promise: [tlog_entry.inclusion_promise.signed_entry_timestamp].pack("m0")
-      )
+      entry = Sigstore::Transparency::LogEntry.from_proto(tlog_entry)
 
       new(
         input: input,

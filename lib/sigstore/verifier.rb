@@ -30,9 +30,25 @@ module Sigstore
       @timestamp_authorities = timestamp_authorities
     end
 
+    def self.for_trust_root(rekor_url:, trust_root:)
+      new(
+        rekor_client: Rekor::Client.for_trust_root(url: rekor_url, trust_root: trust_root),
+        fulcio_cert_chain: trust_root.fulcio_cert_chain,
+        timestamp_authorities: trust_root.timestamp_authorities
+      )
+    end
+
     def self.production(trust_root: TrustedRoot.production)
       new(
         rekor_client: Rekor::Client.production(trust_root: trust_root),
+        fulcio_cert_chain: trust_root.fulcio_cert_chain,
+        timestamp_authorities: trust_root.timestamp_authorities
+      )
+    end
+
+    def self.staging(trust_root: TrustedRoot.staging)
+      new(
+        rekor_client: Rekor::Client.staging(trust_root: trust_root),
         fulcio_cert_chain: trust_root.fulcio_cert_chain,
         timestamp_authorities: trust_root.timestamp_authorities
       )

@@ -23,7 +23,7 @@ module Sigstore
           key = OpenSSL::PKey.read(key_bytes)
           @keyring[OpenSSL::Digest::SHA256.hexdigest(key.public_to_der)] = key
         rescue OpenSSL::PKey::PKeyError => e
-          raise OpenSSL::PKey::PKeyError, "Invalid key: #{e} for #{key_bytes.inspect}"
+          raise Error::InvalidKey, "Invalid key: #{e} for #{key_bytes.inspect}"
         end
       end
 
@@ -37,10 +37,14 @@ module Sigstore
              when OpenSSL::PKey::RSA
                key.verify("SHA256", signature, data, { rsa_padding_mode: "pkcs1" })
              else
-               raise "unsupported key type #{key}"
+               raise Error::UnsupportedKeyType, "unsupported key type #{key}"
              end
 
-        raise("invalid signature: #{signature.inspect} over #{data.inspect} with key #{key_id.inspect}")
+        raise(Error::InvalidSignature,
+              "invalid signature: #{signature.inspect} over #{data.inspect} with key #{key_id.inspect}")
+      rescue OpenSSL::PKey::PKeyError => e
+        raise(Error::InvalidSignature,
+              "#{e}: invalid signature: #{signature.inspect} over #{data.inspect} with key #{key_id.inspect}")
       end
     end
   end

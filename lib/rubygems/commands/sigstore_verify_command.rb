@@ -93,7 +93,7 @@ module Gem
 
         input_map = {}
 
-        if options[:staging]
+        if options[:rekor_url] == Sigstore::Rekor::Client::STAGING_REKOR_URL
           verifier = Sigstore::Verifier.staging(trust_root: options[:trusted_root])
         elsif options[:rekor_url] == Sigstore::Rekor::Client::DEFAULT_REKOR_URL
           verifier = Sigstore::Verifier.production(trust_root: options[:trusted_root])

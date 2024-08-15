@@ -22,6 +22,7 @@ module Sigstore
   module Rekor
     class Client
       DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
+      STAGING_REKOR_URL = "https://rekor.sigstage.dev"
 
       attr_reader :rekor_keyring, :ct_keyring
 
@@ -35,11 +36,25 @@ module Sigstore
         @session.use_ssl = true
       end
 
-      def self.production(trust_root:)
+      def self.for_trust_root(url:, trust_root:)
         new(
-          url: DEFAULT_REKOR_URL,
+          url: url,
           rekor_keyring: Internal::Keyring.new(keys: trust_root.rekor_keys),
           ct_keyring: Internal::Keyring.new(keys: trust_root.ctfe_keys)
+        )
+      end
+
+      def self.production(trust_root:)
+        for_trust_root(
+          url: DEFAULT_REKOR_URL,
+          trust_root: trust_root
+        )
+      end
+
+      def self.staging(trust_root:)
+        for_trust_root(
+          url: STAGING_REKOR_URL,
+          trust_root: trust_root
         )
       end
 
@@ -79,7 +94,11 @@ module Sigstore
           data = { entries: [expected_entry] }
           resp = @session.post2(@url.path, data.to_json,
                                 { "Content-Type" => "application/json", "Accept" => "application/json" })
-          resp.value # TODO: rescue 404
+
+          if resp.code != "200"
+            raise Error::FailedRekorLookup,
+                  "#{resp.code} #{resp.message.inspect}\n#{JSON.pretty_generate(data)}\n#{resp.body}"
+          end
 
           results = JSON.parse(resp.body)
 
