@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "protobug_sigstore_protos", "~> 0.1.0"
+  spec.add_dependency "protobug_sigstore_protos", "~> 0.1.0"
 
   spec.metadata["rubygems_mfa_required"] = "true"
 end

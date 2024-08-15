@@ -67,6 +67,18 @@ module Sigstore
       certs
     end
 
+    def tlogs_for_signing
+      tlogs.select do |ctlog|
+        timerange_valid?(ctlog.public_key.valid_for, allow_expired: false)
+      end
+    end
+
+    def certificate_authority_for_signing
+      certificate_authorities.find do |ca|
+        timerange_valid?(ca.valid_for, allow_expired: false)
+      end
+    end
+
     private
 
     # TODO: why not return the whole Sigstore::TrustRoot::V1::TransparencyLogInstance ?
@@ -76,6 +88,10 @@ module Sigstore
 
       tlogs.each do |transparency_log_instance|
         key_bytes = transparency_log_instance.public_key.raw_bytes
+
+        # TODO: discover if this is only an issue with the key in the staging trusted root
+        next if transparency_log_instance.public_key.key_details == Common::V1::PublicKeyDetails::PKCS1_RSA_PKCS1V5
+
         yield key_bytes if key_bytes
       end
     end
