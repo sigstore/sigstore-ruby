@@ -14,6 +14,7 @@ require "webmock/test_unit"
 require "vcr"
 require "json"
 require "timecop"
+require "tmpdir"
 
 WebMock.disable_net_connect!
 
