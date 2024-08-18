@@ -22,15 +22,16 @@ module Sigstore
       class MissingInclusionProofError < StandardError; end
       class MissingHashError < StandardError; end
       class InvalidInclusionProofError < StandardError; end
-      class InclusionProofSizeError < StandardError; end
+      class InclusionProofSizeError < InvalidInclusionProofError; end
 
       def self.verify_merkle_inclusion(entry)
         inclusion_proof = entry.inclusion_proof
         raise MissingInclusionProofError, "Rekor entry has no inclusion proof" unless inclusion_proof
 
         leaf_hash = hash_leaf(Util.base64_decode(entry.body))
-        verify_inclusion(inclusion_proof.log_index, inclusion_proof.tree_size, inclusion_proof.hashes,
-                         [inclusion_proof.root_hash].pack("H*"), leaf_hash)
+        verify_inclusion(inclusion_proof.log_index, inclusion_proof.tree_size,
+                         inclusion_proof.hashes.map { |h| Util.hex_decode(h) },
+                         Util.hex_decode(inclusion_proof.root_hash), leaf_hash)
       end
 
       def self.verify_inclusion(index, tree_size, proof, root, leaf_hash)
@@ -49,9 +50,14 @@ module Sigstore
                 "Log index #{log_index} is greater than tree size #{tree_size}"
         end
 
-        if leaf_hash.size != 32
+        if leaf_hash.bytesize != 32
           raise InvalidInclusionProofError,
                 "Leaf hash has wrong size, expected 32 bytes, got #{leaf_hash.size}"
+        end
+
+        if proof.any? { |i| i.bytesize != 32 }
+          raise InvalidInclusionProofError,
+                "Proof hashes have wrong sizes, expected 32 bytes, got #{proof.inspect}"
         end
 
         inner, border = decompose_inclusion_proof(log_index, tree_size)
@@ -87,7 +93,6 @@ module Sigstore
 
       def self.chain_inner(seed, hashes, log_index)
         hashes.each_with_index do |hash, i|
-          hash = Util.hex_decode(hash)
           seed = if ((log_index >> i) & 1).zero?
                    hash_children(seed, hash)
                  else
@@ -99,7 +104,6 @@ module Sigstore
 
       def self.chain_border_right(seed, hashes)
         hashes.reduce(seed) do |acc, hash|
-          hash = Util.hex_decode(hash)
           hash_children(hash, acc)
         end
       end

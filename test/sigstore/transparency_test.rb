@@ -120,7 +120,8 @@ class Sigstore::Transparency::LogEntryTest < Test::Unit::TestCase
   end
 end
 
-# TODO: https://github.com/transparency-dev/merkle/blob/main/proof/verify_test.go
+require "sigstore/internal/merkle"
+
 class Sigstore::Transparency::InclusionProofTest < Test::Unit::TestCase
   def test_hasher
     [
@@ -184,16 +185,43 @@ class Sigstore::Transparency::InclusionProofTest < Test::Unit::TestCase
     end
   end
 
-  def verifier_check(leaf_index, tree_size, proof, root, leaf_hash)
+  # dumped from https://github.com/transparency-dev/merkle/blob/main/proof/verify_test.go
+  File.open(File.expand_path("data/transparency/merkle/verify_inclusion.jsonl", __dir__)) do |f|
+    f.each_line.map do |l|
+      c = JSON.parse(l)
+
+      test c["desc"] do
+        blk = proc {
+          proof = (c["proof"] || []).map { |h| Sigstore::Internal::Util.base64_decode h }
+          root = Sigstore::Internal::Util.base64_decode c["root"]
+          leaf_hash = Sigstore::Internal::Util.base64_decode c["leaf_hash"]
+          verifier_check(
+            c["desc"], c["index"], c["size"], proof, root, leaf_hash
+          )
+        }
+
+        if c["expected_error"]
+          assert_raise(Sigstore::Internal::Merkle::InvalidInclusionProofError,
+                       Sigstore::Internal::Merkle::InclusionProofSizeError,
+                       c.inspect, &blk)
+        else
+          assert_nothing_raised(c.inspect, &blk)
+        end
+      end
+    end
+  end
+
+  def verifier_check(desc, log_index, tree_size, proof, root, leaf_hash)
     got = Sigstore::Internal::Merkle.root_from_inclusion_proof(
-      Sigstore::Transparency::InclusionProof.new(
-        hashes: proof,
-        log_index: leaf_index,
-        tree_size: tree_size
-      ),
-      leaf_hash
+      log_index, tree_size, proof, leaf_hash
     )
 
-    assert_equal root, [got].pack("H*"), "got root #{got}, want #{root}"
+    Sigstore::Internal::Merkle.verify_inclusion(
+      log_index, tree_size, proof, root, leaf_hash
+    )
+
+    assert_equal Sigstore::Internal::Util.base64_encode(root), Sigstore::Internal::Util.base64_encode(got),
+                 "#{desc}: got root #{got.inspect}, want #{root.inspect}"
+    assert_equal root, got, "#{desc}: got root #{got.inspect}, want #{root.inspect}"
   end
 end
