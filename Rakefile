@@ -48,10 +48,22 @@ namespace :conformance do
   task setup: "test/sigstore-conformance/env/pyvenv.cfg" # rubocop:disable Rake/Desc
 end
 
+task :find_action_versions do # rubocop:disable Rake/Desc
+  require "yaml"
+  gh = YAML.load_file(".github/workflows/ci.yml")
+  actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
+              .uniq.map { |x| x.split("@", 2) }
+              .group_by(&:first).transform_values { |v| v.map(&:last) }
+  raise "conflicts: #{actions.select { |_, v| v.size > 1 }.inspect}" if actions.any? { |_, v| v.size > 1 }
+
+  @action_versions = actions.transform_values(&:first)
+end
+
 task test: %w[sigstore_conformance]
 
 desc "Update the vendored data files"
 task :update_data do
+  require "sigstore"
   require "sigstore/trusted_root"
   {
     prod: Sigstore::TUF::DEFAULT_TUF_URL,
@@ -69,7 +81,8 @@ end
 require "open3"
 
 class GitRepo < Rake::Task
-  attr_accessor :path, :url, :commit
+  attr_accessor :path, :url
+  attr_writer :commit
 
   include FileUtils
 
@@ -96,7 +109,7 @@ class GitRepo < Rake::Task
     head.strip!
     return true if status.success? && head == commit
 
-    desired, status = Open3.capture2(*%w[git rev-parse], "#{commit}^{commit}", chdir: path)
+    desired, status = Open3.capture2(*%w[git rev-parse], "#{commit}^{commit}", "--", chdir: path)
     desired.strip!
     status.success? && desired == head
   end
@@ -113,23 +126,34 @@ class GitRepo < Rake::Task
 
     sh "git", "-C", path, "switch", "--detach", commit do |ok, _|
       unless ok
-        sh "git", "-C", path, "fetch", "origin", commit
+        sh "git", "-C", path, "fetch", "origin", "#{commit}:#{commit}"
         sh "git", "-C", path, "switch", "--detach", commit
       end
     end
   end
+
+  def commit
+    case @commit
+    when String
+      @commit
+    when ->(c) { c.respond_to?(:call) }
+      @commit.call
+    else
+      raise "unexpected commit type: #{@commit.inspect}"
+    end
+  end
 end
 
-GitRepo.define_task(:sigstore_conformance).tap do |task|
+GitRepo.define_task(sigstore_conformance: %w[find_action_versions]).tap do |task|
   task.path = "test/sigstore-conformance"
   task.url = "https://github.com/sigstore/sigstore-conformance.git"
-  task.commit = "52311dc3b1d7aba6fb2c4b468791fbb119e7f022"
+  task.commit = -> { @action_versions.fetch("sigstore/sigstore-conformance") }
 end
 
-GitRepo.define_task(:tuf_conformance).tap do |task|
+GitRepo.define_task(tuf_conformance: %w[find_action_versions]).tap do |task|
   task.path = "test/tuf-conformance"
-  task.url = "https://github.com/jku/tuf-conformance.git"
-  task.commit = "b938daaea0e3a9b4cc5c5d743954be6a6ae32893"
+  task.url = "https://github.com/theupdateframework/tuf-conformance.git"
+  task.commit = -> { @action_versions.fetch("theupdateframework/tuf-conformance") }
 end
 
 namespace :tuf_conformance do

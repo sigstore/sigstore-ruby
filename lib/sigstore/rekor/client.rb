@@ -30,7 +30,8 @@ module Sigstore
         @rekor_keyring = rekor_keyring
         @ct_keyring = ct_keyring
 
-        @session = Net::HTTP.new(@url.host, @url.port)
+        net = defined?(Gem::Net) ? Gem::Net : Net
+        @session = net::HTTP.new(@url.host, @url.port)
         @session.use_ssl = true
       end
 
@@ -76,7 +77,7 @@ module Sigstore
 
         def post(expected_entry)
           data = { entries: [expected_entry] }
-          resp = @session.post2(@url, data.to_json,
+          resp = @session.post2(@url.path, data.to_json,
                                 { "Content-Type" => "application/json", "Accept" => "application/json" })
           resp.value # TODO: rescue 404
 

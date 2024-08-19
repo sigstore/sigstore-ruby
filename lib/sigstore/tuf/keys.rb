@@ -14,30 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative "../error"
-
 module Sigstore::TUF
-  class Error < ::Sigstore::Error
-    class LengthOrHashMismatch < Error; end
-    class ExpiredMetadata < Error; end
-    class EqualVersionNumber < Error; end
-    class BadVersionNumber < Error; end
-    class BadUpdateOrder < Error; end
-    class TooFewSignatures < Error; end
-    class MetaVersionLower < Error; end
-    class MetaVersionHigher < Error; end
-    class InvalidData < Error; end
+  class Keys
+    include Enumerable
 
-    class Fetch < Error; end
-    class RemoteConnection < Fetch; end
+    def initialize(keys)
+      @keys = keys.to_h do |key_id, key_data|
+        key_type = key_data.fetch("keytype")
+        scheme = key_data.fetch("scheme")
+        keyval = key_data.fetch("keyval")
+        public_key_data = keyval.fetch("public")
 
-    class UnsuccessfulResponse < Fetch
-      attr_reader :response
+        key = Sigstore::Internal::Key.read(key_type, scheme, public_key_data, key_id: key_id)
 
-      def initialize(message, response)
-        super(message)
-        @response = response
+        [key_id, key]
       end
+    end
+
+    def fetch(key_id)
+      @keys.fetch(key_id)
+    end
+
+    def each(&block)
+      @keys.each(&block)
     end
   end
 end

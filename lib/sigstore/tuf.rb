@@ -18,6 +18,7 @@ require_relative "tuf/updater"
 require "tempfile"
 require "uri"
 require "net/http"
+require "rubygems/remote_fetcher"
 
 module Sigstore
   module TUF
@@ -27,9 +28,12 @@ module Sigstore
     class TrustUpdater
       include Loggable
 
+      Net = defined?(Gem::Net) ? Gem::Net : Net
+
       attr_reader :updater
 
-      def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil)
+      def initialize(metadata_url, offline, metadata_dir: nil, targets_dir: nil, target_base_url: nil,
+                     config: UpdaterConfig.new)
         @repo_url = metadata_url
 
         default_metadata_dir, default_targets_dir = get_dirs(metadata_url) unless metadata_dir && targets_dir
@@ -72,22 +76,18 @@ module Sigstore
 
         return if offline
 
-        repo_url = URI.parse(@repo_url)
-
         @updater = Updater.new(
           metadata_dir: @metadata_dir,
           metadata_base_url: @repo_url,
           target_base_url: (target_base_url && URI.parse(target_base_url)) ||
                            URI.join("#{@repo_url.to_s.chomp("/")}/", "targets/"),
           target_dir: @targets_dir,
-          fetcher: Net::HTTP.new(repo_url.host, repo_url.port).tap { _1.use_ssl = true if repo_url.scheme != "http" }
+          fetcher: method(:fetch),
+          config: config
         )
 
-        begin
-          @updater.refresh
-        rescue StandardError => e
-          raise "Failed to refresh TUF metadata: #{e.class} #{e.full_message}"
-        end
+        # TODO: move refresh out of initializer
+        @updater.refresh
       end
 
       def get_dirs(url)
@@ -126,6 +126,35 @@ module Sigstore
         path ||= @updater.download_target(root_info)
 
         path
+      end
+
+      private
+
+      def fetch(uri)
+        uri = Gem::Uri.new uri
+        raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}" unless %w[http https].include?(uri.scheme)
+
+        fetcher = Gem::RemoteFetcher.fetcher
+        begin
+          response = fetcher.request(uri, Net::HTTP::Get, nil) do
+            nil
+          end
+          response.uri = uri
+          case response
+          when Net::HTTPOK
+            nil
+          when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
+            Net::HTTPTemporaryRedirect
+            raise Error::UnsuccessfulResponse.new("should redirects be supported?", response)
+          else
+            raise Error::UnsuccessfulResponse.new("FetchError: #{response.code}", response)
+          end
+          response.body
+        rescue (defined?(Gem::Timeout::Error) ? Gem::Timeout::Error : Timeout::Error),
+               IOError, SocketError, SystemCallError,
+               *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+          raise Error::RemoteConnection, e.message
+        end
       end
     end
   end

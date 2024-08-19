@@ -12,13 +12,14 @@ jobs:
   ruby-versions:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@master
     with:
-      engine: cruby-truffleruby # TODO: change to all when jruby is supported
+      engine: all
       min_version: 3.0
 
   test:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    name: Test Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
     strategy:
       fail-fast: false
       matrix:
@@ -41,17 +42,54 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+
       - name: Run the tests
         run: bin/rake test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+        if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: sigstore/sigstore-ruby
+
+  sigstore-conformance:
+    needs: ruby-versions
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
+    name: Sigstore Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
+        os: [ubuntu-latest]
+        # os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # include:
+        #   - { os: windows-latest, ruby: ucrt }
+        #   - { os: windows-latest, ruby: mingw }
+        #   - { os: windows-latest, ruby: mswin }
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@52311dc3b1d7aba6fb2c4b468791fbb119e7f022
+        uses: sigstore/sigstore-conformance@bcbeee6cda143ee50f852f22a96162b111bf8a71
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@52311dc3b1d7aba6fb2c4b468791fbb119e7f022
+        uses: sigstore/sigstore-conformance@bcbeee6cda143ee50f852f22a96162b111bf8a71
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
@@ -65,11 +103,59 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: sigstore/sigstore-ruby
 
+  tuf-conformance:
+    needs: ruby-versions
+    runs-on: ${{ matrix.os }}
+    name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
+    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') || (matrix.ruby == '3.0') }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
+        os: [ubuntu-latest]
+        # os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # include:
+        #   - { os: windows-latest, ruby: ucrt }
+        #   - { os: windows-latest, ruby: mingw }
+        #   - { os: windows-latest, ruby: mswin }
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Touch requirements.txt
+        run: touch requirements.txt
+
+      - name: Run the TUF conformance tests
+        uses: theupdateframework/tuf-conformance@94bcfb2b21c3dec514cbc0ba2afd225f2c5eb6d7
+        with:
+          entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
+          artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
+        if: |
+          ${{ matrix.os }} == "ubuntu-latest" && ${{ matrix.ruby }} != "3.0"
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+        if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: sigstore/sigstore-ruby
+
   all-tests-pass:
     if: always()
 
     needs:
       - test
+      - sigstore-conformance
+      - tuf-conformance
 
     runs-on: ubuntu-latest
 
@@ -85,6 +171,7 @@ jobs:
           jobs: ${{ toJSON(needs) }}
 
   lint:
+    needs: ruby-versions
     runs-on: ubuntu-latest
     name: Lint
     steps:
@@ -97,7 +184,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
-          ruby-version: "3.3.1"
+          ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
       - name: Run the linter
         run: bin/rubocop

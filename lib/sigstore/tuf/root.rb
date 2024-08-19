@@ -16,10 +16,14 @@
 
 require "time"
 
+require_relative "keys"
+require_relative "roles"
 require_relative "../internal/key"
 
 module Sigstore::TUF
   class Root
+    include Sigstore::Loggable
+
     TYPE = "root"
     attr_reader :version, :consistent_snapshot, :expires
 
@@ -27,42 +31,19 @@ module Sigstore::TUF
       type = data.fetch("_type")
       raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
 
-      @spec_version = data.fetch("spec_version")
-      @consistent_snapshot = data.fetch("consistent_snapshot")
-      @version = data.fetch("version")
-      @expires = Time.iso8601 data.fetch("expires")
-      @keys = data.fetch("keys").to_h do |key_id, key_data|
-        key_type = key_data.fetch("keytype")
-        scheme = key_data.fetch("scheme")
-        keyval = key_data.fetch("keyval")
-        public_key_data = keyval.fetch("public")
-
-        key = Sigstore::Internal::Key.read(key_type, scheme, public_key_data, key_id: key_id)
-
-        [key_id, key]
+      @spec_version = data.fetch("spec_version") { raise Error::InvalidData, "root missing spec_version" }
+      @consistent_snapshot = data.fetch("consistent_snapshot") do
+        raise Error::InvalidData, "root missing consistent_snapshot"
       end
-      @roles = data.fetch("roles")
+      @version = data.fetch("version") { raise Error::InvalidData, "root missing version" }
+      @expires = Time.iso8601(data.fetch("expires") { raise Error::InvalidData, "root missing expires" })
+      keys = Keys.new data.fetch("keys")
+      @roles = Roles.new data.fetch("roles"), keys
       @unrecognized_fields = data.fetch("unrecognized_fields", {})
     end
 
     def verify_delegate(type, bytes, signatures)
-      role = @roles.fetch(type)
-      keyids = role.fetch("keyids")
-      threshold = role.fetch("threshold")
-
-      verified_key_ids = Set.new
-
-      count = signatures.count do |signature|
-        next unless keyids.include?(signature.fetch("keyid"))
-
-        key = @keys.fetch(signature.fetch("keyid"))
-        signature_bytes = [signature.fetch("sig")].pack("H*")
-        verified = key.verify("sha256", signature_bytes, bytes)
-
-        verified_key_ids.add?(signature.fetch("keyid")) if verified
-      end
-
-      raise "Not enough signatures: found #{count} out of threshold=#{threshold}" if count < threshold
+      @roles.verify_delegate(type, bytes, signatures)
     end
 
     def expired?(reference_time)

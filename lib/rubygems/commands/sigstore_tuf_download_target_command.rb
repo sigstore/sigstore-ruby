@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require "rubygems/command"
+require_relative "../../sigstore"
 require_relative "../../sigstore/tuf"
 
 module Gem
@@ -49,11 +50,18 @@ module Gem
 
         kwargs = {}
         kwargs[:target_base_url] = @target_base_url if @target_base_url
-        trust_updater = Sigstore::TUF::TrustUpdater.new(@metadata_url, false, metadata_dir: @metadata_dir,
-                                                                              targets_dir: @targets_dir, **kwargs)
+        trust_updater = Sigstore::TUF::TrustUpdater.new(
+          @metadata_url, false,
+          metadata_dir: @metadata_dir, targets_dir: @targets_dir, target_base_url: @target_base_url,
+          **kwargs
+        )
 
         options[:args].each do |target|
           target_info = trust_updater.updater.get_targetinfo(target)
+          unless target_info
+            alert_error "No such target: #{target}"
+            terminate_interaction 1
+          end
           path = if @cached
                    trust_updater.updater.find_cached_target(target_info)
                  else

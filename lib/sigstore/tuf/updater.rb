@@ -41,7 +41,7 @@ module Sigstore::TUF
 
       begin
         data = load_local_metadata("root")
-        @trusted_set = TrustedMetadataSet.new(data, "metadata")
+        @trusted_set = TrustedMetadataSet.new(data, "metadata", reference_time: Time.now)
       rescue ::JSON::ParserError => e
         raise "Invalid JSON in #{File.join(@dir, "root.json")}: #{e.class} #{e}"
       end
@@ -88,15 +88,14 @@ module Sigstore::TUF
       end
 
       full_url = URI.join(target_base_url, target_filepath)
-
-      @fetcher.get2(full_url) do |resp|
-        resp.value
-        target_info.verify_length_and_hashes(resp.body)
+      begin
+        resp_body = @fetcher.call(full_url)
+        target_info.verify_length_and_hashes(resp_body)
 
         # TODO: atomic write
-        File.binwrite(filepath, resp.body)
-      rescue Net::HTTPClientException => e
-        raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{full_url}: " \
+        File.binwrite(filepath, resp_body)
+      rescue  Error::Fetch => e
+        raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{e.response.uri}: " \
               "#{e.message}"
       end
       logger.info { "Downloaded #{target_filepath} to #{filepath}" }
@@ -113,14 +112,14 @@ module Sigstore::TUF
 
     def load_root
       lower_bound = @trusted_set.root.version + 1
-      upper_bound = lower_bound + @config.max_root_rotations
+      upper_bound = lower_bound - 1 + @config.max_root_rotations
 
       lower_bound.upto(upper_bound) do |version|
         data = download_metadata("root", version)
         @trusted_set.root = data
         persist_metadata("root", data)
-      rescue Net::HTTPClientException => e
-        break if %w[403 404].include? e.response.code
+      rescue Error::UnsuccessfulResponse => e
+        break if %w[403 404].include?(e.response.code)
 
         raise
       end
@@ -129,10 +128,9 @@ module Sigstore::TUF
     def load_timestamp
       begin
         data = load_local_metadata(Timestamp::TYPE)
-      rescue Errno::ENOENT => e
-        logger.debug "Local timestamp not valid as final: #{e.class} #{e.message}"
-      else
         @trusted_set.timestamp = data
+      rescue Errno::ENOENT, Error::ExpiredMetadata, Error::TooFewSignatures => e
+        logger.debug "Local timestamp not valid as final: #{e.class} #{e.message}"
       end
 
       data = download_metadata(Timestamp::TYPE, nil)
@@ -151,7 +149,7 @@ module Sigstore::TUF
       data = load_local_metadata(Snapshot::TYPE)
       @trusted_set.snapshot = data
       logger.debug "Loaded snapshot from local metadata"
-    rescue Errno::ENOENT => e
+    rescue Errno::ENOENT, Error::TooFewSignatures, Error::MetaVersionHigher => e
       logger.debug "Local snapshot not valid as final: #{e.class} #{e.message}"
 
       snapshot_meta = @trusted_set.timestamp.snapshot_meta
@@ -170,8 +168,8 @@ module Sigstore::TUF
         @trusted_set.update_delegated_targets(data, role, parent_role).tap do
           logger.debug { "Loaded targets for #{role} from local metadata" }
         end
-      rescue Errno::ENOENT
-        logger.debug { "No local targets for #{role}, fetching" }
+      rescue Errno::ENOENT, Error::MetaVersionHigher, Error::MetaVersionLower, Error::TooFewSignatures => e
+        logger.debug { "No local targets for #{role}, fetching: #{e.class} #{e.message}" }
 
         snapshot = @trusted_set.snapshot
         metainfo = snapshot.meta.fetch("#{role}.json")
@@ -186,19 +184,20 @@ module Sigstore::TUF
     end
 
     def download_metadata(role_name, version)
-      encoded_name = URI.encode_www_form_component(role_name)
-      url = if version.nil?
-              URI.join(@metadata_base_url, "#{encoded_name}.json")
-            else
-              URI.join(@metadata_base_url, "#{version}.#{encoded_name}.json")
-            end
+      url = metadata_url(role_name, version)
 
       logger.debug { "Downloading metadata for #{role_name} from #{url}" }
 
-      resp = @fetcher.get(url)
-      resp.value
+      @fetcher.call(url)
+    end
 
-      resp.body
+    def metadata_url(role_name, version)
+      encoded_name = URI.encode_www_form_component(role_name)
+      if version.nil?
+        URI.join(@metadata_base_url, "#{encoded_name}.json")
+      else
+        URI.join(@metadata_base_url, "#{version}.#{encoded_name}.json")
+      end
     end
 
     def persist_metadata(role_name, data)
@@ -236,9 +235,9 @@ module Sigstore::TUF
 
         child_roles_to_visit = []
 
-        targets.delegations.roles_for_target(target_path).each do |child_name, terminating|
+        targets.delegations.roles_for_target(target_path).each do |child_name, delegated_role|
           child_roles_to_visit << [child_name, role_name]
-          next unless terminating
+          next unless delegated_role.terminating?
 
           logger.debug { "Terminating delegation found for #{child_name}" }
           delegations_to_visit.clear
@@ -255,6 +254,7 @@ module Sigstore::TUF
 
     def generate_target_file_path(target_info)
       raise ArgumentError, "target_dir not set" unless @target_dir
+      raise ArgumentError, "target_info required" unless target_info
 
       filename = URI.encode_www_form_component(target_info.path)
       File.join(@target_dir, filename)

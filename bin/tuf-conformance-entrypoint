@@ -28,6 +28,9 @@ OptionParser.new do |parser|
   parser.on("--target-base-url U") do |v|
     args << "--target-base-url" << v
   end
+  parser.on("--target-name N") do |v|
+    args << v
+  end
 end.parse!
 
 require "simplecov"
@@ -35,8 +38,18 @@ SimpleCov.command_name "tuf-conformance:#{Digest::SHA256.hexdigest ARGV.map { |a
   a.sub(tmp, "$TMPDIR")
 }.join(" ")}"
 load File.expand_path("../.simplecov", __dir__)
+SimpleCov::Formatter::HTMLFormatter.module_eval do
+  def puts(...)
+    # Suppress output
+  end
+end
 
 command = ARGV.shift
 
 ARGV.unshift "sigstore_tuf_#{command.tr("-", "_")}", *args
-Gem::GemRunner.new.run ARGV.clone
+begin
+  Gem::GemRunner.new.run ARGV.clone
+rescue Gem::SystemExitException => e
+  # For rubygems < 3.3.0
+  exit e.exit_code
+end

@@ -15,6 +15,8 @@
 # limitations under the License.
 
 require_relative "file"
+require_relative "keys"
+require_relative "roles"
 
 module Sigstore::TUF
   class Targets
@@ -29,12 +31,18 @@ module Sigstore::TUF
       @version = data.fetch("version")
       @expires = Time.iso8601 data.fetch("expires")
       @targets = data.fetch("targets").to_h { |k, v| [k, Target.new(v, k)] }
-      @delegations = data.fetch("delegations", {})
+      @delegations = Delegations.new(data.fetch("delegations", {}))
+
       @unrecognized_fields = data.fetch("unrecognized_fields", {})
     end
 
     def expired?(reference_time)
       @expires < reference_time
+    end
+
+    def verify_delegate(type, bytes, signatures)
+      role = @delegations.fetch(type)
+      role.verify_delegate(type, bytes, signatures)
     end
 
     class Target
@@ -51,6 +59,25 @@ module Sigstore::TUF
       def verify_length_and_hashes(data)
         self.class.verify_length(data, @length)
         self.class.verify_hashes(data, @hashes)
+      end
+    end
+
+    class Delegations
+      def initialize(data)
+        keys = Keys.new data.fetch("keys", {})
+        @roles = Roles.new data.fetch("roles", []), keys
+      end
+
+      def roles_for_target(target_path)
+        @roles.for_target(target_path)
+      end
+
+      def any?
+        @roles.any?
+      end
+
+      def fetch(name)
+        @roles.fetch(name)
       end
     end
   end

@@ -32,7 +32,7 @@ module Sigstore::TUF
     end
 
     def root
-      @trusted_set.fetch("root")
+      @trusted_set.fetch("root") { raise Error::InvalidData, "missing root metadata" }
     end
 
     def root=(data)
@@ -74,7 +74,9 @@ module Sigstore::TUF
 
         snapshot_meta = timestamp.snapshot_meta
         new_snapshot_meta = metadata.snapshot_meta
-        raise "snapshot version did not increase" if new_snapshot_meta.version < snapshot_meta.version
+        if new_snapshot_meta.version < snapshot_meta.version
+          raise Error::BadVersionNumber, "snapshot version did not increase"
+        end
       end
 
       @trusted_set["timestamp"] = metadata
@@ -117,6 +119,7 @@ module Sigstore::TUF
       check_final_snapshot
 
       delegator = @trusted_set.fetch(parent_role)
+      logger.debug { "Updating #{role} delegated by #{parent_role.inspect} to #{delegator.inspect}" }
       raise Error::BadUpdateOrder, "cannot load targets before delegator" unless delegator
 
       logger.debug { "Updating #{role} delegated by #{parent_role}" }
@@ -128,7 +131,10 @@ module Sigstore::TUF
 
       new_delegate, = load_data(Targets, data, delegator, role)
       version = new_delegate.version
-      raise Error::BadVersionNumber, "delegated targets version does not match meta version" if version != meta.version
+      if (comp = version <=> meta.version).nonzero?
+        cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
+        raise cls, "delegated targets version (#{version}) does not match meta version (#{meta.version})"
+      end
 
       raise Error::ExpiredMetadata, "expired delegated targets" if new_delegate.expired?(@reference_time)
 
@@ -150,8 +156,9 @@ module Sigstore::TUF
     def load_data(type, data, delegator, role_name = nil)
       metadata = JSON.parse(data)
       signed = metadata.fetch("signed")
-      unless signed.fetch("_type") == type::TYPE
-        raise "Expected type to be #{type::TYPE}, got #{signed.fetch("_type").inspect}"
+      unless signed["_type"] == type::TYPE
+        raise Error::InvalidData,
+              "Expected type to be #{type::TYPE}, got #{signed["_type"].inspect}"
       end
 
       signatures = metadata.fetch("signatures")
@@ -174,9 +181,11 @@ module Sigstore::TUF
       snapshot_meta = timestamp.snapshot_meta
       return unless snapshot.version != snapshot_meta.version
 
-      raise Error::BadVersionNumber,
-            "snapshot version mismatch " \
-            "(snapshot #{snapshot.version} != timestamp snapshot meta #{snapshot_meta.version})"
+      version = snapshot.version
+      return unless (comp = version <=> snapshot_meta.version).nonzero?
+
+      cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
+      raise cls, "snapshot version (#{version}) does not match meta version (#{snapshot_meta.version})"
     end
   end
 end

@@ -38,7 +38,14 @@ module Gem
         raise Gem::CommandLineError, "metadata-dir is required" unless @metadata_dir
         raise Gem::CommandLineError, "no args accepted" unless options[:args].empty?
 
-        Sigstore::TUF::TrustUpdater.new(@metadata_url, false, metadata_dir: @metadata_dir)
+        Sigstore::TUF::TrustUpdater.new(
+          @metadata_url, false,
+          metadata_dir: @metadata_dir
+        )
+      rescue Sigstore::Error => e
+        alert_error e.message
+        ui.backtrace e
+        ui.terminate_interaction 1
       end
     end
   end
