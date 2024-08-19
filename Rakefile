@@ -48,6 +48,17 @@ namespace :conformance do
   task setup: "test/sigstore-conformance/env/pyvenv.cfg" # rubocop:disable Rake/Desc
 end
 
+task :find_action_versions do # rubocop:disable Rake/Desc
+  require "yaml"
+  gh = YAML.load_file(".github/workflows/ci.yml")
+  actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
+              .uniq.map { |x| x.split("@", 2) }
+              .group_by(&:first).transform_values { |v| v.map(&:last) }
+  raise "conflicts: #{actions.select { |_, v| v.size > 1 }.inspect}" if actions.any? { |_, v| v.size > 1 }
+
+  @action_versions = actions.transform_values(&:first)
+end
+
 task test: %w[sigstore_conformance]
 
 desc "Update the vendored data files"
@@ -70,7 +81,8 @@ end
 require "open3"
 
 class GitRepo < Rake::Task
-  attr_accessor :path, :url, :commit
+  attr_accessor :path, :url
+  attr_writer :commit
 
   include FileUtils
 
@@ -119,18 +131,29 @@ class GitRepo < Rake::Task
       end
     end
   end
+
+  def commit
+    case @commit
+    when String
+      @commit
+    when ->(c) { c.respond_to?(:call) }
+      @commit.call
+    else
+      raise "unexpected commit type: #{@commit.inspect}"
+    end
+  end
 end
 
-GitRepo.define_task(:sigstore_conformance).tap do |task|
+GitRepo.define_task(sigstore_conformance: %w[find_action_versions]).tap do |task|
   task.path = "test/sigstore-conformance"
   task.url = "https://github.com/sigstore/sigstore-conformance.git"
-  task.commit = "52311dc3b1d7aba6fb2c4b468791fbb119e7f022"
+  task.commit = -> { @action_versions.fetch("sigstore/sigstore-conformance") }
 end
 
-GitRepo.define_task(:tuf_conformance).tap do |task|
+GitRepo.define_task(tuf_conformance: %w[find_action_versions]).tap do |task|
   task.path = "test/tuf-conformance"
   task.url = "https://github.com/theupdateframework/tuf-conformance.git"
-  task.commit = "refs/pull/149/head"
+  task.commit = -> { @action_versions.fetch("theupdateframework/tuf-conformance") }
 end
 
 namespace :tuf_conformance do
