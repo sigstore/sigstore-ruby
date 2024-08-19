@@ -104,7 +104,7 @@ module Sigstore
 
       unless resp.code == "200"
         raise Error::Signing,
-              "#{resp.code} #{resp.message}\n\n#{JSON.dump(csr)}\n\n#{resp.body}"
+              "#{resp.code} #{resp.message}\n\n#{Internal::Util.base64_encode JSON.dump(csr)}\n\n#{resp.body}"
       end
 
       resp_body = JSON.parse(resp.body)
