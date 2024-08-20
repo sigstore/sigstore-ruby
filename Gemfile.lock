@@ -75,7 +75,8 @@ GEM
       power_assert
     timecop (0.9.10)
     unicode-display_width (2.5.0)
-    vcr (6.2.0)
+    vcr (6.3.0)
+      base64
     webmock (3.23.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
@@ -100,7 +101,7 @@ DEPENDENCIES
   simplecov (~> 0.22.0)
   test-unit (~> 3.0)
   timecop (~> 0.9.10)
-  vcr (~> 6.2)
+  vcr (~> 6.3)
   webmock (~> 3.23)
 
 CHECKSUMS
@@ -143,7 +144,7 @@ CHECKSUMS
   test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
   timecop (0.9.10) sha256=12ba45ce57cdcf6b1043cb6cdffa6381fd89ce10d369c28a7f6f04dc1b0cd8eb
   unicode-display_width (2.5.0) sha256=7e7681dcade1add70cb9fda20dd77f300b8587c81ebbd165d14fd93144ff0ab4
-  vcr (6.2.0) sha256=f960a9a08f904f3577ba212de771171b7e934a319478aa397636daabfcf9490a
+  vcr (6.3.0) sha256=e0ee56f0456306b9e1ec2c97a73399b365ff156762de08c96f91aa3039cbd484
   webmock (3.23.1) sha256=0fa738c0767d1c4ec8cc57f6b21998f0c238c8a5b32450df1c847f2767140d95
 
 BUNDLED WITH
