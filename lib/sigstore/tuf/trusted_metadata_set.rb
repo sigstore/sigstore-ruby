@@ -119,7 +119,7 @@ module Sigstore::TUF
       check_final_snapshot
 
       delegator = @trusted_set.fetch(parent_role)
-      logger.debug { "Updating #{role} delegated by #{parent_role.inspect} to #{delegator.inspect}" }
+      logger.debug { "Updating #{role} delegated by #{parent_role.inspect} to #{delegator.class}" }
       raise Error::BadUpdateOrder, "cannot load targets before delegator" unless delegator
 
       logger.debug { "Updating #{role} delegated by #{parent_role}" }
