@@ -29,7 +29,7 @@ module Sigstore::TUF
           actual_hash = Digest(algorithm.upcase).hexdigest(data)
           unless actual_hash == expected_hash
             raise Error::LengthOrHashMismatch,
-                  "Observed hash #{actual_hash} does not match expected hash #{expected_hash} (algorithm: #{algorithm})"
+                  "observed hash #{actual_hash} does not match expected hash #{expected_hash}"
           end
         end
       end
@@ -43,15 +43,17 @@ module Sigstore::TUF
       end
 
       def validate_hashes(hashes)
+        raise ArgumentError, "hashes must be non-empty" if hashes.empty?
+
         hashes.each do |algorithm, hash|
-          raise "hashes items must be strings" unless algorithm.is_a?(String) && hash.is_a?(String)
+          raise TypeError, "hashes items must be strings" unless algorithm.is_a?(String) && hash.is_a?(String)
         end
       end
 
       def validate_length(length)
         return unless length.negative?
 
-        raise "length must be a non-negative integer, got #{length.inspect}"
+        raise ArgumentError, "length must be a non-negative integer, got #{length.inspect}"
       end
     end
   end

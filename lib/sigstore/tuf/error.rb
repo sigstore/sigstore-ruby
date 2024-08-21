@@ -18,15 +18,20 @@ require_relative "../error"
 
 module Sigstore::TUF
   class Error < ::Sigstore::Error
-    class LengthOrHashMismatch < Error; end
-    class ExpiredMetadata < Error; end
-    class EqualVersionNumber < Error; end
-    class BadVersionNumber < Error; end
+    # An error with a repository's state, such as a missing file.
+    class RepositoryError < Error; end
+
+    class LengthOrHashMismatch < RepositoryError; end
+    class ExpiredMetadata < RepositoryError; end
+    class BadVersionNumber < RepositoryError; end
+    class EqualVersionNumber < BadVersionNumber; end
+    class TooFewSignatures < RepositoryError; end
+
     class BadUpdateOrder < Error; end
-    class TooFewSignatures < Error; end
-    class MetaVersionLower < Error; end
-    class MetaVersionHigher < Error; end
     class InvalidData < Error; end
+
+    # An error occurred while attempting to download a file.
+    class DownloadError < Error; end
 
     class Fetch < Error; end
     class RemoteConnection < Fetch; end

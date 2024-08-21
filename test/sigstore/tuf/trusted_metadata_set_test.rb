@@ -42,7 +42,9 @@ class Sigstore::TUF::TrustedMetadataSetTest < Test::Unit::TestCase
           "snapshot.json" => {
             "version" => 137,
             "length" => 104,
-            "hashes" => {}
+            "hashes" => {
+              "sha256" => "5c4853e87c01a1621f410ad55f80bedb6c5b7e55c1f6e59d739769c0b54cf558"
+            }
           }
         }
       },
