@@ -24,6 +24,8 @@ module Sigstore
   class Signer
     include Loggable
 
+    # @param jwt [String] the OIDC identity token
+    # @param trusted_root [Sigstore::TrustedRoot] the trusted root configuration
     def initialize(jwt:, trusted_root:)
       @jwt = jwt
       @trusted_root = trusted_root
@@ -141,6 +143,10 @@ module Sigstore
       [leaf, x509_store.chain]
     end
 
+    # Sign the payload with the key
+    #
+    # @param payload [String] the payload to sign
+    # @param key [Sigstore::Internal::Key] the key to sign with
     def sign_payload(payload, key)
       # TODO: derive correct digest from what the registry supports
       # The Signer MAY pre-hash the payload using a hash algorithm from the registry (Spec: Sigstore Registries) for
@@ -157,6 +163,10 @@ module Sigstore
       {}
     end
 
+    # Submit the signed metadata to the transparency service
+    # @param signature [String] the signature
+    # @param cert [Sigstore::Internal::X509::Certificate] the certificate
+    # @param data_sha256 [String] the SHA256 hash of the data
     def submit_signed_metadata_to_transparency_service(signature, cert, data_sha256)
       # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
       # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
@@ -192,23 +202,11 @@ module Sigstore
           "apiVersion" => "0.0.1"
         }
 
-        resp = Net::HTTP.post(URI.join(ctlog.base_url, "api/v1/log/entries"), body.to_json, {
-                                "Content-Type" => "application/json"
-                              })
-
-        logger.debug do
-          "#{resp.code} #{resp.message.inspect}\n\n#{JSON.pretty_generate(body)}\n\n#{resp.body}"
-        end
-
-        unless resp.code == "201"
-          raise Error::Signing, "#{resp.code} #{resp.message.inspect}\n\n#{JSON.pretty_generate(body)}\n\n#{resp.body}"
-        end
-
-        body = JSON.parse(resp.body)
-
         # TODO: verify
         # The signer MUST verify the log entry as in Spec: Transparency Service.
-        Transparency::LogEntry.from_response(body).as_transparency_log_entry.as_json
+        Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
+                     .log.entries.post(body)
+                     .as_json
       end
     end
 
@@ -220,7 +218,7 @@ module Sigstore
         input: StringIO.new(input),
         cert_pem: result.x509_certificate_chain.certificates.first.raw_bytes, # passing the DER is fine...
         signature: signature, # TODO: get signature from result
-        rekor_entry: Transparency::LogEntry.from_proto(result.tlog_entries.first),
+        rekor_entry: result.tlog_entries.first,
         offline: false
       )
       result = verifier.verify(

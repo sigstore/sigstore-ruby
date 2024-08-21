@@ -86,7 +86,7 @@ module Sigstore
 
           origin = lines.shift
           log_size = lines.shift.to_i
-          root_hash = lines.shift.unpack1("m0").unpack1("H*")
+          root_hash = lines.shift.unpack1("m0")
 
           raise "empty origin" if origin.empty?
 
@@ -97,8 +97,8 @@ module Sigstore
       def self.verify_checkpoint(client, entry)
         raise "Rekor entry has no inclusion proof" unless entry.inclusion_proof
 
-        signed_checkpoint = SignedCheckpoint.from_text(entry.inclusion_proof.checkpoint)
-        signed_checkpoint.signed_note.verify(client, [entry.log_id].pack("H*"))
+        signed_checkpoint = SignedCheckpoint.from_text(entry.inclusion_proof.checkpoint.envelope)
+        signed_checkpoint.signed_note.verify(client, entry.log_id.key_id)
 
         checkpoint_hash = signed_checkpoint.checkpoint.log_hash
         root_hash = entry.inclusion_proof.root_hash

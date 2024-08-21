@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require_relative "error"
-require_relative "transparency"
 
 module Sigstore
   VerificationResult = Struct.new(:success, keyword_init: true) do
@@ -122,7 +121,7 @@ module Sigstore
       elsif dsse_envelope
         raise "need rekor entry for DSSE verification" unless rekor_entry?
 
-        case t = JSON.parse(rekor_entry.body.unpack1("m0")).values_at("kind", "apiVersion")
+        case t = JSON.parse(rekor_entry.canonicalized_body).values_at("kind", "apiVersion")
         when %w[dsse 0.0.1]
           expected_entry = {
             "apiVersion" => "0.0.1",
@@ -190,7 +189,7 @@ module Sigstore
 
       logger.debug { "Found rekor entry: #{entry}" }
 
-      actual_body = JSON.parse(entry.body.unpack1("m0"))
+      actual_body = JSON.parse(entry.canonicalized_body)
       if dsse_envelope
         # since the hash is over the uncanonicalized envelope, we need to remove it
         #
@@ -310,15 +309,13 @@ module Sigstore
         end
       end
 
-      entry = Sigstore::Transparency::LogEntry.from_proto(tlog_entry)
-
       new(
         input: input,
         cert_pem: leaf_cert.to_pem,
         signature: signature,
         dsse_envelope: dsse_envelope,
         offline: offline,
-        rekor_entry: entry,
+        rekor_entry: tlog_entry,
         timestamp_verification_data: bundle.verification_material.timestamp_verification_data
       )
     end

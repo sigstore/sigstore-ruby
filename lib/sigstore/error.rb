@@ -30,6 +30,7 @@ module Sigstore
     class MissingRekorEntry < Error; end
     class InvalidRekorEntry < Error; end
     class FailedRekorLookup < Error; end
+    class FailedRekorPost < Error; end
 
     class Unimplemented < Error; end
 
