@@ -26,6 +26,7 @@ module Gem
         require "sigstore"
         require "sigstore/rekor/client"
         require "sigstore/trusted_root"
+        require "sigstore/models"
 
         super("sigstore-verify", "Display the contents of the installed gems",
           rekor_url: Sigstore::Rekor::Client::DEFAULT_REKOR_URL)
@@ -41,10 +42,6 @@ module Gem
                    "The certificate will be verified against the Fulcio roots if the " \
                    "--certificate-chain option is not passed.") do |key, options|
           options[:certificate] = key
-        end
-
-        add_option("--rekor-url URL", "URL of the Rekor server") do |url, options|
-          options[:rekor_url] = url
         end
 
         add_option("--[no-]offline", "Do not fetch the latest timestamp from the Rekor server") do |offline, options|
@@ -63,8 +60,8 @@ module Gem
           issuer: options[:certificate_oidc_issuer]
         )
 
-        verified = files_with_materials.all? do |file, materials|
-          result = verifier.verify(materials: materials, policy: policy)
+        verified = files_with_materials.all? do |file, input|
+          result = verifier.verify(input: input, policy: policy, offline: options[:offline])
 
           if result.verified?
             say "OK: #{file}"
@@ -97,25 +94,6 @@ module Gem
           verifier = Sigstore::Verifier.staging(trust_root: options[:trusted_root])
         elsif options[:rekor_url] == Sigstore::Rekor::Client::DEFAULT_REKOR_URL
           verifier = Sigstore::Verifier.production(trust_root: options[:trusted_root])
-        else
-          unless options[:certificate_chain]
-            raise Gem::CommandLineError,
-                  "Custom Rekor URL used without --certificate-chain"
-          end
-
-          cert_chain = load_pem_x509_certificates(File.read(options[:certificate_chain]))
-
-          # TODO: rekor_root_pubkey
-
-          verifier = Sigstore::Verifier.new(
-            rekor_client: Sigstore::Rekor::Client.new(
-              url: options[:rekor_url],
-              rekor_keyring: Sigstore::Internal::Keyring.new(keys: trust_root.rekor_keys),
-              ct_keyring: Sigstore::Internal::Keyring.new(keys: trusted_root.ctfe_keys)
-            ),
-            fulcio_cert_chain: cert_chain,
-            timestamp_authorities: trusted_root.timestamp_authorities
-          )
         end
 
         all_materials = []
@@ -148,31 +126,27 @@ module Gem
         end
 
         input_map.each do |file, inputs|
-          rekor_entry = nil
           # TODO: replace verification materials with Sigstore::Verification::V1::Input
-          materials = File.open(file, "rb") do |input|
-            if inputs[:bundle]
-              bundle_bytes = Gem.read_binary(inputs[:bundle])
-              bundle = Sigstore::Bundle::V1::Bundle.decode_json(bundle_bytes, registry: Sigstore::REGISTRY)
+          artifact = Sigstore::Verification::V1::Artifact.new
+          artifact.artifact = File.binread(file)
 
-              Sigstore::VerificationMaterials.from_bundle(input: input, bundle: bundle,
-                                                          offline: options[:offline])
-            else
-              cert_pem = Gem.read_binary(inputs[:cert])
-              b64_sig = Gem.read_binary(inputs[:sig])
-              signature = b64_sig.unpack1("m")
+          verification_input = Sigstore::Verification::V1::Input.new
+          verification_input.artifact = artifact
 
-              Sigstore::VerificationMaterials.new(
-                input: input,
-                cert_pem: cert_pem,
-                signature: signature, rekor_entry: rekor_entry,
-                offline: options[:offline]
-              )
-            end
+          if inputs[:bundle]
+            bundle_bytes = Gem.read_binary(inputs[:bundle])
+            verification_input.bundle = Sigstore::Bundle::V1::Bundle.decode_json(bundle_bytes,
+                                                                                 registry: Sigstore::REGISTRY)
+          else
+            cert_pem = Gem.read_binary(inputs[:cert])
+            b64_sig = Gem.read_binary(inputs[:sig])
+            signature = b64_sig.unpack1("m")
+
+            verification_input.bundle = Sigstore::SBundle.for_cert_bytes_and_signature(cert_pem, signature)
           end
 
           say "Verifying #{file}..."
-          all_materials << [file, materials]
+          all_materials << [file, Sigstore::VerificationInput.new(verification_input)]
         end
 
         [verifier, all_materials]

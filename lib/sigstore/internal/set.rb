@@ -17,7 +17,7 @@
 module Sigstore
   module Internal
     module SET
-      def self.verify_set(client:, entry:)
+      def self.verify_set(keyring:, entry:)
         raise "invalid log entry: no inclusion promise" unless entry.inclusion_promise
 
         signed_entry_timestamp = entry.inclusion_promise.signed_entry_timestamp
@@ -31,7 +31,7 @@ module Sigstore
                                         logIndex: entry.log_index
                                       })
 
-        client.rekor_keyring.verify(
+        keyring.verify(
           key_id: log_id,
           signature: signed_entry_timestamp,
           data: canonical_entry

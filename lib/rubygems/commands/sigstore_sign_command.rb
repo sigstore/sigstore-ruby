@@ -31,6 +31,10 @@ module Gem
         super("sigstore-sign", "Sign an artifact with sigstore",
           rekor_url: Sigstore::Rekor::Client::DEFAULT_REKOR_URL)
 
+        add_option("--staging") do |_, options|
+          options[:trusted_root] = Sigstore::TrustedRoot.staging
+        end
+
         add_option("--identity-token TOKEN", "id token") do |token, options|
           options[:identity_token] = token
         end
@@ -45,22 +49,6 @@ module Gem
                    "--certificate-chain option is not passed.") do |key, options|
           options[:certificate] = key
         end
-
-        add_option("--staging") do |_, options|
-          options[:trusted_root] = Sigstore::TrustedRoot.staging
-        end
-
-        add_option("--trusted-root ROOT", "path to the trusted root certificate") do |root, options|
-          options[:trusted_root] = Sigstore::TrustedRoot.from_file(root)
-        end
-
-        # add_option("--rekor-url URL", "URL of the Rekor server") do |url, options|
-        #   options[:rekor_url] = url
-        # end
-
-        # add_option("--[no-]offline", "Do not fetch the latest timestamp from the Rekor server") do |offline, options|
-        #   options[:offline] = offline
-        # end
       end
 
       def execute
@@ -68,12 +56,13 @@ module Gem
 
         options[:trusted_root] ||= Sigstore::TrustedRoot.production
 
-        sig, leaf, = Sigstore::Signer.new(
+        bundle = Sigstore::Signer.new(
           jwt: options[:identity_token],
           trusted_root: options[:trusted_root]
         ).sign(File.binread(options[:args].first))
-        File.binwrite(options[:signature], [sig].pack("m0"))
-        File.binwrite(options[:certificate], leaf.to_pem)
+
+        File.binwrite(options[:signature], [bundle.message_signature.signature].pack("m0"))
+        File.binwrite(options[:certificate], bundle.verification_material.certificate.raw_bytes)
       end
     end
   end

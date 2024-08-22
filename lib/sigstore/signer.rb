@@ -24,8 +24,6 @@ module Sigstore
   class Signer
     include Loggable
 
-    # @param jwt [String] the OIDC identity token
-    # @param trusted_root [Sigstore::TrustedRoot] the trusted root configuration
     def initialize(jwt:, trusted_root:)
       @jwt = jwt
       @trusted_root = trusted_root
@@ -45,23 +43,17 @@ module Sigstore
       # 7) send hash of signature to timestamping service
       timestamp_verification_data = submit_signature_hash_to_timstamping_service(signature)
       # 8) submit signed metadata to transparency service
+      hashed_input = Common::V1::HashOutput.new
+      hashed_input.algorithm = Common::V1::HashAlgorithm::SHA2_256
+      hashed_input.digest = OpenSSL::Digest("SHA256").digest(payload)
       tlog_entries = submit_signed_metadata_to_transparency_service(signature, leaf,
-                                                                    OpenSSL::Digest("SHA256").digest(payload))
+                                                                    hashed_input.digest)
       # 9) perform verification
 
-      verification_material = Bundle::V1::VerificationMaterial.decode_json_hash(
-        {
-          "x509CertificateChain" => {
-            "certificates" => chain[0..-2].map { |c| { "rawBytes" => Internal::Util.base64_encode(c.to_der) } }
-          },
-          "tlogEntries" => tlog_entries,
-          "timestampVerificationData" => timestamp_verification_data
-        },
-        registry: REGISTRY
-      )
-      verify(payload, verification_material, signature)
-      # TODO: return a bundle
-      [signature, leaf, verification_material]
+      bundle = collect_bundle(leaf, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      verify(payload, bundle)
+
+      bundle
     end
 
     private
@@ -143,10 +135,6 @@ module Sigstore
       [leaf, x509_store.chain]
     end
 
-    # Sign the payload with the key
-    #
-    # @param payload [String] the payload to sign
-    # @param key [Sigstore::Internal::Key] the key to sign with
     def sign_payload(payload, key)
       # TODO: derive correct digest from what the registry supports
       # The Signer MAY pre-hash the payload using a hash algorithm from the registry (Spec: Sigstore Registries) for
@@ -160,13 +148,9 @@ module Sigstore
       # receives a TimeStampResp including a `TimeStampToken`.
       # The signer MUST verify the TimeStampToken against the payload and Timestamping Service root certificate.
 
-      {}
+      nil
     end
 
-    # Submit the signed metadata to the transparency service
-    # @param signature [String] the signature
-    # @param cert [Sigstore::Internal::X509::Certificate] the certificate
-    # @param data_sha256 [String] the SHA256 hash of the data
     def submit_signed_metadata_to_transparency_service(signature, cert, data_sha256)
       # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
       # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
@@ -206,24 +190,22 @@ module Sigstore
         # The signer MUST verify the log entry as in Spec: Transparency Service.
         Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
                      .log.entries.post(body)
-                     .as_json
       end
     end
 
-    def verify(input, result, signature)
+    def verify(artifact, bundle)
       verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
                                          trust_root: @trusted_root)
-      # TODO: verify via a bundle
-      verification_material = VerificationMaterials.new(
-        input: StringIO.new(input),
-        cert_pem: result.x509_certificate_chain.certificates.first.raw_bytes, # passing the DER is fine...
-        signature: signature, # TODO: get signature from result
-        rekor_entry: result.tlog_entries.first,
-        offline: false
-      )
+
+      verification_input = Verification::V1::Input.new
+      verification_input.bundle = bundle
+      verification_input.artifact = Verification::V1::Artifact.new
+      verification_input.artifact.artifact = artifact
+
       result = verifier.verify(
-        materials: verification_material,
-        policy: expected_identity
+        input: VerificationInput.new(verification_input),
+        policy: expected_identity,
+        offline: false
       )
       raise Error::Signing, "Failed to verify: #{result.reason}" unless result.verified?
     end
@@ -243,6 +225,21 @@ module Sigstore
 
       Policy::Identity.new(identity: identity, issuer: issuer)
       NullVerifier.new # TODO: expect the real identity
+    end
+
+    def collect_bundle(leaf_certificate, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      bundle = Bundle::V1::Bundle.new
+      bundle.media_type = BundleType::BUNDLE_0_3.media_type
+      bundle.verification_material = Bundle::V1::VerificationMaterial.new
+      bundle.verification_material.certificate = Common::V1::X509Certificate.new
+      bundle.verification_material.certificate.raw_bytes = leaf_certificate.to_pem
+      bundle.verification_material.tlog_entries = tlog_entries
+      bundle.verification_material.timestamp_verification_data = timestamp_verification_data
+      bundle.message_signature = Sigstore::Common::V1::MessageSignature.new.tap do |ms|
+        ms.message_digest = hashed_input
+        ms.signature = signature
+      end
+      bundle
     end
   end
 end

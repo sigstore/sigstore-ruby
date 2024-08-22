@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require "delegate"
-require "json"
 require "openssl"
 
 require "protobug_sigstore_protos"
