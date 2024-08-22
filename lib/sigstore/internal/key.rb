@@ -104,7 +104,7 @@ module Sigstore
           raise ArgumentError, "key must be an OpenSSL::PKey::RSA" unless @key.is_a?(OpenSSL::PKey::RSA)
 
           case @schema
-          when "rsassa-pss-sha256"
+          when "rsassa-pss-sha256", "rsa-pkcs1v15-sha256"
             # supported
           else
             raise ArgumentError, "Unsupported schema #{schema}"
@@ -115,6 +115,8 @@ module Sigstore
           case @schema
           when "rsassa-pss-sha256"
             @key.verify_pss("sha256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+          when "rsa-pkcs1v15-sha256"
+            super
           else
             raise ArgumentError, "Unsupported schema #{schema}"
           end

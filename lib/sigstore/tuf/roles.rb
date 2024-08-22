@@ -81,7 +81,7 @@ module Sigstore::TUF
       signatures.each do |signature|
         key_id = signature.fetch("keyid")
         unless @keys.include?(key_id)
-          logger.warn "Unknown key_id=#{key_id.inspect} missing from #{@keys}"
+          logger.warn "Unknown key_id=#{key_id.inspect} missing from #{@keys.keys}"
           next
         end
 
@@ -90,7 +90,9 @@ module Sigstore::TUF
         verified = key.verify("sha256", signature_bytes, bytes)
 
         added = verified_key_ids.add?(key_id) if verified
-        logger.debug { "key_id=#{key_id.inspect} type=#{type} verified=#{verified} added=#{added.inspect}" }
+        logger.debug do
+          "key_id=#{key_id.inspect} type=#{type} verified=#{verified} added=#{added.nil? ? added.inspect : true}"
+        end
       end
       count = verified_key_ids.size
 
