@@ -39,12 +39,8 @@ module Sigstore::TUF
         raise ArgumentError, "Unsupported envelope type: #{@config[:envelope_type].inspect}"
       end
 
-      begin
-        data = load_local_metadata("root")
-        @trusted_set = TrustedMetadataSet.new(data, "metadata", reference_time: Time.now)
-      rescue ::JSON::ParserError => e
-        raise "Invalid JSON in #{File.join(@dir, "root.json")}: #{e.class} #{e}"
-      end
+      data = load_local_metadata("root")
+      @trusted_set = TrustedMetadataSet.new(data, "metadata", reference_time: Time.now)
     end
 
     def refresh
@@ -115,13 +111,15 @@ module Sigstore::TUF
       upper_bound = lower_bound - 1 + @config.max_root_rotations
 
       lower_bound.upto(upper_bound) do |version|
-        data = download_metadata("root", version)
-        @trusted_set.root = data
-        persist_metadata("root", data)
+        data = download_metadata(Root::TYPE, version)
       rescue Error::UnsuccessfulResponse => e
+        logger.debug { "Failed to download root metadata v#{version}: #{e.class} #{e.message}" }
         break if %w[403 404].include?(e.response.code)
 
         raise
+      else
+        @trusted_set.root = data
+        persist_metadata(Root::TYPE, data)
       end
     end
 
@@ -129,7 +127,7 @@ module Sigstore::TUF
       begin
         data = load_local_metadata(Timestamp::TYPE)
         @trusted_set.timestamp = data
-      rescue Errno::ENOENT, Error::ExpiredMetadata, Error::TooFewSignatures => e
+      rescue Errno::ENOENT, Error::RepositoryError => e
         logger.debug "Local timestamp not valid as final: #{e.class} #{e.message}"
       end
 
@@ -147,9 +145,9 @@ module Sigstore::TUF
 
     def load_snapshot
       data = load_local_metadata(Snapshot::TYPE)
-      @trusted_set.snapshot = data
+      @trusted_set.send(:snapshot=, data, trusted: true)
       logger.debug "Loaded snapshot from local metadata"
-    rescue Errno::ENOENT, Error::TooFewSignatures, Error::MetaVersionHigher => e
+    rescue Errno::ENOENT, Error::RepositoryError => e
       logger.debug "Local snapshot not valid as final: #{e.class} #{e.message}"
 
       snapshot_meta = @trusted_set.timestamp.snapshot_meta
@@ -161,19 +159,22 @@ module Sigstore::TUF
     end
 
     def load_targets(role, parent_role)
-      return @trusted_set[role] if @trusted_set.include?(role)
+      if @trusted_set.include?(role)
+        logger.debug { "Returning cached targets for #{role}" }
+        return @trusted_set[role]
+      end
 
       begin
         data = load_local_metadata(role)
         @trusted_set.update_delegated_targets(data, role, parent_role).tap do
           logger.debug { "Loaded targets for #{role} from local metadata" }
         end
-      rescue Errno::ENOENT, Error::MetaVersionHigher, Error::MetaVersionLower, Error::TooFewSignatures => e
+      rescue Errno::ENOENT, Error::RepositoryError => e
         logger.debug { "No local targets for #{role}, fetching: #{e.class} #{e.message}" }
 
         snapshot = @trusted_set.snapshot
-        metainfo = snapshot.meta.fetch("#{role}.json")
-        raise "No metadata for role: #{role}" unless metainfo
+        metainfo = snapshot.meta["#{role}.json"]
+        raise Error::RepositoryError, "role #{role} was delegated but is not part of snapshot" unless metainfo
 
         version = metainfo.version if @trusted_set.root.consistent_snapshot
         data = download_metadata(role, version)

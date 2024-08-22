@@ -18,6 +18,8 @@ require_relative "error"
 require_relative "root"
 require_relative "../internal/json"
 
+require "json"
+
 module Sigstore::TUF
   class TrustedMetadataSet
     include Sigstore::Loggable
@@ -95,9 +97,16 @@ module Sigstore::TUF
 
       new_snapshot, = load_data(Snapshot, data, root)
 
-      if include?(Snapshot::TYPE) && (new_snapshot.version < snapshot.version)
-        raise Error::BadVersionNumber,
-              "snapshot version decreased"
+      # If an existing trusted snapshot is updated, check for rollback attack
+      if include?(Snapshot::TYPE)
+        snapshot.meta.each do |filename, file_info|
+          new_file_info = new_snapshot.meta[filename]
+          raise Error::RepositoryError, "new snapshot is missing info for #{filename}" unless new_file_info
+
+          if new_file_info.version < file_info.version
+            raise Error::BadVersionNumber, "expected #{filename} v#{new_file_info.version}, got v#{file_info.version}"
+          end
+        end
       end
 
       @trusted_set["snapshot"] = new_snapshot
@@ -118,25 +127,20 @@ module Sigstore::TUF
 
       check_final_snapshot
 
-      delegator = @trusted_set.fetch(parent_role)
+      delegator = @trusted_set[parent_role]
       logger.debug { "Updating #{role} delegated by #{parent_role.inspect} to #{delegator.class}" }
       raise Error::BadUpdateOrder, "cannot load targets before delegator" unless delegator
 
-      logger.debug { "Updating #{role} delegated by #{parent_role}" }
-
-      meta = snapshot.meta.fetch("#{role}.json")
-      raise "No metadata for role: #{role}" unless meta
+      meta = snapshot.meta["#{role}.json"]
+      raise Error::RepositoryError, "no metadata for role #{role} in snapshot" unless meta
 
       meta.verify_length_and_hashes(data)
 
       new_delegate, = load_data(Targets, data, delegator, role)
       version = new_delegate.version
-      if (comp = version <=> meta.version).nonzero?
-        cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
-        raise cls, "delegated targets version (#{version}) does not match meta version (#{meta.version})"
-      end
+      raise Error::BadVersionNumber, "expected #{role} v#{meta.version}, got v#{version}" if version != meta.version
 
-      raise Error::ExpiredMetadata, "expired delegated targets" if new_delegate.expired?(@reference_time)
+      raise Error::ExpiredMetadata, "new #{role} is expired" if new_delegate.expired?(@reference_time)
 
       @trusted_set[role] = new_delegate
       logger.debug { "Updated #{role} v#{version}" }
@@ -166,6 +170,8 @@ module Sigstore::TUF
       canonical_signed = Sigstore::Internal::JSON.canonical_generate(signed)
       delegator&.verify_delegate(role_name || type::TYPE, canonical_signed, signatures)
       [metadata, canonical_signed, signatures]
+    rescue JSON::ParserError => e
+      raise Error::InvalidData, "Failed to parse #{type}: #{e.message}"
     end
 
     def check_final_timestamp
@@ -179,13 +185,9 @@ module Sigstore::TUF
       raise Error::ExpiredMetadata, "final snapshot.json is expired" if snapshot.expired?(@reference_time)
 
       snapshot_meta = timestamp.snapshot_meta
-      return unless snapshot.version != snapshot_meta.version
+      return if snapshot.version == snapshot_meta.version
 
-      version = snapshot.version
-      return unless (comp = version <=> snapshot_meta.version).nonzero?
-
-      cls = comp.positive? ? Error::MetaVersionLower : Error::MetaVersionHigher
-      raise cls, "snapshot version (#{version}) does not match meta version (#{snapshot_meta.version})"
+      raise Error::BadVersionNumber, "expected snapshot version #{snapshot_meta.version}, got #{snapshot.version}"
     end
   end
 end
