@@ -24,6 +24,8 @@ module Sigstore
   class Verifier
     include Loggable
 
+    attr_reader :rekor_client
+
     def initialize(rekor_client:, fulcio_cert_chain:, timestamp_authorities:)
       @rekor_client = rekor_client
       @fulcio_cert_chain = fulcio_cert_chain
@@ -140,19 +142,9 @@ module Sigstore
       # SignedCertificateTimestamp embedded in the leaf certificate, and verify it as in RFC 9162 §8.1.3,
       # using the verification key from the Certificate Transparency Log.
       chain = chains.first
-      sct_list = bundle.leaf_certificate
-                       .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
-                       .signed_certificate_timestamps
-      raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
-
-      sct_list.each do |sct|
-        verified = verify_sct(
-          sct,
-          bundle.leaf_certificate,
-          chain,
-          @rekor_client.ct_keyring
-        )
-        return VerificationFailure.new("SCT verification failed") unless verified
+      if (result = self.class.verify_scts(bundle.leaf_certificate, chain,
+                                          @rekor_client.ct_keyring)) && !result.verified?
+        return result
       end
 
       # 5)
@@ -245,94 +237,101 @@ module Sigstore
       end
     end
 
-    def verify_sct(sct, certificate, chain, ct_keyring)
-      # TODO: validate hash & signature algorithm match the key in the keyring
-      hash = sct.hash_algorithm
-      signature_algorithm = sct.signature_algorithm
-      unless hash == "sha256" && signature_algorithm == "ecdsa"
-        # TODO: support more algorithms
-        raise Error::Unimplemented, "only sha256 edcsa supported, got #{hash} #{signature_algorithm}"
-      end
+    class << self
+      def verify_scts(leaf_certificate, chain, ct_keyring)
+        sct_list = leaf_certificate
+                   .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
+                   .signed_certificate_timestamps
+        raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
 
-      issuer_key_id = nil
-      if sct.entry_type == 1
-        issuer_cert = find_issuer_cert(chain)
-        issuer_pubkey = issuer_cert.public_key
-        unless issuer_cert.ca?
-          raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
+        sct_list.each do |sct|
+          verified = verify_sct(
+            sct,
+            leaf_certificate,
+            chain,
+            ct_keyring
+          )
+          return VerificationFailure.new("SCT verification failed") unless verified
         end
-        raise Error::InvalidCertificate, "unsupported issuer pubkey" unless case issuer_pubkey
-                                                                            when OpenSSL::PKey::RSA, OpenSSL::PKey::EC
-                                                                              true
-                                                                            else
-                                                                              false
-                                                                            end
 
-        issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
+        nil
       end
 
-      digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
+      private
 
-      ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
-    end
-
-    def pack_digitally_signed(sct, certificate, issuer_key_id = nil)
-      # https://datatracker.ietf.org/doc/html/rfc6962#section-3.4
-      # https://datatracker.ietf.org/doc/html/rfc6962#section-3.5
-      #
-      #   digitally-signed struct {
-      #     Version sct_version;
-      #     SignatureType signature_type = certificate_timestamp;
-      #     uint64 timestamp;
-      #     LogEntryType entry_type;
-      #     select(entry_type) {
-      #         case x509_entry: ASN.1Cert;
-      #         case precert_entry: PreCert;
-      #     } signed_entry;
-      #    CtExtensions extensions;
-      # };
-
-      signed_entry =
-        case sct.entry_type
-        when 0 # x509_entry
-          cert_der = certificate.to_public_der
-          cert_len = cert_der.bytesize
-          unused, len1, len2, len3 = [cert_len].pack("N").unpack("C4")
-          raise Error::InvalidCertificate, "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
-
-          [len1, len2, len3, cert_der].pack("CCC a#{cert_len}")
-        when 1 # precert_entry
-          unless issuer_key_id&.bytesize == 32
-            raise Error::InvalidCertificate,
-                  "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
+      def verify_sct(sct, certificate, chain, ct_keyring)
+        if sct.entry_type == 1
+          issuer_cert = find_issuer_cert(chain)
+          issuer_pubkey = issuer_cert.public_key
+          unless issuer_cert.ca?
+            raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
           end
 
-          tbs_cert = certificate.tbs_certificate_der
-          tbs_cert_len = tbs_cert.bytesize
-          unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
-          raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
-
-          [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
-        else
-          raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
         end
 
-      [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
-        C # version
-        C # signature_type
-        Q> # timestamp
-        n # entry_type
-        a#{signed_entry.bytesize} # signed_entry
-        n # extensions length
-      PACK
-    end
+        digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
+        ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
+      end
 
-    def find_issuer_cert(chain)
-      issuer = chain[0]
-      issuer = chain[1] if issuer.preissuer?
-      raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
+      def pack_digitally_signed(sct, certificate, issuer_key_id = nil)
+        # https://datatracker.ietf.org/doc/html/rfc6962#section-3.4
+        # https://datatracker.ietf.org/doc/html/rfc6962#section-3.5
+        #
+        #   digitally-signed struct {
+        #     Version sct_version;
+        #     SignatureType signature_type = certificate_timestamp;
+        #     uint64 timestamp;
+        #     LogEntryType entry_type;
+        #     select(entry_type) {
+        #         case x509_entry: ASN.1Cert;
+        #         case precert_entry: PreCert;
+        #     } signed_entry;
+        #    CtExtensions extensions;
+        # };
 
-      issuer
+        signed_entry =
+          case sct.entry_type
+          when 0 # x509_entry
+            cert_der = certificate.to_public_der
+            cert_len = cert_der.bytesize
+            unused, len1, len2, len3 = [cert_len].pack("N").unpack("C4")
+            raise Error::InvalidCertificate, "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
+
+            [len1, len2, len3, cert_der].pack("CCC a#{cert_len}")
+          when 1 # precert_entry
+            unless issuer_key_id&.bytesize == 32
+              raise Error::InvalidCertificate,
+                    "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
+            end
+
+            tbs_cert = certificate.tbs_certificate_der
+            tbs_cert_len = tbs_cert.bytesize
+            unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
+            raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
+
+            [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
+          else
+            raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          end
+
+        [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
+          C # version
+          C # signature_type
+          Q> # timestamp
+          n # entry_type
+          a#{signed_entry.bytesize} # signed_entry
+          n # extensions length
+        PACK
+      end
+
+      def find_issuer_cert(chain)
+        issuer = chain[0]
+        issuer = chain[1] if issuer.preissuer?
+        raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
+
+        issuer
+      end
     end
 
     def extract_timestamp_from_verification_data(data)

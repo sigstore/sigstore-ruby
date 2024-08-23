@@ -17,6 +17,7 @@
 require_relative "internal/util"
 require_relative "internal/x509"
 require_relative "models"
+require_relative "oidc"
 require_relative "policy"
 require_relative "verifier"
 
@@ -25,8 +26,11 @@ module Sigstore
     include Loggable
 
     def initialize(jwt:, trusted_root:)
-      @jwt = jwt
+      @identity_token = OIDC::IdentityToken.new(jwt)
       @trusted_root = trusted_root
+
+      @verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
+                                          trust_root: @trusted_root)
     end
 
     def sign(payload)
@@ -35,9 +39,9 @@ module Sigstore
       # 3) generate a CreateSigningCertificateRequest
       csr = generate_csr(keypair)
       # 4) get a cert chain from fulcio
-      chain = fetch_cert(csr)
+      leaf = fetch_cert(csr)
       # 5) verify returned cert chain
-      leaf, _chain = verify_chain(chain)
+      verify_chain(leaf)
       # 6) sign the payload
       signature = sign_payload(payload, keypair)
       # 7) send hash of signature to timestamping service
@@ -69,19 +73,34 @@ module Sigstore
     def generate_csr(keypair)
       csr = OpenSSL::X509::Request.new
 
-      csr.version = 0 # TODO: check
-      # TODO: proper name
+      csr.version = 0
+      csr.public_key = keypair
+
       # The subject in the CertificationRequestInfo is an X.501 RelativeDistinguishedName.
       # The value of the RelativeDistinguishedName SHOULD be the subject of the authentication token;
       # its type MUST be the type identified in the Fulcio instance’s public configuration.
-      csr.subject = OpenSSL::X509::Name.new [%w[CN noone], %w[DC example]]
-      csr.public_key = keypair
+      # NOTE: the subject of the CSR is unused
+
+      extension = OpenSSL::X509::ExtensionFactory.new.create_extension(
+        "basicConstraints",
+        "CA:FALSE",
+        true # critical
+      )
+      csr.add_attribute OpenSSL::X509::Attribute.new(
+        "extReq",
+        OpenSSL::ASN1::Set.new(
+          [OpenSSL::ASN1::Sequence.new([extension])]
+        )
+      )
+
       # TODO: digest from trusted root config
       csr.sign keypair, "SHA256"
 
+      logger.debug { "Generated CSR" }
+
       {
         credentials: {
-          oidc_identity_token: @jwt
+          oidc_identity_token: @identity_token.raw_token
         },
         certificate_signing_request: Internal::Util.base64_encode(csr.to_pem)
       }
@@ -103,34 +122,58 @@ module Sigstore
 
       resp_body = JSON.parse(resp.body)
 
-      chain = resp_body.fetch("signedCertificateEmbeddedSct").fetch("chain")
-                       .fetch("certificates").map { |pem| Internal::X509::Certificate.read(pem) }
+      cert = resp_body.fetch("signedCertificateEmbeddedSct").fetch("chain")
+                      .fetch("certificates").first.then { |pem| Internal::X509::Certificate.read(pem) }
       logger.debug { "Fetched cert from fulcio" }
-      chain
+      cert
     end
 
-    def verify_chain(chain)
+    def verify_chain(leaf)
       # Perform certification path validation (RFC 5280 §6) of the returned certificate chain with the pre-distributed
       # Fulcio root certificate(s) as a trust anchor.
 
       x509_store = OpenSSL::X509::Store.new
-      chain = chain.map(&:openssl)
-      leaf = chain.shift
-      root = chain.pop # TODO: use root from trusted root as trust anchor
-      x509_store.add_cert root
-      raise x509_store.error_string unless x509_store.verify(leaf, chain)
+      expected_chain = @trusted_root.fulcio_cert_chain
+
+      x509_store.add_cert expected_chain.last.openssl
+      unless x509_store.verify(leaf.openssl, expected_chain[..-2].map(&:openssl))
+        raise Error::Signing, "returned certificate does not validate: #{x509_store.error_string}"
+      end
+
+      chain = x509_store.chain
+      chain.shift # remove the leaf cert
+      chain.map! { |cert| Internal::X509::Certificate.new(cert) }
 
       logger.debug { "verified chain" }
 
-      # TODO: verify SCT in leaf
       # Extract a SignedCertificateTimestamp, which may be embedded as an X.509 extension in the leaf certificate or
       # attached separately in the SigningCertificate returned from the Identity Service.
       # Verify this SignedCertificateTimestamp as in RFC 9162 §8.1.3, using the root certificate from
       # the Certificate Transparency Log.
+      if (result = Verifier.verify_scts(leaf, chain, @verifier.rekor_client.ct_keyring)) &&
+         !result.verified?
+        raise Error::Signing, "Failed to verify SCTs: #{result.reason}"
+      end
 
-      # TODO: verify leaf subject
       # Check that the leaf certificate contains the subject from the certificate signing request and encodes the
       # appropriate AuthenticationServiceIdentifier in an extension with OID 1.3.6.1.4.1.57264.1.8.
+
+      fulcio_issuer = leaf.extension(Internal::X509::Extension::FulcioIssuer)
+      unless fulcio_issuer && fulcio_issuer.issuer == @identity_token.issuer
+        raise Error::Signing, "certificate does not contain expected Fulcio issuer"
+      end
+
+      unless leaf.subject.to_a.empty?
+        raise Error::Signing,
+              "certificate contains unexpected subject #{leaf.subject.to_a}"
+      end
+
+      general_names = leaf.extension(Internal::X509::Extension::SubjectAlternativeName).general_names
+      expected_san = [[:uniformResourceIdentifier, @identity_token.identity]]
+      if general_names != expected_san
+        raise Error::Signing,
+              "certificate does not contain expected SAN #{expected_san}, got #{general_names}"
+      end
 
       [leaf, x509_store.chain]
     end
@@ -151,6 +194,27 @@ module Sigstore
       nil
     end
 
+    def build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+      {
+        "spec" => {
+          "signature" => {
+            "content" => Internal::Util.base64_encode(signature),
+            "publicKey" => {
+              "content" => Internal::Util.base64_encode(cert.to_pem)
+            }
+          },
+          "data" => {
+            "hash" => {
+              "algorithm" => "sha256", # TODO: should this always be sha256?
+              "value" => Internal::Util.hex_encode(data_sha256)
+            }
+          }
+        },
+        "kind" => "hashedrekord", # TODO: is hashedrekord always the right kind? should this be configurable?
+        "apiVersion" => "0.0.1"
+      }
+    end
+
     def submit_signed_metadata_to_transparency_service(signature, cert, data_sha256)
       # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
       # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
@@ -163,46 +227,27 @@ module Sigstore
       # The signing metadata might contain additional, application-specific metadata according to the format used.
       # The Signer then canonically encodes the metadata (according to the chosen format).
 
+      # TODO: allow configuring the entry kind?
+      proposed_entry = build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+
       # TODO: is looping here correct?
       @trusted_root.tlogs_for_signing.map do |ctlog|
         logger.info { "Submitting to #{ctlog.base_url}" }
 
-        body = {
-          "spec" => {
-            "signature" => {
-              "content" => Internal::Util.base64_encode(signature),
-              "publicKey" => {
-                "content" => Internal::Util.base64_encode(cert.to_pem)
-              }
-            },
-            "data" => {
-              "hash" => {
-                "algorithm" => "sha256", # TODO: should this always be sha256?
-                "value" => Internal::Util.hex_encode(data_sha256)
-              }
-            }
-          },
-          "kind" => "hashedrekord", # TODO: is hashedrekord always the right kind? should this be configurable?
-          "apiVersion" => "0.0.1"
-        }
-
         # TODO: verify
         # The signer MUST verify the log entry as in Spec: Transparency Service.
         Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
-                     .log.entries.post(body)
+                     .log.entries.post(proposed_entry)
       end
     end
 
     def verify(artifact, bundle)
-      verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
-                                         trust_root: @trusted_root)
-
       verification_input = Verification::V1::Input.new
       verification_input.bundle = bundle
       verification_input.artifact = Verification::V1::Artifact.new
       verification_input.artifact.artifact = artifact
 
-      result = verifier.verify(
+      result = @verifier.verify(
         input: VerificationInput.new(verification_input),
         policy: expected_identity,
         offline: false
@@ -210,21 +255,8 @@ module Sigstore
       raise Error::Signing, "Failed to verify: #{result.reason}" unless result.verified?
     end
 
-    class NullVerifier
-      def verify(_cert)
-        VerificationSuccess.new
-      end
-    end
-
     def expected_identity
-      _header, claims, _sig = @jwt.split(".").map { |d| d.unpack1("m*") }
-
-      claims = JSON.parse(claims)
-      issuer = claims["iss"]
-      identity = claims["sub"] # TODO: this isn't the correct identity for GHA tokens
-
-      Policy::Identity.new(identity: identity, issuer: issuer)
-      NullVerifier.new # TODO: expect the real identity
+      Policy::Identity.new(identity: @identity_token.identity, issuer: @identity_token.issuer)
     end
 
     def collect_bundle(leaf_certificate, tlog_entries, timestamp_verification_data, hashed_input, signature)

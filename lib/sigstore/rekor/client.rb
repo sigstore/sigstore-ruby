@@ -91,6 +91,9 @@ module Sigstore
           raise Error::FailedRekorPost,
                 "#{resp.code} #{resp.message.inspect}\n#{JSON.pretty_generate(entry)}\n#{resp.body}"
         end
+        unless resp.content_type == "application/json"
+          raise Error::FailedRekorPost, "Unexpected content type: #{resp.content_type.inspect}"
+        end
 
         body = JSON.parse(resp.body)
         Entries.decode_transparency_log_entry(body)
