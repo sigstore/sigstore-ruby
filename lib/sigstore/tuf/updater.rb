@@ -222,7 +222,7 @@ module Sigstore::TUF
       visited_role_names = Set.new
 
       while delegations_to_visit.any? && visited_role_names.size < @config.max_delegations
-        role_name, parent_role = delegations_to_visit.shift
+        role_name, parent_role = delegations_to_visit.pop
         next if visited_role_names.include?(role_name)
 
         targets = load_targets(role_name, parent_role)
