@@ -122,6 +122,10 @@ module Sigstore
 
       resp_body = JSON.parse(resp.body)
 
+      unless resp_body.key?("signedCertificateEmbeddedSct")
+        raise Error::Signing, "missing signedCertificateEmbeddedSct in response from fulcio"
+      end
+
       cert = resp_body.fetch("signedCertificateEmbeddedSct").fetch("chain")
                       .fetch("certificates").first.then { |pem| Internal::X509::Certificate.read(pem) }
       logger.debug { "Fetched cert from fulcio" }

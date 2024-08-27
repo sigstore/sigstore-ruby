@@ -88,7 +88,7 @@ module Sigstore
         if entry.inclusion_proof&.checkpoint
           Internal::Merkle.verify_merkle_inclusion(entry)
           Rekor::Checkpoint.verify_checkpoint(@rekor_client, entry)
-        elsif offline
+        elsif !offline
           return VerificationFailure.new("Missing Rekor inclusion proof")
         else
           logger.warn "inclusion proof not present in bundle: skipping due to offline verification"
