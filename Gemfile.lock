@@ -21,8 +21,8 @@ GEM
     json (2.7.2)
     json (2.7.2-java)
     language_server-protocol (3.17.0.3)
-    parallel (1.24.0)
-    parser (3.3.2.0)
+    parallel (1.26.3)
+    parser (3.3.4.2)
       ast (~> 2.4.1)
       racc
     power_assert (2.0.3)
@@ -37,25 +37,24 @@ GEM
     protobug_well_known_protos (0.1.0)
       protobug (= 0.1.0)
     public_suffix (5.0.5)
-    racc (1.8.0)
-    racc (1.8.0-java)
+    racc (1.8.1)
+    racc (1.8.1-java)
     rainbow (3.1.1)
     rake (13.2.1)
     regexp_parser (2.9.2)
     rexml (3.3.6)
       strscan
-    rubocop (1.64.1)
+    rubocop (1.66.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
-      regexp_parser (>= 1.8, < 3.0)
-      rexml (>= 3.2.5, < 4.0)
-      rubocop-ast (>= 1.31.1, < 2.0)
+      regexp_parser (>= 2.4, < 3.0)
+      rubocop-ast (>= 1.32.1, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 3.0)
-    rubocop-ast (1.31.3)
+    rubocop-ast (1.32.1)
       parser (>= 3.3.1.0)
     rubocop-performance (1.21.1)
       rubocop (>= 1.48.1, < 2.0)
@@ -94,7 +93,7 @@ PLATFORMS
 DEPENDENCIES
   base64 (~> 0.2.0)
   rake (~> 13.2)
-  rubocop (~> 1.64)
+  rubocop (~> 1.66)
   rubocop-performance (~> 1.21)
   rubocop-rake (~> 0.6.0)
   sigstore!
@@ -116,22 +115,22 @@ CHECKSUMS
   json (2.7.2) sha256=1898b5cbc81cd36c0fd4d0b7ad2682c39fb07c5ff682fc6265f678f550d4982c
   json (2.7.2-java) sha256=138e3038b5361b3d06ee2e8aa2be00bed0d0de4ef5f1553fc5935e5b93aca7ee
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
-  parallel (1.24.0) sha256=5bf38efb9b37865f8e93d7a762727f8c5fc5deb19949f4040c76481d5eee9397
-  parser (3.3.2.0) sha256=085d6ff5de3db7fa8ce1298abdb08750ccd7c96d0fcb95a90437b6d851378249
+  parallel (1.26.3) sha256=d86babb7a2b814be9f4b81587bf0b6ce2da7d45969fab24d8ae4bf2bb4d4c7ef
+  parser (3.3.4.2) sha256=71efa8690c2a1ff8937258ff5713add4894dcea8b4ba19055692e28a2469c9e6
   power_assert (2.0.3) sha256=cd5e13c267370427c9804ce6a57925d6030613e341cb48e02eec1f3c772d4cf8
   protobug (0.1.0) sha256=5bf1356cedf99dcf311890743b78f5e602f62ca703e574764337f1996b746bf2
   protobug_googleapis_field_behavior_protos (0.1.0) sha256=db48ef6a5913b2355b4a6931ab400a9e3e995fb48499977a3ad0be6365f9e265
   protobug_sigstore_protos (0.1.0) sha256=4ad1eebaf6454131b6f432dda50ad0e513773613474b92470847614a5acacce1
   protobug_well_known_protos (0.1.0) sha256=356757f562453bb34a28f12e8e9fa357346cca35a6807a549837c3fe256bb5b3
   public_suffix (5.0.5) sha256=72c340218bb384610536919988705cc29e09749c0021fd7005f715c7e5dfc493
-  racc (1.8.0) sha256=09349a65c37c4fe710a435f25c9f1652e39f29ad6b1fa08d4a8d30c0553d3a08
-  racc (1.8.0-java) sha256=3688448632150682bbd708b199961129aed2266107e26fcacb45c997395c19f9
+  racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
+  racc (1.8.1-java) sha256=54f2e6d1e1b91c154013277d986f52a90e5ececbe91465d29172e49342732b98
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
   rexml (3.3.6) sha256=7af0459d108dfd6ffa7d38c67c8464e200f5c9d476d4c6a3d1899e92808d63c6
-  rubocop (1.64.1) sha256=3145bf1863771e400a1c041060e751e5ff0edd9ceb99d01df36db1902f611f3b
-  rubocop-ast (1.31.3) sha256=1b07d618d8776993ec6053a706d1c09f0bf15139fd69415924656cbff07e7818
+  rubocop (1.66.0) sha256=348f65716380cb2d789936e61021186eff831e4f7d3c44cb045952e33b337791
+  rubocop-ast (1.32.1) sha256=6a86ce3b7aa8ff8b600396d8f75ef5f85873b94bf0a1ae11607c19e65ced79c1
   rubocop-performance (1.21.1) sha256=5cf20002a544275ad6aa99abca4b945d2a2ed71be925c38fe83700360ed8734e
   rubocop-rake (0.6.0) sha256=56b6f22189af4b33d4f4e490a555c09f1281b02f4d48c3a61f6e8fe5f401d8db
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
