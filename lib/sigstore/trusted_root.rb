@@ -68,8 +68,8 @@ module Sigstore
       certs
     end
 
-    def tlogs_for_signing
-      tlogs.select do |ctlog|
+    def tlog_for_signing
+      tlogs.find do |ctlog|
         timerange_valid?(ctlog.public_key.valid_for, allow_expired: false)
       end
     end

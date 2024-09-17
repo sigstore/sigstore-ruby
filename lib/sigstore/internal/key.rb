@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "util"
+
 module Sigstore
   module Internal
     class Key
@@ -44,7 +46,7 @@ module Sigstore
           # needed because older versions of OpenSSL don't implement OpenSSL::PKey.new_raw_public_key
           pem = <<~PEM
             -----BEGIN PUBLIC KEY-----
-            MCowBQYDK2VwAyEA#{[raw].pack("m0")}
+            MCowBQYDK2VwAyEA#{Internal::Util.base64_encode(raw)}
             -----END PUBLIC KEY-----
           PEM
           # pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)

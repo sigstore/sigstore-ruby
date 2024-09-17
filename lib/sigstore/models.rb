@@ -182,9 +182,9 @@ module Sigstore
       {
         "spec" => {
           "signature" => {
-            "content" => [message_signature.signature].pack("m0"),
+            "content" => Internal::Util.base64_encode(message_signature.signature),
             "publicKey" => {
-              "content" => [leaf_certificate.to_pem].pack("m0")
+              "content" => Internal::Util.base64_encode(leaf_certificate.to_pem)
             }
           },
           "data" => {
@@ -207,14 +207,17 @@ module Sigstore
           "content" => {
             "envelope" => {
               "payloadType" => dsse_envelope.payloadType,
-              "payload" => [[dsse_envelope.payload].pack("m0")].pack("m0"),
+              "payload" => Internal::Util.base64_encode(Internal::Util.base64_encode(dsse_envelope.payload)),
               "signatures" => dsse_envelope.signatures.map do |sig|
                 {
-                  "publicKey" => [
+                  "publicKey" =>
                     # needed because #to_pem packs the key in base64 with m*
-                    "-----BEGIN CERTIFICATE-----\n#{[leaf_certificate.to_der].pack("m0")}\n-----END CERTIFICATE-----\n"
-                  ].pack("m0"),
-                  "sig" => [[sig.sig].pack("m0")].pack("m0")
+                    Internal::Util.base64_encode(
+                      "-----BEGIN CERTIFICATE-----\n" \
+                      "#{Internal::Util.base64_encode(leaf_certificate.to_der)}\n" \
+                      "-----END CERTIFICATE-----\n"
+                    ),
+                  "sig" => Internal::Util.base64_encode(Internal::Util.base64_encode(sig.sig))
                 }
               end
             },
@@ -239,8 +242,8 @@ module Sigstore
           "signatures" =>
             dsse_envelope.signatures.map do |sig|
               {
-                "signature" => [sig.sig].pack("m0"),
-                "verifier" => [certificate.to_pem].pack("m0")
+                "signature" => Internal::Util.base64_encode(sig.sig),
+                "verifier" => Internal::Util.base64_encode(certificate.to_pem)
               }
             end
         }

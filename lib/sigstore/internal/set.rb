@@ -18,14 +18,14 @@ module Sigstore
   module Internal
     module SET
       def self.verify_set(keyring:, entry:)
-        raise "invalid log entry: no inclusion promise" unless entry.inclusion_promise
+        raise Error, "invalid log entry: no inclusion promise" unless entry.inclusion_promise
 
         signed_entry_timestamp = entry.inclusion_promise.signed_entry_timestamp
         log_id = Util.hex_encode(entry.log_id.key_id)
 
         # https://www.rfc-editor.org/rfc/rfc8785
         canonical_entry = ::JSON.dump({
-                                        body: [entry.canonicalized_body].pack("m0"),
+                                        body: Internal::Util.base64_encode(entry.canonicalized_body),
                                         integratedTime: entry.integrated_time,
                                         logID: log_id,
                                         logIndex: entry.log_index

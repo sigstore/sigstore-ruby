@@ -29,7 +29,7 @@ module Sigstore
       @identity_token = OIDC::IdentityToken.new(jwt)
       @trusted_root = trusted_root
 
-      @verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
+      @verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlog_for_signing.base_url,
                                           trust_root: @trusted_root)
     end
 
@@ -50,11 +50,10 @@ module Sigstore
       hashed_input = Common::V1::HashOutput.new
       hashed_input.algorithm = Common::V1::HashAlgorithm::SHA2_256
       hashed_input.digest = OpenSSL::Digest("SHA256").digest(payload)
-      tlog_entries = submit_signed_metadata_to_transparency_service(signature, leaf,
-                                                                    hashed_input.digest)
+      tlog_entry = submit_signed_metadata_to_transparency_service(signature, leaf, hashed_input)
       # 9) perform verification
 
-      bundle = collect_bundle(leaf, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      bundle = collect_bundle(leaf, [tlog_entry], timestamp_verification_data, hashed_input, signature)
       verify(payload, bundle)
 
       bundle
@@ -63,7 +62,6 @@ module Sigstore
     private
 
     def generate_keypair
-      # TODO: check if the type of key matters?
       # maybe allow configuring?
       key = OpenSSL::PKey::EC.generate("prime256v1")
       logger.debug { "Generated keypair #{key}" }
@@ -93,7 +91,6 @@ module Sigstore
         )
       )
 
-      # TODO: digest from trusted root config
       csr.sign keypair, "SHA256"
 
       logger.debug { "Generated CSR" }
@@ -183,7 +180,6 @@ module Sigstore
     end
 
     def sign_payload(payload, key)
-      # TODO: derive correct digest from what the registry supports
       # The Signer MAY pre-hash the payload using a hash algorithm from the registry (Spec: Sigstore Registries) for
       # compatibility with some signing metadata formats (see §Submission of Signing Metadata to Transparency Service).
       key.sign("SHA256", payload)
@@ -198,7 +194,15 @@ module Sigstore
       nil
     end
 
-    def build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+    def build_proposed_hashed_rekord_entry(signature, cert, hashed_input)
+      algorithm = case hashed_input.algorithm
+                  when Common::V1::HashAlgorithm::SHA2_256 then "sha256"
+                  when Common::V1::HashAlgorithm::SHA2_384 then "sha384"
+                  when Common::V1::HashAlgorithm::SHA2_512 then "sha512"
+                  else
+                    raise ArgumentError,
+                          "unsupported hash algorithm: #{hashed_input.algorithm.inspect}"
+                  end
       {
         "spec" => {
           "signature" => {
@@ -209,17 +213,17 @@ module Sigstore
           },
           "data" => {
             "hash" => {
-              "algorithm" => "sha256", # TODO: should this always be sha256?
-              "value" => Internal::Util.hex_encode(data_sha256)
+              "algorithm" => algorithm,
+              "value" => Internal::Util.hex_encode(hashed_input.digest)
             }
           }
         },
-        "kind" => "hashedrekord", # TODO: is hashedrekord always the right kind? should this be configurable?
+        "kind" => "hashedrekord",
         "apiVersion" => "0.0.1"
       }
     end
 
-    def submit_signed_metadata_to_transparency_service(signature, cert, data_sha256)
+    def submit_signed_metadata_to_transparency_service(signature, cert, hashed_input)
       # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
       # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
       # * The signature.
@@ -232,17 +236,14 @@ module Sigstore
       # The Signer then canonically encodes the metadata (according to the chosen format).
 
       # TODO: allow configuring the entry kind?
-      proposed_entry = build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+      proposed_entry = build_proposed_hashed_rekord_entry(signature, cert, hashed_input)
 
-      # TODO: is looping here correct?
-      @trusted_root.tlogs_for_signing.map do |ctlog|
-        logger.info { "Submitting to #{ctlog.base_url}" }
+      ctlog = @trusted_root.tlog_for_signing
+      logger.info { "Submitting to #{ctlog.base_url}" }
 
-        # TODO: verify
-        # The signer MUST verify the log entry as in Spec: Transparency Service.
-        Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
-                     .log.entries.post(proposed_entry)
-      end
+      # The signer MUST verify the log entry as in Spec: Transparency Service.
+      Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
+                   .log.entries.post(proposed_entry)
     end
 
     def verify(artifact, bundle)

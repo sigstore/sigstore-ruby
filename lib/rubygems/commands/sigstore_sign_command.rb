@@ -61,7 +61,7 @@ module Gem
           trusted_root: options[:trusted_root]
         ).sign(File.binread(options[:args].first))
 
-        File.binwrite(options[:signature], [bundle.message_signature.signature].pack("m0"))
+        File.binwrite(options[:signature], Sigstore::Internal::Util.base64_encode(bundle.message_signature.signature))
         File.binwrite(options[:certificate], bundle.verification_material.certificate.raw_bytes)
       end
     end

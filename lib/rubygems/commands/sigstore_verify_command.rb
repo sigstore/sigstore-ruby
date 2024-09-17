@@ -126,7 +126,6 @@ module Gem
         end
 
         input_map.each do |file, inputs|
-          # TODO: replace verification materials with Sigstore::Verification::V1::Input
           artifact = Sigstore::Verification::V1::Artifact.new
           artifact.artifact = File.binread(file)
 
