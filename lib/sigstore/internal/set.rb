@@ -17,15 +17,24 @@
 module Sigstore
   module Internal
     module SET
-      def self.verify_set(client:, entry:)
+      def self.verify_set(keyring:, entry:)
         raise "invalid log entry: no inclusion promise" unless entry.inclusion_promise
 
-        signed_entry_timestamp = entry.inclusion_promise.unpack1("m0")
+        signed_entry_timestamp = entry.inclusion_promise.signed_entry_timestamp
+        log_id = Util.hex_encode(entry.log_id.key_id)
 
-        client.rekor_keyring.verify(
-          key_id: entry.log_id,
+        # https://www.rfc-editor.org/rfc/rfc8785
+        canonical_entry = ::JSON.dump({
+                                        body: [entry.canonicalized_body].pack("m0"),
+                                        integratedTime: entry.integrated_time,
+                                        logID: log_id,
+                                        logIndex: entry.log_index
+                                      })
+
+        keyring.verify(
+          key_id: log_id,
           signature: signed_entry_timestamp,
-          data: entry.encode_canonical
+          data: canonical_entry
         )
       end
     end

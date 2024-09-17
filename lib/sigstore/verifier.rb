@@ -24,6 +24,8 @@ module Sigstore
   class Verifier
     include Loggable
 
+    attr_reader :rekor_client
+
     def initialize(rekor_client:, fulcio_cert_chain:, timestamp_authorities:)
       @rekor_client = rekor_client
       @fulcio_cert_chain = fulcio_cert_chain
@@ -54,9 +56,12 @@ module Sigstore
       )
     end
 
-    def verify(materials:, policy:)
+    def verify(input:, policy:, offline:)
       # First, establish a time for the signature. This timestamp is required to validate the certificate chain,
       # so this step comes first.
+
+      bundle = input.sbundle
+      materials = bundle.verification_material
 
       # 1)
       # If the verification policy uses the Timestamping Service, the Verifier MUST verify the timestamping response
@@ -76,21 +81,21 @@ module Sigstore
       begin
         # TODO: should this instead be an input to the verify method?
         # See https://docs.google.com/document/d/1kbhK2qyPPk8SLavHzYSDM8-Ueul9_oxIMVFuWMWKz0E/edit?disco=AAABQVV-gT0
-        entry = materials.find_rekor_entry(@rekor_client)
+        entry = find_rekor_entry(bundle, input.hashed_input, offline: offline)
       rescue Sigstore::Error::MissingRekorEntry
         return VerificationFailure.new("Rekor entry not found")
       else
         if entry.inclusion_proof&.checkpoint
           Internal::Merkle.verify_merkle_inclusion(entry)
           Rekor::Checkpoint.verify_checkpoint(@rekor_client, entry)
-        elsif !materials.offline
+        elsif !offline
           return VerificationFailure.new("Missing Rekor inclusion proof")
         else
           logger.warn "inclusion proof not present in bundle: skipping due to offline verification"
         end
       end
 
-      Internal::SET.verify_set(client: @rekor_client, entry: entry) if entry.inclusion_promise
+      Internal::SET.verify_set(keyring: @rekor_client.rekor_keyring, entry: entry) if entry.inclusion_promise
 
       timestamps << Time.at(entry.integrated_time).utc
 
@@ -110,7 +115,7 @@ module Sigstore
       # MUST perform path validation using the timestamp from the Transparency Service. If both are available, the
       # Verifier performs path validation twice. If either fails, verification fails.
       chains = timestamps.map do |ts|
-        store_ctx = OpenSSL::X509::StoreContext.new(store, materials.certificate.openssl)
+        store_ctx = OpenSSL::X509::StoreContext.new(store, bundle.leaf_certificate.openssl)
         store_ctx.time = ts
 
         unless store_ctx.verify
@@ -137,33 +142,23 @@ module Sigstore
       # SignedCertificateTimestamp embedded in the leaf certificate, and verify it as in RFC 9162 §8.1.3,
       # using the verification key from the Certificate Transparency Log.
       chain = chains.first
-      sct_list = materials.certificate
-                          .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
-                          .signed_certificate_timestamps
-      raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
-
-      sct_list.each do |sct|
-        verified = verify_sct(
-          sct,
-          materials.certificate,
-          chain,
-          @rekor_client.ct_keyring
-        )
-        return VerificationFailure.new("SCT verification failed") unless verified
+      if (result = self.class.verify_scts(bundle.leaf_certificate, chain,
+                                          @rekor_client.ct_keyring)) && !result.verified?
+        return result
       end
 
       # 5)
       # The Verifier MUST then check the certificate against the verification policy.
 
-      usage_ext = materials.certificate.extension(Internal::X509::Extension::KeyUsage)
+      usage_ext = bundle.leaf_certificate.extension(Internal::X509::Extension::KeyUsage)
       return VerificationFailure.new("Key usage is not of type `digital signature`") unless usage_ext.digital_signature
 
-      extended_key_usage = materials.certificate.extension(Internal::X509::Extension::ExtendedKeyUsage)
+      extended_key_usage = bundle.leaf_certificate.extension(Internal::X509::Extension::ExtendedKeyUsage)
       unless extended_key_usage.code_signing?
         return VerificationFailure.new("Extended key usage is not of type `code signing`")
       end
 
-      policy_check = policy.verify(materials.certificate)
+      policy_check = policy.verify(bundle.leaf_certificate)
       return policy_check unless policy_check.verified?
 
       # 6)
@@ -179,32 +174,26 @@ module Sigstore
       #  * The key or certificate from the parsed body is the same as in the input certificate.
       #  * The “subject” of the parsed body matches the artifact.
 
-      signing_key = materials.certificate.public_key
+      signing_key = bundle.leaf_certificate.public_key
 
-      unless materials.signature.nil? ^ materials.dsse_envelope.nil?
-        raise Error::InvalidBundle,
-              "expected either signature xor dsse envelope, got:" \
-              "\n  signature: #{materials.signature.inspect}\n  in_toto: #{materials.dsse_envelope.inspect}"
-      end
-
-      raise Error::InvalidBundle, "missing hashed input" unless materials.hashed_input
-      raise Error::InvalidBundle, "missing input bytes" unless materials.input_bytes
-
-      if materials.signature
-        verified = signing_key.verify(materials.hashed_input.name, materials.signature,
-                                      materials.input_bytes)
+      case bundle.content
+      when :message_signature
+        verified = signing_key.verify(input.hashed_input.name, bundle.message_signature.signature,
+                                      input.artifact.artifact)
         return VerificationFailure.new("Signature verification failed") unless verified
-      elsif materials.dsse_envelope
-        verify_dsse(materials.dsse_envelope, signing_key) or
+      when :dsse_envelope
+        verify_dsse(bundle.dsse_envelope, signing_key) or
           return VerificationFailure.new("DSSE envelope verification failed")
 
-        case materials.dsse_envelope.payloadType
+        case bundle.dsse_envelope.payloadType
         when "application/vnd.in-toto+json"
-          verify_in_toto(materials, JSON.parse(materials.dsse_envelope.payload))
+          verify_in_toto(input, JSON.parse(bundle.dsse_envelope.payload))
         else
           raise Sigstore::Error::Unimplemented,
-                "unsupported DSSE payload type: #{materials.dsse_envelope.payloadType.inspect}"
+                "unsupported DSSE payload type: #{bundle.dsse_envelope.payloadType.inspect}"
         end
+      else
+        raise Error::InvalidBundle, "unknown content type: #{bundle.content}"
       end
 
       VerificationSuccess.new
@@ -227,7 +216,7 @@ module Sigstore
       end
     end
 
-    def verify_in_toto(materials, in_toto_payload)
+    def verify_in_toto(input, in_toto_payload)
       type = in_toto_payload.fetch("_type")
       raise Error::InvalidBundle, "Expected in-toto statement, got #{type.inspect}" unless type == "https://in-toto.io/Statement/v1"
 
@@ -239,103 +228,110 @@ module Sigstore
       raise Error::InvalidBundle, "Expected in-toto statement with digest" if !digest || digest.empty?
 
       digest.each do |name, value|
-        next if materials.hashed_input.hexdigest == value
+        next if input.hashed_input.hexdigest == value
 
         return VerificationFailure.new(
-          "in-toto subject does not match for #{materials.hashed_input.name} of #{subject.fetch("name")}: " \
-          "expected #{name} to be #{value}, got #{materials.hashed_input.hexdigest}"
+          "in-toto subject does not match for #{input.hashed_input.name} of #{subject.fetch("name")}: " \
+          "expected #{name} to be #{value}, got #{input.hashed_input.hexdigest}"
         )
       end
     end
 
-    def verify_sct(sct, certificate, chain, ct_keyring)
-      # TODO: validate hash & signature algorithm match the key in the keyring
-      hash = sct.hash_algorithm
-      signature_algorithm = sct.signature_algorithm
-      unless hash == "sha256" && signature_algorithm == "ecdsa"
-        # TODO: support more algorithms
-        raise Error::Unimplemented, "only sha256 edcsa supported, got #{hash} #{signature_algorithm}"
-      end
+    class << self
+      def verify_scts(leaf_certificate, chain, ct_keyring)
+        sct_list = leaf_certificate
+                   .extension(Internal::X509::Extension::PrecertificateSignedCertificateTimestamps)
+                   .signed_certificate_timestamps
+        raise Error::InvalidCertificate, "no SCTs found" if sct_list.empty?
 
-      issuer_key_id = nil
-      if sct.entry_type == 1
-        issuer_cert = find_issuer_cert(chain)
-        issuer_pubkey = issuer_cert.public_key
-        unless issuer_cert.ca?
-          raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
+        sct_list.each do |sct|
+          verified = verify_sct(
+            sct,
+            leaf_certificate,
+            chain,
+            ct_keyring
+          )
+          return VerificationFailure.new("SCT verification failed") unless verified
         end
-        raise Error::InvalidCertificate, "unsupported issuer pubkey" unless case issuer_pubkey
-                                                                            when OpenSSL::PKey::RSA, OpenSSL::PKey::EC
-                                                                              true
-                                                                            else
-                                                                              false
-                                                                            end
 
-        issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
+        nil
       end
 
-      digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
+      private
 
-      ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
-    end
-
-    def pack_digitally_signed(sct, certificate, issuer_key_id = nil)
-      # https://datatracker.ietf.org/doc/html/rfc6962#section-3.4
-      # https://datatracker.ietf.org/doc/html/rfc6962#section-3.5
-      #
-      #   digitally-signed struct {
-      #     Version sct_version;
-      #     SignatureType signature_type = certificate_timestamp;
-      #     uint64 timestamp;
-      #     LogEntryType entry_type;
-      #     select(entry_type) {
-      #         case x509_entry: ASN.1Cert;
-      #         case precert_entry: PreCert;
-      #     } signed_entry;
-      #    CtExtensions extensions;
-      # };
-
-      signed_entry =
-        case sct.entry_type
-        when 0 # x509_entry
-          cert_der = certificate.to_public_der
-          cert_len = cert_der.bytesize
-          unused, len1, len2, len3 = [cert_len].pack("N").unpack("C4")
-          raise Error::InvalidCertificate, "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
-
-          [len1, len2, len3, cert_der].pack("CCC a#{cert_len}")
-        when 1 # precert_entry
-          unless issuer_key_id&.bytesize == 32
-            raise Error::InvalidCertificate,
-                  "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
+      def verify_sct(sct, certificate, chain, ct_keyring)
+        if sct.entry_type == 1
+          issuer_cert = find_issuer_cert(chain)
+          issuer_pubkey = issuer_cert.public_key
+          unless issuer_cert.ca?
+            raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
           end
 
-          tbs_cert = certificate.tbs_certificate_der
-          tbs_cert_len = tbs_cert.bytesize
-          unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
-          raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
-
-          [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
-        else
-          raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
         end
 
-      [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
-        C # version
-        C # signature_type
-        Q> # timestamp
-        n # entry_type
-        a#{signed_entry.bytesize} # signed_entry
-        n # extensions length
-      PACK
-    end
+        digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
+        ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
+      end
 
-    def find_issuer_cert(chain)
-      issuer = chain[0]
-      issuer = chain[1] if issuer.preissuer?
-      raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
+      def pack_digitally_signed(sct, certificate, issuer_key_id = nil)
+        # https://datatracker.ietf.org/doc/html/rfc6962#section-3.4
+        # https://datatracker.ietf.org/doc/html/rfc6962#section-3.5
+        #
+        #   digitally-signed struct {
+        #     Version sct_version;
+        #     SignatureType signature_type = certificate_timestamp;
+        #     uint64 timestamp;
+        #     LogEntryType entry_type;
+        #     select(entry_type) {
+        #         case x509_entry: ASN.1Cert;
+        #         case precert_entry: PreCert;
+        #     } signed_entry;
+        #    CtExtensions extensions;
+        # };
 
-      issuer
+        signed_entry =
+          case sct.entry_type
+          when 0 # x509_entry
+            cert_der = certificate.to_public_der
+            cert_len = cert_der.bytesize
+            unused, len1, len2, len3 = [cert_len].pack("N").unpack("C4")
+            raise Error::InvalidCertificate, "invalid cert_len #{cert_len} #{cert_der.inspect}" if unused != 0
+
+            [len1, len2, len3, cert_der].pack("CCC a#{cert_len}")
+          when 1 # precert_entry
+            unless issuer_key_id&.bytesize == 32
+              raise Error::InvalidCertificate,
+                    "issuer_key_id must be 32 bytes for precert, given #{issuer_key_id.inspect}"
+            end
+
+            tbs_cert = certificate.tbs_certificate_der
+            tbs_cert_len = tbs_cert.bytesize
+            unused, len1, len2, len3 = [tbs_cert_len].pack("N").unpack("C4")
+            raise Error::InvalidCertificate, "invalid tbs_cert_len #{tbs_cert_len} #{tbs_cert.inspect}" if unused != 0
+
+            [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
+          else
+            raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          end
+
+        [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
+          C # version
+          C # signature_type
+          Q> # timestamp
+          n # entry_type
+          a#{signed_entry.bytesize} # signed_entry
+          n # extensions length
+        PACK
+      end
+
+      def find_issuer_cert(chain)
+        issuer = chain[0]
+        issuer = chain[1] if issuer.preissuer?
+        raise Error::InvalidCertificate, "no issuer certificate found" unless issuer
+
+        issuer
+      end
     end
 
     def extract_timestamp_from_verification_data(data)
@@ -394,6 +390,92 @@ module Sigstore
         end ||
           raise(OpenSSL::Timestamp::TimestampError, "timestamp verification failed")
         resp.token_info.gen_time
+      end
+    end
+
+    def find_rekor_entry(bundle, hashed_input, offline:)
+      raise Error::InvalidBundle, "multiple tlog entries" if bundle.verification_material.tlog_entries.size > 1
+
+      rekor_entry = bundle.verification_material.tlog_entries&.first
+      has_inclusion_promise = rekor_entry && !rekor_entry.inclusion_promise.nil?
+      has_inclusion_proof = rekor_entry && !rekor_entry.inclusion_proof&.checkpoint.nil?
+
+      logger.debug do
+        "Looking for rekor entry, " \
+          "has_inclusion_promise=#{has_inclusion_promise} has_inclusion_proof=#{has_inclusion_proof}"
+      end
+
+      expected_entry = bundle.expected_tlog_entry(hashed_input)
+
+      entry = if offline
+                logger.debug { "Offline verification, skipping rekor" }
+                rekor_entry
+              elsif !has_inclusion_proof
+                logger.debug { "No inclusion proof, searching rekor" }
+                @rekor_client.log.entries.retrieve.post(expected_entry)
+              else
+                logger.debug { "Using rekor entry in sigstore bundle" }
+                rekor_entry
+              end
+
+      raise Error::MissingRekorEntry, "Rekor entry not found" unless entry
+
+      logger.debug { "Found rekor entry: #{entry}" }
+
+      actual_body = JSON.parse(entry.canonicalized_body)
+      if bundle.dsse_envelope?
+        # since the hash is over the uncanonicalized envelope, we need to remove it
+        #
+        # NOTE(sigstore-python): This is very slightly weaker than the consistency check
+        # for hashedrekord entries, due to how inclusion is recorded for DSSE:
+        # the included entry for DSSE includes an envelope hash that we
+        # *cannot* verify, since the envelope is uncanonicalized JSON.
+        # Instead, we manually pick apart the entry body below and verify
+        # the parts we can (namely the payload hash and signature list).
+        case actual_body["kind"]
+        when "intoto"
+          actual_body["spec"]["content"].delete("hash")
+        when "dsse"
+          actual_body["spec"].delete("envelopeHash")
+        else
+          raise Error::InvalidRekorEntry, "Unknown kind: #{actual_body["kind"]}"
+        end
+      end
+
+      if actual_body != expected_entry
+        require "pp"
+        raise Error::InvalidRekorEntry, "Invalid rekor entry:\n\n" \
+                                        "Envelope:\n#{bundle.dsse_envelope.pretty_inspect}\n\n" \
+                                        "Diff:\n#{diff_json(expected_entry, actual_body).pretty_inspect}"
+      end
+
+      entry
+    end
+
+    def diff_json(a, b) # rubocop:disable Naming/MethodParameterName
+      return nil if a == b
+
+      return [a, b] if a.class != b.class
+
+      case a
+      when Hash
+        (a.keys | b.keys).to_h do |k|
+          [k, diff_json(a[k], b[k])]
+        end.compact
+      when Array
+        a.zip(b).filter_map { |x, y| diff_json(x, y) }
+      when String
+        begin
+          da = a.unpack1("m0")
+          db = b.unpack1("m0")
+
+          [{ "decoded" => da, "base64" => a },
+           { "decoded" => db, "base64" => b }]
+        rescue ArgumentError
+          [a, b]
+        end
+      else
+        [a, b]
       end
     end
   end

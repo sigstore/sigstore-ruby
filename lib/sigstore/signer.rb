@@ -17,6 +17,7 @@
 require_relative "internal/util"
 require_relative "internal/x509"
 require_relative "models"
+require_relative "oidc"
 require_relative "policy"
 require_relative "verifier"
 
@@ -25,8 +26,11 @@ module Sigstore
     include Loggable
 
     def initialize(jwt:, trusted_root:)
-      @jwt = jwt
+      @identity_token = OIDC::IdentityToken.new(jwt)
       @trusted_root = trusted_root
+
+      @verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
+                                          trust_root: @trusted_root)
     end
 
     def sign(payload)
@@ -35,31 +39,25 @@ module Sigstore
       # 3) generate a CreateSigningCertificateRequest
       csr = generate_csr(keypair)
       # 4) get a cert chain from fulcio
-      chain = fetch_cert(csr)
+      leaf = fetch_cert(csr)
       # 5) verify returned cert chain
-      leaf, _chain = verify_chain(chain)
+      verify_chain(leaf)
       # 6) sign the payload
       signature = sign_payload(payload, keypair)
       # 7) send hash of signature to timestamping service
       timestamp_verification_data = submit_signature_hash_to_timstamping_service(signature)
       # 8) submit signed metadata to transparency service
+      hashed_input = Common::V1::HashOutput.new
+      hashed_input.algorithm = Common::V1::HashAlgorithm::SHA2_256
+      hashed_input.digest = OpenSSL::Digest("SHA256").digest(payload)
       tlog_entries = submit_signed_metadata_to_transparency_service(signature, leaf,
-                                                                    OpenSSL::Digest("SHA256").digest(payload))
+                                                                    hashed_input.digest)
       # 9) perform verification
 
-      verification_material = Bundle::V1::VerificationMaterial.decode_json_hash(
-        {
-          "x509CertificateChain" => {
-            "certificates" => chain[0..-2].map { |c| { "rawBytes" => Internal::Util.base64_encode(c.to_der) } }
-          },
-          "tlogEntries" => tlog_entries,
-          "timestampVerificationData" => timestamp_verification_data
-        },
-        registry: REGISTRY
-      )
-      verify(payload, verification_material, signature)
-      # TODO: return a bundle
-      [signature, leaf, verification_material]
+      bundle = collect_bundle(leaf, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      verify(payload, bundle)
+
+      bundle
     end
 
     private
@@ -75,19 +73,34 @@ module Sigstore
     def generate_csr(keypair)
       csr = OpenSSL::X509::Request.new
 
-      csr.version = 0 # TODO: check
-      # TODO: proper name
+      csr.version = 0
+      csr.public_key = keypair
+
       # The subject in the CertificationRequestInfo is an X.501 RelativeDistinguishedName.
       # The value of the RelativeDistinguishedName SHOULD be the subject of the authentication token;
       # its type MUST be the type identified in the Fulcio instance’s public configuration.
-      csr.subject = OpenSSL::X509::Name.new [%w[CN noone], %w[DC example]]
-      csr.public_key = keypair
+      # NOTE: the subject of the CSR is unused
+
+      extension = OpenSSL::X509::ExtensionFactory.new.create_extension(
+        "basicConstraints",
+        "CA:FALSE",
+        true # critical
+      )
+      csr.add_attribute OpenSSL::X509::Attribute.new(
+        "extReq",
+        OpenSSL::ASN1::Set.new(
+          [OpenSSL::ASN1::Sequence.new([extension])]
+        )
+      )
+
       # TODO: digest from trusted root config
       csr.sign keypair, "SHA256"
 
+      logger.debug { "Generated CSR" }
+
       {
         credentials: {
-          oidc_identity_token: @jwt
+          oidc_identity_token: @identity_token.raw_token
         },
         certificate_signing_request: Internal::Util.base64_encode(csr.to_pem)
       }
@@ -109,34 +122,62 @@ module Sigstore
 
       resp_body = JSON.parse(resp.body)
 
-      chain = resp_body.fetch("signedCertificateEmbeddedSct").fetch("chain")
-                       .fetch("certificates").map { |pem| Internal::X509::Certificate.read(pem) }
+      unless resp_body.key?("signedCertificateEmbeddedSct")
+        raise Error::Signing, "missing signedCertificateEmbeddedSct in response from fulcio"
+      end
+
+      cert = resp_body.fetch("signedCertificateEmbeddedSct").fetch("chain")
+                      .fetch("certificates").first.then { |pem| Internal::X509::Certificate.read(pem) }
       logger.debug { "Fetched cert from fulcio" }
-      chain
+      cert
     end
 
-    def verify_chain(chain)
+    def verify_chain(leaf)
       # Perform certification path validation (RFC 5280 §6) of the returned certificate chain with the pre-distributed
       # Fulcio root certificate(s) as a trust anchor.
 
       x509_store = OpenSSL::X509::Store.new
-      chain = chain.map(&:openssl)
-      leaf = chain.shift
-      root = chain.pop # TODO: use root from trusted root as trust anchor
-      x509_store.add_cert root
-      raise x509_store.error_string unless x509_store.verify(leaf, chain)
+      expected_chain = @trusted_root.fulcio_cert_chain
+
+      x509_store.add_cert expected_chain.last.openssl
+      unless x509_store.verify(leaf.openssl, expected_chain[..-2].map(&:openssl))
+        raise Error::Signing, "returned certificate does not validate: #{x509_store.error_string}"
+      end
+
+      chain = x509_store.chain
+      chain.shift # remove the leaf cert
+      chain.map! { |cert| Internal::X509::Certificate.new(cert) }
 
       logger.debug { "verified chain" }
 
-      # TODO: verify SCT in leaf
       # Extract a SignedCertificateTimestamp, which may be embedded as an X.509 extension in the leaf certificate or
       # attached separately in the SigningCertificate returned from the Identity Service.
       # Verify this SignedCertificateTimestamp as in RFC 9162 §8.1.3, using the root certificate from
       # the Certificate Transparency Log.
+      if (result = Verifier.verify_scts(leaf, chain, @verifier.rekor_client.ct_keyring)) &&
+         !result.verified?
+        raise Error::Signing, "Failed to verify SCTs: #{result.reason}"
+      end
 
-      # TODO: verify leaf subject
       # Check that the leaf certificate contains the subject from the certificate signing request and encodes the
       # appropriate AuthenticationServiceIdentifier in an extension with OID 1.3.6.1.4.1.57264.1.8.
+
+      fulcio_issuer = leaf.extension(Internal::X509::Extension::FulcioIssuer)
+      unless fulcio_issuer && fulcio_issuer.issuer == @identity_token.issuer
+        raise Error::Signing, "certificate does not contain expected Fulcio issuer"
+      end
+
+      unless leaf.subject.to_a.empty?
+        raise Error::Signing,
+              "certificate contains unexpected subject #{leaf.subject.to_a}"
+      end
+
+      general_names = leaf.extension(Internal::X509::Extension::SubjectAlternativeName).general_names
+      expected_san = [@identity_token.identity]
+      if general_names.map(&:last) != expected_san
+        raise Error::Signing,
+              "certificate does not contain expected SAN #{expected_san}, got #{general_names}"
+      end
 
       [leaf, x509_store.chain]
     end
@@ -154,7 +195,28 @@ module Sigstore
       # receives a TimeStampResp including a `TimeStampToken`.
       # The signer MUST verify the TimeStampToken against the payload and Timestamping Service root certificate.
 
-      {}
+      nil
+    end
+
+    def build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+      {
+        "spec" => {
+          "signature" => {
+            "content" => Internal::Util.base64_encode(signature),
+            "publicKey" => {
+              "content" => Internal::Util.base64_encode(cert.to_pem)
+            }
+          },
+          "data" => {
+            "hash" => {
+              "algorithm" => "sha256", # TODO: should this always be sha256?
+              "value" => Internal::Util.hex_encode(data_sha256)
+            }
+          }
+        },
+        "kind" => "hashedrekord", # TODO: is hashedrekord always the right kind? should this be configurable?
+        "apiVersion" => "0.0.1"
+      }
     end
 
     def submit_signed_metadata_to_transparency_service(signature, cert, data_sha256)
@@ -169,82 +231,51 @@ module Sigstore
       # The signing metadata might contain additional, application-specific metadata according to the format used.
       # The Signer then canonically encodes the metadata (according to the chosen format).
 
+      # TODO: allow configuring the entry kind?
+      proposed_entry = build_proposed_hashed_rekord_entry(signature, cert, data_sha256)
+
       # TODO: is looping here correct?
       @trusted_root.tlogs_for_signing.map do |ctlog|
         logger.info { "Submitting to #{ctlog.base_url}" }
 
-        body = {
-          "spec" => {
-            "signature" => {
-              "content" => Internal::Util.base64_encode(signature),
-              "publicKey" => {
-                "content" => Internal::Util.base64_encode(cert.to_pem)
-              }
-            },
-            "data" => {
-              "hash" => {
-                "algorithm" => "sha256", # TODO: should this always be sha256?
-                "value" => Internal::Util.hex_encode(data_sha256)
-              }
-            }
-          },
-          "kind" => "hashedrekord", # TODO: is hashedrekord always the right kind? should this be configurable?
-          "apiVersion" => "0.0.1"
-        }
-
-        resp = Net::HTTP.post(URI.join(ctlog.base_url, "api/v1/log/entries"), body.to_json, {
-                                "Content-Type" => "application/json"
-                              })
-
-        logger.debug do
-          "#{resp.code} #{resp.message.inspect}\n\n#{JSON.pretty_generate(body)}\n\n#{resp.body}"
-        end
-
-        unless resp.code == "201"
-          raise Error::Signing, "#{resp.code} #{resp.message.inspect}\n\n#{JSON.pretty_generate(body)}\n\n#{resp.body}"
-        end
-
-        body = JSON.parse(resp.body)
-
         # TODO: verify
         # The signer MUST verify the log entry as in Spec: Transparency Service.
-        Transparency::LogEntry.from_response(body).as_transparency_log_entry.as_json
+        Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
+                     .log.entries.post(proposed_entry)
       end
     end
 
-    def verify(input, result, signature)
-      verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlogs_for_signing.first.base_url,
-                                         trust_root: @trusted_root)
-      # TODO: verify via a bundle
-      verification_material = VerificationMaterials.new(
-        input: StringIO.new(input),
-        cert_pem: result.x509_certificate_chain.certificates.first.raw_bytes, # passing the DER is fine...
-        signature: signature, # TODO: get signature from result
-        rekor_entry: Transparency::LogEntry.from_proto(result.tlog_entries.first),
+    def verify(artifact, bundle)
+      verification_input = Verification::V1::Input.new
+      verification_input.bundle = bundle
+      verification_input.artifact = Verification::V1::Artifact.new
+      verification_input.artifact.artifact = artifact
+
+      result = @verifier.verify(
+        input: VerificationInput.new(verification_input),
+        policy: expected_identity,
         offline: false
-      )
-      result = verifier.verify(
-        materials: verification_material,
-        policy: expected_identity
       )
       raise Error::Signing, "Failed to verify: #{result.reason}" unless result.verified?
     end
 
-    class NullVerifier
-      def verify(_cert)
-        VerificationSuccess.new
-      end
+    def expected_identity
+      Policy::Identity.new(identity: @identity_token.identity, issuer: @identity_token.issuer)
     end
 
-    def expected_identity
-      _header, claims, _sig = @jwt.split(".").map { |d| d.unpack1("m*") }
-
-      claims = JSON.parse(claims)
-      issuer = claims["iss"]
-      identity = claims["sub"] # TODO: this isn't the correct identity for GHA tokens
-
-      Policy::Identity.new(identity: identity, issuer: issuer)
-      NullVerifier.new # TODO: expect the real identity
+    def collect_bundle(leaf_certificate, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      bundle = Bundle::V1::Bundle.new
+      bundle.media_type = BundleType::BUNDLE_0_3.media_type
+      bundle.verification_material = Bundle::V1::VerificationMaterial.new
+      bundle.verification_material.certificate = Common::V1::X509Certificate.new
+      bundle.verification_material.certificate.raw_bytes = leaf_certificate.to_pem
+      bundle.verification_material.tlog_entries = tlog_entries
+      bundle.verification_material.timestamp_verification_data = timestamp_verification_data
+      bundle.message_signature = Sigstore::Common::V1::MessageSignature.new.tap do |ms|
+        ms.message_digest = hashed_input
+        ms.signature = signature
+      end
+      bundle
     end
   end
 end

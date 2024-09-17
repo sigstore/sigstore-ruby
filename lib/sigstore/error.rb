@@ -26,10 +26,12 @@ module Sigstore
     class InvalidKey < Error; end
 
     class Signing < Error; end
+    class InvalidIdentityToken < Error; end
 
     class MissingRekorEntry < Error; end
     class InvalidRekorEntry < Error; end
     class FailedRekorLookup < Error; end
+    class FailedRekorPost < Error; end
 
     class Unimplemented < Error; end
 

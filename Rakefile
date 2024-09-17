@@ -12,7 +12,7 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[test conformance conformance_staging conformance_tuf rubocop]
+task default: %i[test conformance_staging conformance conformance_tuf rubocop]
 
 require "openssl"
 # Checks for https://github.com/ruby/openssl/pull/770

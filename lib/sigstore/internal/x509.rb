@@ -84,13 +84,17 @@ module Sigstore
 
         def extension(cls)
           openssl.extensions.each do |ext|
-            return cls.new(ext) if ext.oid == cls.oid || ext.oid == cls.oid.short_name
+            return cls.new(ext) if ext.oid == cls.oid || ext.oid == cls.oid.short_name || ext.oid == cls.oid.oid
           end
           nil
         end
 
         def_delegators :openssl, :version, :not_after, :not_before, :to_pem, :to_der,
-                       :public_key, :to_text
+                       :public_key, :to_text, :subject, :hash
+
+        def ==(other)
+          openssl == other.openssl
+        end
 
         def leaf?
           return false if ca?
@@ -154,9 +158,9 @@ module Sigstore
           value = shift_value([OpenSSL::ASN1.decode(extension.to_der)], OpenSSL::ASN1::Sequence)
           @oid = value.shift
 
-          unless @extension.is_a?(OpenSSL::X509::Extension) && @oid == self.class.oid
+          unless @extension.is_a?(OpenSSL::X509::Extension) && @oid.oid == self.class.oid.oid
             raise ArgumentError,
-                  "Invalid extension: #{@extension.inspect} is not a #{@oid.inspect}" \
+                  "Invalid extension: #{@extension.inspect} is not a #{@oid.inspect} " \
                   "(#{self.class} / #{self.class.oid.inspect})"
           end
 
@@ -168,6 +172,8 @@ module Sigstore
           raise ArgumentError, "Invalid extension: extra fields left in #{self}: #{value}" unless value.empty?
 
           parse_value(OpenSSL::ASN1.decode(contents))
+        rescue OpenSSL::ASN1::ASN1Error => e
+          raise ArgumentError, "Invalid extension: #{e.message} for #{self.class.oid}\n#{extension.inspect}"
         end
 
         def critical?
@@ -426,6 +432,21 @@ module Sigstore
             raise Error::InvalidCertificate, "failed unpacking SCTs: offset=#{offset} len=#{len}" unless offset == len
 
             list
+          end
+        end
+
+        class FulcioIssuer < Extension
+          self.oid = OpenSSL::ASN1::ObjectId.new("1.3.6.1.4.1.57264.1.8")
+
+          attr_reader :issuer
+
+          def parse_value(value)
+            unless value.is_a?(OpenSSL::ASN1::UTF8String)
+              raise ArgumentError,
+                    "Invalid Fulcio issuer: #{value.inspect}"
+            end
+
+            @issuer = value.value
           end
         end
       end

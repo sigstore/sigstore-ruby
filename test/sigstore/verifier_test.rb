@@ -5,7 +5,6 @@ require "sigstore/verifier"
 
 class Sigstore::VerifierTest < Test::Unit::TestCase
   def test_pack_digitally_signed_precertificate
-    verifier = Sigstore::Verifier.allocate
     [3, 255, 1024, 16_777_215].each do |precert_bytes_len|
       precert_bytes = "x".b * precert_bytes_len
       sct = Sigstore::Internal::X509::Extension::PrecertificateSignedCertificateTimestamps::Timestamp.new(
@@ -22,7 +21,7 @@ class Sigstore::VerifierTest < Test::Unit::TestCase
       issuer_key_id = "iamapublickeyshatwofivesixdigest"
       cert = Sigstore::Internal::X509::Certificate.allocate
       cert.singleton_class.send(:define_method, :tbs_certificate_der) { precert_bytes }
-      data = verifier.send(:pack_digitally_signed, sct, cert, issuer_key_id)
+      data = Sigstore::Verifier.send(:pack_digitally_signed, sct, cert, issuer_key_id)
       _, l1, l2, l3 = [precert_bytes.bytesize].pack("N").unpack("C4")
       assert_equal [
         "\x00", # version
