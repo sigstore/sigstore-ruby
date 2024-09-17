@@ -151,8 +151,7 @@ module Sigstore
       # attached separately in the SigningCertificate returned from the Identity Service.
       # Verify this SignedCertificateTimestamp as in RFC 9162 §8.1.3, using the root certificate from
       # the Certificate Transparency Log.
-      if (result = Verifier.verify_scts(leaf, chain, @verifier.rekor_client.ct_keyring)) &&
-         !result.verified?
+      if (result = @verifier.verify_scts(leaf, chain)) && !result.verified?
         raise Error::Signing, "Failed to verify SCTs: #{result.reason}"
       end
 
@@ -242,8 +241,7 @@ module Sigstore
       logger.info { "Submitting to #{ctlog.base_url}" }
 
       # The signer MUST verify the log entry as in Spec: Transparency Service.
-      Rekor::Client.for_trust_root(url: ctlog.base_url, trust_root: @trusted_root)
-                   .log.entries.post(proposed_entry)
+      @verifier.rekor_client.log.entries.post(proposed_entry)
     end
 
     def verify(artifact, bundle)

@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require "net/http"
-require_relative "../internal/keyring"
 
 module Sigstore
   module Rekor
@@ -23,38 +22,20 @@ module Sigstore
       DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
       STAGING_REKOR_URL = "https://rekor.sigstage.dev"
 
-      attr_reader :rekor_keyring, :ct_keyring
-
-      def initialize(url:, rekor_keyring:, ct_keyring:)
+      def initialize(url:)
         @url = URI.join(url, "api/v1/")
-        @rekor_keyring = rekor_keyring
-        @ct_keyring = ct_keyring
 
         net = defined?(Gem::Net) ? Gem::Net : Net
         @session = net::HTTP.new(@url.host, @url.port)
         @session.use_ssl = true
       end
 
-      def self.for_trust_root(url:, trust_root:)
-        new(
-          url: url,
-          rekor_keyring: Internal::Keyring.new(keys: trust_root.rekor_keys),
-          ct_keyring: Internal::Keyring.new(keys: trust_root.ctfe_keys)
-        )
+      def self.production
+        new(url: DEFAULT_REKOR_URL)
       end
 
-      def self.production(trust_root:)
-        for_trust_root(
-          url: DEFAULT_REKOR_URL,
-          trust_root: trust_root
-        )
-      end
-
-      def self.staging(trust_root:)
-        for_trust_root(
-          url: STAGING_REKOR_URL,
-          trust_root: trust_root
-        )
+      def self.staging
+        new(url: STAGING_REKOR_URL)
       end
 
       def log

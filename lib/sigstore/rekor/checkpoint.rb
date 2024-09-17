@@ -63,7 +63,7 @@ module Sigstore
           new(note: note, signatures: signatures)
         end
 
-        def verify(client, key_id)
+        def verify(rekor_keyring, key_id)
           data = note.encode("utf-8")
           signatures.each do |signature|
             sig_hash = key_id[0, 4]
@@ -71,7 +71,7 @@ module Sigstore
               raise "sig_hash hint #{signature.sig_hash.inspect} does not match key_id #{sig_hash.inspect}"
             end
 
-            client.rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data: data)
+            rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data: data)
           end
         end
       end
@@ -94,11 +94,11 @@ module Sigstore
         end
       end
 
-      def self.verify_checkpoint(client, entry)
+      def self.verify_checkpoint(rekor_keyring, entry)
         raise "Rekor entry has no inclusion proof" unless entry.inclusion_proof
 
         signed_checkpoint = SignedCheckpoint.from_text(entry.inclusion_proof.checkpoint.envelope)
-        signed_checkpoint.signed_note.verify(client, entry.log_id.key_id)
+        signed_checkpoint.signed_note.verify(rekor_keyring, entry.log_id.key_id)
 
         checkpoint_hash = signed_checkpoint.checkpoint.log_hash
         root_hash = entry.inclusion_proof.root_hash
