@@ -173,8 +173,8 @@ module Sigstore
       end
 
       general_names = leaf.extension(Internal::X509::Extension::SubjectAlternativeName).general_names
-      expected_san = [[:uniformResourceIdentifier, @identity_token.identity]]
-      if general_names != expected_san
+      expected_san = [@identity_token.identity]
+      if general_names.map(&:last) != expected_san
         raise Error::Signing,
               "certificate does not contain expected SAN #{expected_san}, got #{general_names}"
       end
