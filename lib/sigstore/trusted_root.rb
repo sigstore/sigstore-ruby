@@ -88,12 +88,8 @@ module Sigstore
       return enum_for(__method__, tlogs) unless block_given?
 
       tlogs.each do |transparency_log_instance|
-        key_bytes = transparency_log_instance.public_key.raw_bytes
-
-        # TODO: discover if this is only an issue with the key in the staging trusted root
-        next if transparency_log_instance.public_key.key_details == Common::V1::PublicKeyDetails::PKCS1_RSA_PKCS1V5
-
-        yield key_bytes if key_bytes
+        key = transparency_log_instance.public_key
+        yield Internal::Key.from_key_details(key.key_details, key.raw_bytes)
       end
     end
 
