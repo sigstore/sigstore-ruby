@@ -35,7 +35,7 @@ class Test::Unit::TestCase
     ENV.update(
       "XDG_DATA_HOME" => nil,
       "XDG_CACHE_HOME" => nil,
-      "HOME" => Dir.mktmpdir
+      "HOME" => @tmp_home
     )
   end
 
