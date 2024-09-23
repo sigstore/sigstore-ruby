@@ -55,6 +55,7 @@ module Gem
           metadata_dir: @metadata_dir, targets_dir: @targets_dir, target_base_url: @target_base_url,
           **kwargs
         )
+        trust_updater.refresh
 
         options[:args].each do |target|
           target_info = trust_updater.updater.get_targetinfo(target)

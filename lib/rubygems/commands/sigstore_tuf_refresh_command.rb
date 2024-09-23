@@ -41,7 +41,7 @@ module Gem
         Sigstore::TUF::TrustUpdater.new(
           @metadata_url, false,
           metadata_dir: @metadata_dir
-        )
+        ).refresh
       rescue Sigstore::Error => e
         alert_error e.message
         ui.backtrace e

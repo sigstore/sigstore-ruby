@@ -393,8 +393,8 @@ module Sigstore
       raise Error::InvalidBundle, "multiple tlog entries" if bundle.verification_material.tlog_entries.size > 1
 
       rekor_entry = bundle.verification_material.tlog_entries&.first
-      has_inclusion_promise = rekor_entry && !rekor_entry.inclusion_promise.nil?
-      has_inclusion_proof = rekor_entry && !rekor_entry.inclusion_proof&.checkpoint.nil?
+      has_inclusion_promise = !rekor_entry.nil? && !rekor_entry.inclusion_promise.nil?
+      has_inclusion_proof = !rekor_entry.nil? && !rekor_entry.inclusion_proof&.checkpoint.nil?
 
       logger.debug do
         "Looking for rekor entry, " \
