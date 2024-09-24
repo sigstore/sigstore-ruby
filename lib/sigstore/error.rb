@@ -23,12 +23,19 @@ module Sigstore
     class NoTrustedRoot < Error; end
     class NoBundle < Error; end
     class NoSignature < Error; end
+    class InvalidKey < Error; end
+
+    class Signing < Error; end
+    class InvalidIdentityToken < Error; end
 
     class MissingRekorEntry < Error; end
     class InvalidRekorEntry < Error; end
+    class FailedRekorLookup < Error; end
+    class FailedRekorPost < Error; end
 
     class Unimplemented < Error; end
 
     class UnsupportedPlatform < Error; end
+    class UnsupportedKeyType < Error; end
   end
 end

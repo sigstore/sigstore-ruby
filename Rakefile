@@ -12,7 +12,7 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[test conformance conformance_staging conformance_tuf rubocop]
+task default: %i[test conformance_staging conformance conformance_tuf rubocop]
 
 require "openssl"
 # Checks for https://github.com/ruby/openssl/pull/770
@@ -22,7 +22,7 @@ desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
   sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" => xfail },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
-     "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
+     "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}",
      chdir: "test/sigstore-conformance")
 end
 
@@ -30,7 +30,7 @@ desc "Run the conformance tests against staging"
 task conformance_staging: %w[conformance:setup] do
   sh({ "GHA_SIGSTORE_CONFORMANCE_XFAIL" => xfail },
      File.expand_path("test/sigstore-conformance/env/bin/pytest"), "test",
-     "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}", "--skip-signing",
+     "--entrypoint=#{File.join(__dir__, "bin", "conformance-entrypoint")}",
      "--staging",
      chdir: "test/sigstore-conformance")
 end

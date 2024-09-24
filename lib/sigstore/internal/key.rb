@@ -14,29 +14,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "util"
+
 module Sigstore
   module Internal
     class Key
       include Loggable
 
+      def self.from_key_details(key_details, key_bytes)
+        case key_details
+        when Common::V1::PublicKeyDetails::PKIX_ECDSA_P256_SHA_256
+          key_type = "ecdsa"
+          key_schema = "ecdsa-sha2-nistp256"
+        when Common::V1::PublicKeyDetails::PKCS1_RSA_PKCS1V5
+          key_type = "rsa"
+          key_schema = "rsa-pkcs1v15-sha256"
+        else
+          raise Error::UnsupportedKeyType, "Unsupported key type #{key_details}"
+        end
+
+        read(key_type, key_schema, key_bytes, key_id: OpenSSL::Digest::SHA256.hexdigest(key_bytes))
+      end
+
       def self.read(key_type, schema, key_bytes, key_id: nil)
         case key_type
         when "ecdsa", "ecdsa-sha2-nistp256"
-          pkey = OpenSSL::PKey.read(key_bytes)
+          pkey = OpenSSL::PKey::EC.new(key_bytes)
           EDCSA.new(key_type, schema, pkey, key_id: key_id)
         when "ed25519"
           raw = [key_bytes].pack("H*")
           # needed because older versions of OpenSSL don't implement OpenSSL::PKey.new_raw_public_key
           pem = <<~PEM
             -----BEGIN PUBLIC KEY-----
-            MCowBQYDK2VwAyEA#{[raw].pack("m0")}
+            MCowBQYDK2VwAyEA#{Internal::Util.base64_encode(raw)}
             -----END PUBLIC KEY-----
           PEM
           # pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)
           pkey = OpenSSL::PKey.read(pem)
           ED25519.new(key_type, schema, pkey, key_id: key_id)
         when "rsa"
-          pkey = OpenSSL::PKey.read(key_bytes)
+          pkey = OpenSSL::PKey::RSA.new(key_bytes)
           RSA.new(key_type, schema, pkey, key_id: key_id)
         else
           raise ArgumentError, "Unsupported key type #{key_type}"
@@ -73,6 +90,10 @@ module Sigstore
         false
       end
 
+      def public_to_der
+        @key.public_to_der
+      end
+
       class EDCSA < Key
         def initialize(...)
           super
@@ -101,7 +122,10 @@ module Sigstore
         def initialize(...)
           super
           raise ArgumentError, "key_type must be rsa, given #{@key_type}" unless @key_type == "rsa"
-          raise ArgumentError, "key must be an OpenSSL::PKey::RSA" unless @key.is_a?(OpenSSL::PKey::RSA)
+
+          unless @key.is_a?(OpenSSL::PKey::RSA)
+            raise ArgumentError, "key must be an OpenSSL::PKey::RSA, given #{@key.inspect}"
+          end
 
           case @schema
           when "rsassa-pss-sha256", "rsa-pkcs1v15-sha256"

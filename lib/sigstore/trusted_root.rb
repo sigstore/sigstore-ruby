@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require "delegate"
-require "json"
 require "openssl"
 
 require "protobug_sigstore_protos"
@@ -61,10 +60,24 @@ module Sigstore
     end
 
     def fulcio_cert_chain
-      certs = ca_keys(certificate_authorities, allow_expired: true).flat_map { Internal::X509::Certificate.read(_1) }
+      certs = ca_keys(certificate_authorities, allow_expired: true).flat_map do |raw_bytes|
+        Internal::X509::Certificate.read(raw_bytes)
+      end
       raise "Fulcio certificates not found in trusted root" if certs.empty?
 
       certs
+    end
+
+    def tlog_for_signing
+      tlogs.find do |ctlog|
+        timerange_valid?(ctlog.public_key.valid_for, allow_expired: false)
+      end
+    end
+
+    def certificate_authority_for_signing
+      certificate_authorities.find do |ca|
+        timerange_valid?(ca.valid_for, allow_expired: false)
+      end
     end
 
     private
@@ -75,8 +88,8 @@ module Sigstore
       return enum_for(__method__, tlogs) unless block_given?
 
       tlogs.each do |transparency_log_instance|
-        key_bytes = transparency_log_instance.public_key.raw_bytes
-        yield key_bytes if key_bytes
+        key = transparency_log_instance.public_key
+        yield Internal::Key.from_key_details(key.key_details, key.raw_bytes)
       end
     end
 

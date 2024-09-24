@@ -28,10 +28,10 @@ module Sigstore
         inclusion_proof = entry.inclusion_proof
         raise MissingInclusionProofError, "Rekor entry has no inclusion proof" unless inclusion_proof
 
-        leaf_hash = hash_leaf(Util.base64_decode(entry.body))
+        leaf_hash = hash_leaf(entry.canonicalized_body)
         verify_inclusion(inclusion_proof.log_index, inclusion_proof.tree_size,
-                         inclusion_proof.hashes.map { |h| Util.hex_decode(h) },
-                         Util.hex_decode(inclusion_proof.root_hash), leaf_hash)
+                         inclusion_proof.hashes,
+                         inclusion_proof.root_hash, leaf_hash)
       end
 
       def self.verify_inclusion(index, tree_size, proof, root, leaf_hash)

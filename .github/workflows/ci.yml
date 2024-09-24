@@ -86,7 +86,6 @@ jobs:
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
-          skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
         uses: sigstore/sigstore-conformance@bcbeee6cda143ee50f852f22a96162b111bf8a71
@@ -94,7 +93,6 @@ jobs:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           environment: staging
-          skip-signing: true
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0

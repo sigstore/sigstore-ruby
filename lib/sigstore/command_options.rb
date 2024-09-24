@@ -32,5 +32,11 @@ module Sigstore::CommandOptions
     add_option "--bundle PATH", "Path to the signature bundle" do |value, options|
       options[:bundle] = value
     end
+
+    add_option "--staging", "Use staging" do |_, options|
+      options[:staging] = true
+      options[:rekor_url] = Sigstore::Rekor::Client::STAGING_REKOR_URL
+      options[:trusted_root] = Sigstore::TrustedRoot.staging
+    end
   end
 end
