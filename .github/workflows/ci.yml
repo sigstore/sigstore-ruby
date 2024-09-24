@@ -135,7 +135,7 @@ jobs:
         run: touch requirements.txt
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@e9a3a160751549e8a9fd92b267a5c92247d9df82
+        uses: theupdateframework/tuf-conformance@307fb63cefc6c47d2c4c20e579f5e2f258c9e83f
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
