@@ -4,11 +4,7 @@
 ENV["BUNDLE_GEMFILE"] = File.expand_path("../Gemfile", __dir__)
 require "bundler/setup"
 
-require "rubygems/gem_runner"
-
 require "optparse"
-
-tmp = nil
 
 args = []
 OptionParser.new do |parser|
@@ -16,7 +12,6 @@ OptionParser.new do |parser|
     args << "--metadata-url" << v
   end
   parser.on("--metadata-dir D") do |v|
-    tmp = File.dirname(v)
     args << "--metadata-dir" << v
   end
   parser.on("--targets-dir D") do |v|
@@ -44,12 +39,8 @@ SimpleCov::Formatter::HTMLFormatter.module_eval do
   end
 end
 
-command = ARGV.shift
+ARGV.prepend("tuf")
+ARGV[2, 0] = args
 
-ARGV.unshift "sigstore_tuf_#{command.tr("-", "_")}", *args
-begin
-  Gem::GemRunner.new.run ARGV.clone
-rescue Gem::SystemExitException => e
-  # For rubygems < 3.3.0
-  exit e.exit_code
-end
+load File.expand_path("sigstore-ruby", __dir__)
+Sigstore::CLI.start(ARGV)

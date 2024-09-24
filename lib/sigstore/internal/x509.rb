@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "forwardable"
+require "openssl"
+
 module Sigstore
   module Internal
     module X509
@@ -245,7 +248,7 @@ module Sigstore
           CODE_SIGNING = OpenSSL::ASN1::ObjectId.new("1.3.6.1.5.5.7.3.3")
 
           def code_signing?
-            purposes.any?(CODE_SIGNING)
+            purposes.any? { |purpose| purpose.oid == CODE_SIGNING.oid }
           end
         end
 

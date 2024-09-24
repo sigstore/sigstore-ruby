@@ -81,7 +81,7 @@ module Sigstore::TUF
       signatures.each do |signature|
         key_id = signature.fetch("keyid")
         unless @keys.include?(key_id)
-          logger.warn "Unknown key_id=#{key_id.inspect} missing from #{@keys.keys}"
+          logger.warn "Unknown key_id=#{key_id.inspect} in signatures for #{type}"
           next
         end
 

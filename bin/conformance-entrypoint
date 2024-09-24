@@ -6,8 +6,6 @@ require "bundler/setup"
 
 require "tmpdir"
 
-command = ARGV.shift
-
 tmp = Dir.mktmpdir
 
 require "simplecov"
@@ -21,16 +19,9 @@ end
 
 ENV.update(
   "HOME" => tmp,
-  "XDG_DATA_HOME" => File.join(tmp, ".local", "share"),
-  "XDG_CACHE_HOME" => File.join(tmp, ".cache")
+  "XDG_DATA_HOME" => nil,
+  "XDG_CACHE_HOME" => nil
 )
 
-require "rubygems/gem_runner"
-
-ARGV.unshift "sigstore_#{command.tr("-", "_")}"
-begin
-  Gem::GemRunner.new.run ARGV.clone
-rescue Gem::SystemExitException => e
-  # For rubygems < 3.3.0
-  exit e.exit_code
-end
+load File.expand_path("sigstore-ruby", __dir__)
+Sigstore::CLI.start(ARGV)
