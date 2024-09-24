@@ -8,8 +8,7 @@ on:
   schedule:
     - cron: "0 12 * * *"
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   ruby-versions:
