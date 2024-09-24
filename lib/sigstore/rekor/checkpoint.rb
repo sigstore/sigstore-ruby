@@ -36,24 +36,24 @@ module Sigstore
         def self.from_text(text)
           separator = "\n\n"
 
-          raise "Note must ..." unless text.include?(separator)
+          raise Error::InvalidCheckpoint, "Note must include double newline separator" unless text.include?(separator)
 
           note, signatures = text.split(separator, 2)
-          raise "must contain at least one signature" if signatures.empty?
-          raise "signatures must end with a newline" unless signatures.end_with?("\n")
+          raise Error::InvalidCheckpoint, "must contain at least one signature" if signatures.empty?
+          raise Error::InvalidCheckpoint, "signatures must end with a newline" unless signatures.end_with?("\n")
 
           note << "\n"
 
           sig_parser = %r{^\u2014 (?<name>[^[[:space:]]+]+) (?<signature>[0-9A-Za-z+/=-]+)\n}
 
           signatures = signatures.lines.map! do |line|
-            raise "Invalid signature line: #{line.inspect}" unless sig_parser =~ line
+            raise Error::InvalidCertificate, "Invalid signature line: #{line.inspect}" unless sig_parser =~ line
 
             name = Regexp.last_match[:name]
             signature = Regexp.last_match[:signature]
 
             signature_bytes = signature.unpack1("m0")
-            raise "too few bytes in signature" if signature_bytes.bytesize < 5
+            raise Error::InvalidCheckpoint, "too few bytes in signature" if signature_bytes.bytesize < 5
 
             sig_hash = signature_bytes.slice!(0, 4).unpack1("a4")
 
@@ -68,7 +68,8 @@ module Sigstore
           signatures.each do |signature|
             sig_hash = key_id[0, 4]
             if signature.sig_hash != sig_hash
-              raise "sig_hash hint #{signature.sig_hash.inspect} does not match key_id #{sig_hash.inspect}"
+              raise Error::InvalidCheckpoint,
+                    "sig_hash hint #{signature.sig_hash.inspect} does not match key_id #{sig_hash.inspect}"
             end
 
             rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data: data)
@@ -82,20 +83,20 @@ module Sigstore
         def self.from_text(text)
           lines = text.strip.split("\n")
 
-          raise "too few items in header" if lines.size < 3
+          raise Error::InvalidCheckpoint, "too few items in header" if lines.size < 3
 
           origin = lines.shift
           log_size = lines.shift.to_i
           root_hash = lines.shift.unpack1("m0")
 
-          raise "empty origin" if origin.empty?
+          raise Error::InvalidCheckpoint, "empty origin" if origin.empty?
 
           new(origin: origin, log_size: log_size, log_hash: root_hash, other_content: lines)
         end
       end
 
       def self.verify_checkpoint(rekor_keyring, entry)
-        raise "Rekor entry has no inclusion proof" unless entry.inclusion_proof
+        raise Error::InvalidRekorEntry, "Rekor entry has no inclusion proof" unless entry.inclusion_proof
 
         signed_checkpoint = SignedCheckpoint.from_text(entry.inclusion_proof.checkpoint.envelope)
         signed_checkpoint.signed_note.verify(rekor_keyring, entry.log_id.key_id)
@@ -105,8 +106,8 @@ module Sigstore
 
         return if checkpoint_hash == root_hash
 
-        raise "Inclusion proof contains invalid root hash: " \
-              "expected #{checkpoint_hash.inspect}, calculated #{root_hash.inspect}"
+        raise Error::InvalidRekorEntry, "Inclusion proof contains invalid root hash: " \
+                                        "expected #{checkpoint_hash.inspect}, calculated #{root_hash.inspect}"
       end
     end
   end

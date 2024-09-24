@@ -34,4 +34,4 @@ Style/ClassAndModuleChildren:
   Enabled: false
 
 Style/ImplicitRuntimeError:
-  Enabled: false # TODO: Enable this cop
+  Enabled: true

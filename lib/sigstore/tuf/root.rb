@@ -29,7 +29,7 @@ module Sigstore::TUF
 
     def initialize(data)
       type = data.fetch("_type")
-      raise "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
+      raise Error::InvalidData, "Expected type to be #{TYPE}, got #{type.inspect}" unless type == TYPE
 
       @spec_version = data.fetch("spec_version") { raise Error::InvalidData, "root missing spec_version" }
       @consistent_snapshot = data.fetch("consistent_snapshot") do
