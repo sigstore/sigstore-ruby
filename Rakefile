@@ -71,6 +71,7 @@ task :update_data do
   }.each do |name, url|
     Dir.mktmpdir do |dir|
       updater = Sigstore::TUF::TrustUpdater.new(url, false, metadata_dir: dir, targets_dir: dir).updater
+      updater.refresh
       updater.download_target(updater.get_targetinfo("trusted_root.json"))
       cp File.join(dir, "trusted_root.json"), "data/_store/#{name}/trusted_root.json"
       cp File.join(dir, "root.json"), "data/_store/#{name}/root.json"

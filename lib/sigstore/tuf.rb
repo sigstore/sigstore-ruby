@@ -57,6 +57,7 @@ module Sigstore
           unless File.exist?(tuf_root)
             File.open(tuf_root, "wb") do |f|
               File.open(File.expand_path("../../data/_store/#{rsrc_prefix}/root.json", __dir__), "rb") do |r|
+                logger.info { "Copying root.json from #{r.path} to #{f.path}" }
                 IO.copy_stream(r, f)
               end
             end
@@ -68,13 +69,14 @@ module Sigstore
             File.open(trusted_root_target, "wb") do |f|
               File.open(File.expand_path("../../data/_store/#{rsrc_prefix}/trusted_root.json", __dir__),
                         "rb") do |r|
+                logger.info { "Copying trusted_root.json from #{r.path} to #{f.path}" }
                 IO.copy_stream(r, f)
               end
             end
           end
         end
 
-        return if offline
+        return if @offline
 
         @updater = Updater.new(
           metadata_dir: @metadata_dir,
@@ -85,9 +87,6 @@ module Sigstore
           fetcher: method(:fetch),
           config: config
         )
-
-        # TODO: move refresh out of initializer
-        @updater.refresh
       end
 
       def get_dirs(url)
@@ -126,6 +125,12 @@ module Sigstore
         path ||= @updater.download_target(root_info)
 
         path
+      end
+
+      def refresh
+        raise "Offline mode: cannot refresh" if @offline || !@updater
+
+        @updater.refresh
       end
 
       private
