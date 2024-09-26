@@ -36,9 +36,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
+        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -74,21 +74,21 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
+        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@bcbeee6cda143ee50f852f22a96162b111bf8a71
+        uses: sigstore/sigstore-conformance@2c7252ea71e5719372869e439ec872167b68341a
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@bcbeee6cda143ee50f852f22a96162b111bf8a71
+        uses: sigstore/sigstore-conformance@2c7252ea71e5719372869e439ec872167b68341a
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
@@ -122,9 +122,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
+        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -133,7 +133,7 @@ jobs:
         run: touch requirements.txt
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@307fb63cefc6c47d2c4c20e579f5e2f258c9e83f
+        uses: theupdateframework/tuf-conformance@adc04afc6059bcab73d64a245cd3557f4a24e2bb
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
@@ -178,9 +178,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
+        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
         with:
           ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
