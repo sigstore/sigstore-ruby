@@ -7,11 +7,13 @@ require "bundler/setup"
 require "optparse"
 
 args = []
+tmp = nil
 OptionParser.new do |parser|
   parser.on("--metadata-url U") do |v|
     args << "--metadata-url" << v
   end
   parser.on("--metadata-dir D") do |v|
+    tmp = v
     args << "--metadata-dir" << v
   end
   parser.on("--targets-dir D") do |v|
