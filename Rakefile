@@ -54,7 +54,9 @@ task :find_action_versions do # rubocop:disable Rake/Desc
   actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
               .uniq.map { |x| x.split("@", 2) }
               .group_by(&:first).transform_values { |v| v.map(&:last) }
-  raise "conflicts: #{actions.select { |_, v| v.size > 1 }.inspect}" if actions.any? { |_, v| v.size > 1 }
+  if actions.any? { |_, v| v.size > 1 }
+    raise StandardError, "conflicts: #{actions.select { |_, v| v.size > 1 }.inspect}"
+  end
 
   @action_versions = actions.transform_values(&:first)
 end
@@ -140,7 +142,7 @@ class GitRepo < Rake::Task
     when ->(c) { c.respond_to?(:call) }
       @commit.call
     else
-      raise "unexpected commit type: #{@commit.inspect}"
+      raise StandardError, "unexpected commit type: #{@commit.inspect}"
     end
   end
 end

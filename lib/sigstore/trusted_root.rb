@@ -47,14 +47,14 @@ module Sigstore
 
     def rekor_keys
       keys = tlog_keys(tlogs).to_a
-      raise "Did not find one Rekor key" if keys.size != 1
+      raise Error::InvalidBundle, "Did not find one Rekor key" if keys.size != 1
 
       keys
     end
 
     def ctfe_keys
       keys = tlog_keys(ctlogs).to_a
-      raise "Did not find any CTFE keys" if keys.empty?
+      raise Error::InvalidBundle, "Did not find any CTFE keys" if keys.empty?
 
       keys
     end
@@ -63,7 +63,7 @@ module Sigstore
       certs = ca_keys(certificate_authorities, allow_expired: true).flat_map do |raw_bytes|
         Internal::X509::Certificate.read(raw_bytes)
       end
-      raise "Fulcio certificates not found in trusted root" if certs.empty?
+      raise Error::InvalidBundle, "Fulcio certificates not found in trusted root" if certs.empty?
 
       certs
     end
@@ -82,8 +82,6 @@ module Sigstore
 
     private
 
-    # TODO: why not return the whole Sigstore::TrustRoot::V1::TransparencyLogInstance ?
-    # it has the log id, hash algorithm, public key, and validity range
     def tlog_keys(tlogs)
       return enum_for(__method__, tlogs) unless block_given?
 

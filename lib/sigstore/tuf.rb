@@ -119,7 +119,7 @@ module Sigstore
         end
 
         root_info = @updater.get_targetinfo("trusted_root.json")
-        raise "Unsupported TUF configuration: no trusted_root.json" unless root_info
+        raise Error::NoTrustedRoot, "Unsupported TUF configuration: no trusted_root.json" unless root_info
 
         path = @updater.find_cached_target(root_info)
         path ||= @updater.download_target(root_info)
@@ -128,7 +128,7 @@ module Sigstore
       end
 
       def refresh
-        raise "Offline mode: cannot refresh" if @offline || !@updater
+        raise ArgumentError, "Offline mode: cannot refresh" if @offline || !@updater
 
         @updater.refresh
       end

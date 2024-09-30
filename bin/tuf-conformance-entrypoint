@@ -13,7 +13,7 @@ OptionParser.new do |parser|
     args << "--metadata-url" << v
   end
   parser.on("--metadata-dir D") do |v|
-    tmp = File.dirname(v)
+    tmp = v
     args << "--metadata-dir" << v
   end
   parser.on("--targets-dir D") do |v|

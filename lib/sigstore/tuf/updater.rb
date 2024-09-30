@@ -90,8 +90,9 @@ module Sigstore::TUF
 
         # TODO: atomic write
         File.binwrite(filepath, resp_body)
-      rescue  Error::Fetch => e
-        raise "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{e.response.uri}: " \
+      rescue Error::Fetch => e
+        raise Error::Fetch,
+              "Failed to download target #{target_info.inspect} #{target_filepath.inspect} from #{e.response.uri}: " \
               "#{e.message}"
       end
       logger.info { "Downloaded #{target_filepath} to #{filepath}" }
