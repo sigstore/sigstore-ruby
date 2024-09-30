@@ -14,12 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "sigstore/trusted_root"
-require "sigstore/internal/keyring"
-require "sigstore/internal/merkle"
-require "sigstore/internal/set"
-require "sigstore/rekor/checkpoint"
-require "sigstore/internal/x509"
+require_relative "trusted_root"
+require_relative "internal/keyring"
+require_relative "internal/merkle"
+require_relative "internal/set"
+require_relative "rekor/client"
+require_relative "rekor/checkpoint"
+require_relative "internal/x509"
 
 module Sigstore
   class Verifier
@@ -35,9 +36,9 @@ module Sigstore
       @ct_keyring = ct_keyring
     end
 
-    def self.for_trust_root(rekor_url:, trust_root:)
+    def self.for_trust_root(trust_root:)
       new(
-        rekor_client: Rekor::Client.new(url: rekor_url),
+        rekor_client: Rekor::Client.new(url: trust_root.tlog_for_signing.base_url),
         fulcio_cert_chain: trust_root.fulcio_cert_chain,
         timestamp_authorities: trust_root.timestamp_authorities,
         rekor_keyring: Internal::Keyring.new(keys: trust_root.rekor_keys),
@@ -46,11 +47,11 @@ module Sigstore
     end
 
     def self.production(trust_root: TrustedRoot.production)
-      for_trust_root(rekor_url: Rekor::Client::DEFAULT_REKOR_URL, trust_root: trust_root)
+      for_trust_root(trust_root: trust_root)
     end
 
     def self.staging(trust_root: TrustedRoot.staging)
-      for_trust_root(rekor_url: Rekor::Client::STAGING_REKOR_URL, trust_root: trust_root)
+      for_trust_root(trust_root: trust_root)
     end
 
     def verify(input:, policy:, offline:)

@@ -29,8 +29,7 @@ module Sigstore
       @identity_token = OIDC::IdentityToken.new(jwt)
       @trusted_root = trusted_root
 
-      @verifier = Verifier.for_trust_root(rekor_url: @trusted_root.tlog_for_signing.base_url,
-                                          trust_root: @trusted_root)
+      @verifier = Verifier.for_trust_root(trust_root: @trusted_root)
     end
 
     def sign(payload)

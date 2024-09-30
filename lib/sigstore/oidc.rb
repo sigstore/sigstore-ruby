@@ -66,7 +66,16 @@ module Sigstore
         audience = DEFAULT_AUDIENCE
         leeway = 5
 
-        _header, payload, _signature = raw_token.split(".", 3).map { |d| d.unpack1("m*") }
+        _header, payload, _signature =
+          raw_token
+          .split(".", 3)
+          .tap do |parts|
+            raise Error::InvalidIdentityToken, "identity token is not a JWT" unless parts.length == 3
+          end.map! do |part| # rubocop:disable Style/MultilineBlockChain
+            part.unpack1("m*")
+          rescue ArgumentError
+            raise Error::InvalidIdentityToken, "Invalid base64 in identity token"
+          end
 
         begin
           payload = JSON.parse(payload)
