@@ -36,7 +36,7 @@ module Sigstore
     end
 
     def self.from_tuf(url, offline)
-      path = TUF::TrustUpdater.new(url, offline).trusted_root_path
+      path = TUF::TrustUpdater.new(url, offline).tap { _1.refresh unless offline }.trusted_root_path
       from_file(path)
     end
 

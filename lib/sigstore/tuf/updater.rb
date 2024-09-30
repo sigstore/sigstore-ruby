@@ -127,7 +127,9 @@ module Sigstore::TUF
       begin
         data = load_local_metadata(Timestamp::TYPE)
         @trusted_set.timestamp = data
-      rescue Errno::ENOENT, Error::RepositoryError => e
+      rescue Errno::ENOENT
+        logger.debug "No local timestamp found"
+      rescue Error::RepositoryError => e
         logger.debug "Local timestamp not valid as final: #{e.class} #{e.message}"
       end
 

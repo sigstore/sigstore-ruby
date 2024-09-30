@@ -2,7 +2,7 @@
 http_interactions:
 - request:
     method: get
-    uri: https://tuf-repo-cdn.sigstore.dev/10.root.json
+    uri: https://tuf-repo-cdn.sigstore.dev/11.root.json
     body:
       encoding: US-ASCII
       string: ''
@@ -13,36 +13,39 @@ http_interactions:
       - "*/*"
       User-Agent:
       - Ruby
-      Host:
-      - tuf-repo-cdn.sigstore.dev
+      - RubyGems/3.4.19 arm64-darwin-23 Ruby/3.2.3 (2024-01-18 patchlevel 157)
+      Connection:
+      - keep-alive
+      Keep-Alive:
+      - '30'
   response:
     status:
       code: 404
       message: Not Found
     headers:
+      Content-Type:
+      - application/xml; charset=UTF-8
       Content-Length:
       - '127'
       X-Guploader-Uploadid:
-      - ABPtcPqH_MT7Z4f6Rg0O2Fv9vA96Esb4amjV5VgzCtUh0BMMerBoFyxtlR8iWuWAgOtryXxlqhUa3vbnug
+      - AD-8ljtTzbzTSTi82QIhiVa2EFp1ZT6wkfTcGfV5_3thgnW13kudJIC8cNsMjKUn103ju6bRfko
+      Date:
+      - Tue, 24 Sep 2024 19:32:15 GMT
+      Expires:
+      - Tue, 24 Sep 2024 19:32:15 GMT
+      Cache-Control:
+      - private, max-age=0
       Server:
       - UploadServer
       Via:
       - 1.1 google
-      Date:
-      - Thu, 25 Apr 2024 23:30:13 GMT
-      Cache-Control:
-      - public,max-age=120
-      Content-Type:
-      - application/xml; charset=UTF-8
-      Age:
-      - '63'
       Alt-Svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
     body:
       encoding: UTF-8
       string: "<?xml version='1.0' encoding='UTF-8'?><Error><Code>NoSuchKey</Code><Message>The
         specified key does not exist.</Message></Error>"
-  recorded_at: Thu, 25 Apr 2024 23:31:16 GMT
+  recorded_at: Tue, 24 Sep 2024 19:32:15 GMT
 - request:
     method: get
     uri: https://tuf-repo-cdn.sigstore.dev/timestamp.json
@@ -56,44 +59,47 @@ http_interactions:
       - "*/*"
       User-Agent:
       - Ruby
-      Host:
-      - tuf-repo-cdn.sigstore.dev
+      - RubyGems/3.4.19 arm64-darwin-23 Ruby/3.2.3 (2024-01-18 patchlevel 157)
+      Connection:
+      - keep-alive
+      Keep-Alive:
+      - '30'
   response:
     status:
       code: 200
       message: OK
     headers:
       Date:
-      - Thu, 25 Apr 2024 23:31:16 GMT
+      - Tue, 24 Sep 2024 19:32:15 GMT
       Cache-Control:
       - no-store
       Expires:
-      - Fri, 25 Apr 2025 23:31:16 GMT
+      - Wed, 24 Sep 2025 19:32:15 GMT
       Last-Modified:
-      - Tue, 23 Apr 2024 16:38:37 GMT
+      - Tue, 24 Sep 2024 13:30:21 GMT
       Etag:
-      - '"43f1e25c084f16749914f83c4cda77ac"'
+      - '"7c6cbda4330af48fd1e23db82286e7ab"'
       X-Goog-Generation:
-      - '1713890317497462'
+      - '1727184620932794'
       X-Goog-Metageneration:
       - '1'
       X-Goog-Stored-Content-Encoding:
       - identity
       X-Goog-Stored-Content-Length:
-      - '723'
+      - '449'
       Content-Type:
       - application/json
       X-Goog-Hash:
-      - crc32c=DeFOxQ==
-      - md5=Q/HiXAhPFnSZFPg8TNp3rA==
+      - crc32c=709eSg==
+      - md5=fGy9pDMK9I/R4j24Iobnqw==
       X-Goog-Storage-Class:
       - STANDARD
       Accept-Ranges:
       - bytes
       Content-Length:
-      - '723'
+      - '449'
       X-Guploader-Uploadid:
-      - ABPtcPr0R7oqrjrIBAWcq8KTuAYX2v_SxaF7eeaUPgYctxtILVwC2yLQg8dO6cxPp7t22c8xePlh2oCHAw
+      - AD-8ljsfxSjK3qA0HnndOGcCWE-MY1qCDD-zRyNpBkywc8vsMtE70feehDZ3JKGq5wmJITPA5PoEizFyyQ
       Server:
       - UploadServer
       Via:
@@ -102,17 +108,30 @@ http_interactions:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
     body:
       encoding: UTF-8
-      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"timestamp\",\n\t\t\"spec_version\":
-        \"1.0\",\n\t\t\"version\": 179,\n\t\t\"expires\": \"2024-04-30T16:07:01Z\",\n\t\t\"meta\":
-        {\n\t\t\t\"snapshot.json\": {\n\t\t\t\t\"length\": 2302,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"794009e5f64d8a67e5a87fa7203cafa12447b97bab7d14ae9fada392b46bc8b6\",\n\t\t\t\t\t\"sha512\":
-        \"dee363cca4d3e51a0ee76290a25e422d14b05eeaba859ee6db2ad92c72caf932f61684bda1af366d136980d226c6f03aab1571ee081062a16c3457031505ae7d\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        137\n\t\t\t}\n\t\t}\n\t},\n\t\"signatures\": [\n\t\t{\n\t\t\t\"keyid\": \"923bb39e60dd6fa2c31e6ea55473aa93b64dd4e53e16fbe42f6a207d3f97de2d\",\n\t\t\t\"sig\":
-        \"304602210098c329ab4dab127270dd2f56150bdc1ea3c0bee78d6f231fcededa0704b5a37302210095ec5cb338ab53b3b6463c581d0ffd9134d23272572ac9ca69ad3b190041d5d8\"\n\t\t}\n\t]\n}"
-  recorded_at: Thu, 25 Apr 2024 23:31:16 GMT
+      string: |-
+        {
+         "signatures": [
+          {
+           "keyid": "7247f0dbad85b147e1863bade761243cc785dcb7aa410e7105dd3d2b61a36d2c",
+           "sig": "304502204cbf8eedddcb8cd1f4d274ad202aad9162d85fb4c79ee4dff5ec1d08948e8191022100abe1569a87d13d40d4b563806c1694017332b7101fbaea377d4a0991a29a9065"
+          }
+         ],
+         "signed": {
+          "_type": "timestamp",
+          "expires": "2024-10-01T13:26:15Z",
+          "meta": {
+           "snapshot.json": {
+            "version": 156
+           }
+          },
+          "spec_version": "1.0",
+          "version": 224
+         }
+        }
+  recorded_at: Tue, 24 Sep 2024 19:32:15 GMT
 - request:
     method: get
-    uri: https://tuf-repo-cdn.sigstore.dev/137.snapshot.json
+    uri: https://tuf-repo-cdn.sigstore.dev/156.snapshot.json
     body:
       encoding: US-ASCII
       string: ''
@@ -123,78 +142,116 @@ http_interactions:
       - "*/*"
       User-Agent:
       - Ruby
-      Host:
-      - tuf-repo-cdn.sigstore.dev
+      - RubyGems/3.4.19 arm64-darwin-23 Ruby/3.2.3 (2024-01-18 patchlevel 157)
+      Connection:
+      - keep-alive
+      Keep-Alive:
+      - '30'
   response:
     status:
       code: 200
       message: OK
     headers:
       X-Goog-Generation:
-      - '1722357475002934'
+      - '1725380115625190'
       X-Goog-Metageneration:
       - '1'
       X-Goog-Stored-Content-Encoding:
       - identity
       X-Goog-Stored-Content-Length:
-      - '2302'
+      - '1758'
+      X-Goog-Meta-Goog-Reserved-File-Mtime:
+      - '1725379916'
       X-Goog-Hash:
-      - crc32c=tdrrPQ==
-      - md5=MxUwMt1V1tib21x/Y/XSNw==
+      - crc32c=KP+kcQ==
+      - md5=xVm/fgX6HzD6P9pEzgZ51Q==
       X-Goog-Storage-Class:
       - STANDARD
       Accept-Ranges:
       - bytes
       Content-Length:
-      - '2302'
+      - '1758'
       X-Guploader-Uploadid:
-      - AHxI1nPqxbrK7YgZid-YGlj0N65gKOKd_rA-uTqrDrX3xB4k0ARcMRd0d09L0MjwQP5kHgsNlDdAO_iNZw
+      - AD-8ljuVnlyofdHPsb9q0-aPa9byMEep5AY_466v8T3dOT8LZfF_maLHZbnl8f8h1MWSvT32vv77slsFAQ
       Server:
       - UploadServer
       Via:
       - 1.1 google
       Date:
-      - Wed, 31 Jul 2024 12:06:04 GMT
+      - Tue, 24 Sep 2024 16:21:05 GMT
       Cache-Control:
       - public,max-age=86400
+      Age:
+      - '11470'
       Last-Modified:
-      - Tue, 30 Jul 2024 16:37:55 GMT
+      - Tue, 24 Sep 2024 13:30:19 GMT
       Etag:
-      - '"33153032dd55d6d89bdb5c7f63f5d237"'
+      - '"c559bf7e05fa1f30fa3fda44ce0679d5"'
       Content-Type:
       - application/json
-      Age:
-      - '27710'
       Alt-Svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
     body:
       encoding: UTF-8
-      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"snapshot\",\n\t\t\"spec_version\":
-        \"1.0\",\n\t\t\"version\": 137,\n\t\t\"expires\": \"2024-05-14T16:06:59Z\",\n\t\t\"meta\":
-        {\n\t\t\t\"registry.npmjs.org.json\": {\n\t\t\t\t\"length\": 964,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"0d0dce2402aa5edcd117269557f0f42a7a31cd89f481a305d9ef135592915a9e\",\n\t\t\t\t\t\"sha512\":
-        \"1f7ba405126482df160d35127937c7ed899b0e2a5b313ecc42044e4d2c0b4aab03c4ada0f07137051735dca33d4bb16f6718cff9e53779381984854ac15f86f6\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        3\n\t\t\t},\n\t\t\t\"rekor.json\": {\n\t\t\t\t\"length\": 797,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"9d2e1a5842937d8e0d3e3759170b0ad15c56c5df36afc5cf73583ddd283a463b\",\n\t\t\t\t\t\"sha512\":
-        \"176e9e710ddddd1b357a7d7970831bae59763395a0c18976110cbd35b25e5412dc50f356ec421a7a30265670cf7aec9ed84ee944ba700ec2394b9c876645b960\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        3\n\t\t\t},\n\t\t\t\"revocation.json\": {\n\t\t\t\t\"length\": 800,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"6f60848ba8fb0955a02abfd1232fb3845dc9ee9f418bf03521a7ddb48217e040\",\n\t\t\t\t\t\"sha512\":
-        \"a965dddd0d0edef6c59e84cf02ecf5a53299f633fd339b2b61814a4219ab4df672a6390f265b8b29e1c8cea9368ea3440df013790759d50231a30df1c1f02551\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        2\n\t\t\t},\n\t\t\t\"root.json\": {\n\t\t\t\t\"length\": 5297,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"f5ad897c9414cca99629f400ac3585e41bd8ebb44c5af07fb08dd636a9eced9c\",\n\t\t\t\t\t\"sha512\":
-        \"7445ddfdd338ef786c324fc3d68f75be28cb95b7fb581d2a383e3e5dde18aa17029a5636ec0a22e9631931bbcb34057788311718ea41e21e7cdd3c0de13ede42\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        2\n\t\t\t},\n\t\t\t\"staging.json\": {\n\t\t\t\t\"length\": 401,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"cda57759abac5375397eea3531d7ca51e3a67da9a2dc93f2cdab749e2ae73149\",\n\t\t\t\t\t\"sha512\":
-        \"e9e59587bde453144c7079884a880c706f1d43f26e8bb23fac2b96a99569a2a30ae6cf51ec51c2454f760ce83d4c20915e062aede7f319b3da6a6ed1d26ca281\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        2\n\t\t\t},\n\t\t\t\"targets.json\": {\n\t\t\t\t\"length\": 5478,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"f48d24a391c67370e4da4888f856c7775e4e82171f4970b7b0baba61ede68297\",\n\t\t\t\t\t\"sha512\":
-        \"5c06931ca4873ebe5e6b04fa39b7dcd8c02d4e6f61912ae9a0cca6e7c2f1f4ab102871a1f0c08c5deab059b37960d45e78c16aacb8b8790247a5f42aed96f970\"\n\t\t\t\t},\n\t\t\t\t\"version\":
-        9\n\t\t\t}\n\t\t}\n\t},\n\t\"signatures\": [\n\t\t{\n\t\t\t\"keyid\": \"230e212616274a4195cdc28e9fce782c20e6c720f1a811b40f98228376bdd3ac\",\n\t\t\t\"sig\":
-        \"3045022100d470f6085356c9d62fdee85458bdfd5d0992c8ac220ce85606ff33810b8d937c0220608bda3986f80c44a917ef2d894c4d6af3b07ae7b4578af1cd050e3e32d6ec86\"\n\t\t}\n\t]\n}"
-  recorded_at: Thu, 25 Apr 2024 23:31:16 GMT
+      string: |-
+        {
+         "signatures": [
+          {
+           "keyid": "7247f0dbad85b147e1863bade761243cc785dcb7aa410e7105dd3d2b61a36d2c",
+           "sig": "304402206566fd1ac98aae6c76e88d477201f8d6793d1df8655d5585f70cdfea16dfc46a022060fdeaafc754530606b4b78e2c273a8f6bed629345b8505e0380e722a8900450"
+          }
+         ],
+         "signed": {
+          "_type": "snapshot",
+          "expires": "2034-08-31T13:31:34Z",
+          "meta": {
+           "registry.npmjs.org.json": {
+            "version": 4
+           },
+           "rekor.json": {
+            "hashes": {
+             "sha256": "9d2e1a5842937d8e0d3e3759170b0ad15c56c5df36afc5cf73583ddd283a463b",
+             "sha512": "176e9e710ddddd1b357a7d7970831bae59763395a0c18976110cbd35b25e5412dc50f356ec421a7a30265670cf7aec9ed84ee944ba700ec2394b9c876645b960"
+            },
+            "length": 797,
+            "version": 3
+           },
+           "revocation.json": {
+            "hashes": {
+             "sha256": "6f60848ba8fb0955a02abfd1232fb3845dc9ee9f418bf03521a7ddb48217e040",
+             "sha512": "a965dddd0d0edef6c59e84cf02ecf5a53299f633fd339b2b61814a4219ab4df672a6390f265b8b29e1c8cea9368ea3440df013790759d50231a30df1c1f02551"
+            },
+            "length": 800,
+            "version": 2
+           },
+           "root.json": {
+            "hashes": {
+             "sha256": "f5ad897c9414cca99629f400ac3585e41bd8ebb44c5af07fb08dd636a9eced9c",
+             "sha512": "7445ddfdd338ef786c324fc3d68f75be28cb95b7fb581d2a383e3e5dde18aa17029a5636ec0a22e9631931bbcb34057788311718ea41e21e7cdd3c0de13ede42"
+            },
+            "length": 5297,
+            "version": 2
+           },
+           "staging.json": {
+            "hashes": {
+             "sha256": "cda57759abac5375397eea3531d7ca51e3a67da9a2dc93f2cdab749e2ae73149",
+             "sha512": "e9e59587bde453144c7079884a880c706f1d43f26e8bb23fac2b96a99569a2a30ae6cf51ec51c2454f760ce83d4c20915e062aede7f319b3da6a6ed1d26ca281"
+            },
+            "length": 401,
+            "version": 2
+           },
+           "targets.json": {
+            "version": 10
+           }
+          },
+          "spec_version": "1.0",
+          "version": 156
+         }
+        }
+  recorded_at: Tue, 24 Sep 2024 19:32:15 GMT
 - request:
     method: get
-    uri: https://tuf-repo-cdn.sigstore.dev/9.targets.json
+    uri: https://tuf-repo-cdn.sigstore.dev/10.targets.json
     body:
       encoding: US-ASCII
       string: ''
@@ -205,107 +262,220 @@ http_interactions:
       - "*/*"
       User-Agent:
       - Ruby
-      Host:
-      - tuf-repo-cdn.sigstore.dev
+      - RubyGems/3.4.19 arm64-darwin-23 Ruby/3.2.3 (2024-01-18 patchlevel 157)
+      Connection:
+      - keep-alive
+      Keep-Alive:
+      - '30'
   response:
     status:
       code: 200
       message: OK
     headers:
       X-Goog-Generation:
-      - '1722357623562547'
+      - '1725380115569153'
       X-Goog-Metageneration:
       - '1'
       X-Goog-Stored-Content-Encoding:
       - identity
       X-Goog-Stored-Content-Length:
-      - '5478'
+      - '5624'
+      X-Goog-Meta-Goog-Reserved-File-Mtime:
+      - '1725379916'
       X-Goog-Hash:
-      - crc32c=1IyUjw==
-      - md5=I2gJ/v5hJ+8XmLwJTXe4wg==
+      - crc32c=uBDWLw==
+      - md5=HDgoh6x8PE4twwByxqk9eg==
       X-Goog-Storage-Class:
       - STANDARD
       Accept-Ranges:
       - bytes
       Content-Length:
-      - '5478'
+      - '5624'
       X-Guploader-Uploadid:
-      - AHxI1nMf4CFCIiBYu2KSWDNyMjD549M6GBeuL_9dEvwVWqCMTXZpHwJygkDoUvkETWArpbZgof2dl3GHnb_EYHQ
+      - AD-8ljuqI0TCFNPAhR460l5rdARrrRdHJzvtdI_Iqshy_FcPX3swUKm4oT7MPCWUP8Fok9QUA3QcQ6YLiQ
       Server:
       - UploadServer
       Via:
       - 1.1 google
       Date:
-      - Wed, 31 Jul 2024 16:45:41 GMT
+      - Tue, 24 Sep 2024 16:21:05 GMT
       Cache-Control:
       - public,max-age=86400
       Age:
-      - '10933'
+      - '11470'
       Last-Modified:
-      - Tue, 30 Jul 2024 16:40:23 GMT
+      - Tue, 24 Sep 2024 13:30:19 GMT
       Etag:
-      - '"236809fefe6127ef1798bc094d77b8c2"'
+      - '"1c382887ac7c3c4e2dc30072c6a93d7a"'
       Content-Type:
       - application/json
       Alt-Svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
     body:
       encoding: UTF-8
-      string: "{\n\t\"signed\": {\n\t\t\"_type\": \"targets\",\n\t\t\"spec_version\":
-        \"1.0\",\n\t\t\"version\": 9,\n\t\t\"expires\": \"2024-09-12T06:13:15Z\",\n\t\t\"targets\":
-        {\n\t\t\t\"artifact.pub\": {\n\t\t\t\t\"length\": 177,\n\t\t\t\t\"hashes\":
-        {\n\t\t\t\t\t\"sha256\": \"59ebf97a9850aecec4bc39c1f5c1dc46e6490a6b5fd2a6cacdcac0c3a6fc4cbf\",\n\t\t\t\t\t\"sha512\":
-        \"308fd1d1d95d7f80aa33b837795251cc3e886792982275e062409e13e4e236ffc34d676682aa96fdc751414de99c864bf132dde71581fa651c6343905e3bf988\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"usage\":
-        \"Unknown\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ctfe.pub\": {\n\t\t\t\t\"length\":
-        177,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\": \"7fcb94a5d0ed541260473b990b99a6c39864c1fb16f3f3e594a5a3cebbfe138a\",\n\t\t\t\t\t\"sha512\":
-        \"4b20747d1afe2544238ad38cc0cc3010921b177d60ac743767e0ef675b915489bd01a36606c0ff83c06448622d7160f0d866c83d20f0c0f44653dcc3f9aa0bd4\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
-        \"https://ctfe.sigstore.dev/test\",\n\t\t\t\t\t\t\"usage\": \"CTFE\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"ctfe_2022.pub\":
-        {\n\t\t\t\t\"length\": 178,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"270488a309d22e804eeb245493e87c667658d749006b9fee9cc614572d4fbbdc\",\n\t\t\t\t\t\"sha512\":
-        \"e83fa4f427b24ee7728637fad1b4aa45ebde2ba02751fa860694b1bb16059a490328f9985e51cc70e4d237545315a1bc866dc4fdeef2f6248d99cc7a6077bf85\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
-        \"https://ctfe.sigstore.dev/2022\",\n\t\t\t\t\t\t\"usage\": \"CTFE\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio.crt.pem\":
-        {\n\t\t\t\t\"length\": 744,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"f360c53b2e13495a628b9b8096455badcb6d375b185c4816d95a5d746ff29908\",\n\t\t\t\t\t\"sha512\":
-        \"0713252a7fd17f7f3ab12f88a64accf2eb14b8ad40ca711d7fe8b4ecba3b24db9e9dffadb997b196d3867b8f9ff217faf930d80e4dab4e235c7fc3f07be69224\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Expired\",\n\t\t\t\t\t\t\"uri\":
-        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio_intermediate_v1.crt.pem\":
-        {\n\t\t\t\t\"length\": 789,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"f8cbecf186db7714624a5f4e99da31a917cbef70a94dd6921f5c3ca969dfe30a\",\n\t\t\t\t\t\"sha512\":
-        \"0f99f47dbc26c5f1e3cba0bfd9af4245a26e5cb735d6ef005792ec7e603f66fdb897de985973a6e50940ca7eff5e1849719e967b5ad2dac74a29115a41cf6f21\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
-        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"fulcio_v1.crt.pem\":
-        {\n\t\t\t\t\"length\": 740,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"f989aa23def87c549404eadba767768d2a3c8d6d30a8b793f9f518a8eafd2cf5\",\n\t\t\t\t\t\"sha512\":
-        \"f2e33a6dc208cee1f51d33bbea675ab0f0ced269617497985f9a0680689ee7073e4b6f8fef64c91bda590d30c129b3070dddce824c05bc165ac9802f0705cab6\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
-        \"https://fulcio.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Fulcio\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"rekor.pub\":
-        {\n\t\t\t\t\"length\": 178,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"dce5ef715502ec9f3cdfd11f8cc384b31a6141023d3e7595e9908a81cb6241bd\",\n\t\t\t\t\t\"sha512\":
-        \"0ae7705e02db33e814329746a4a0e5603c5bdcd91c96d072158d71011a2695788866565a2fec0fe363eb72cbcaeda39e54c5fe8d416daf9f3101fdba4217ef35\"\n\t\t\t\t},\n\t\t\t\t\"custom\":
-        {\n\t\t\t\t\t\"sigstore\": {\n\t\t\t\t\t\t\"status\": \"Active\",\n\t\t\t\t\t\t\"uri\":
-        \"https://rekor.sigstore.dev\",\n\t\t\t\t\t\t\"usage\": \"Rekor\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"trusted_root.json\":
-        {\n\t\t\t\t\"length\": 7014,\n\t\t\t\t\"hashes\": {\n\t\t\t\t\t\"sha256\":
-        \"4364d7724c04cc912ce2a6c45ed2610e8d8d1c4dc857fb500292738d4d9c8d2c\",\n\t\t\t\t\t\"sha512\":
-        \"fdebade075c4840d40f1806a14d0660ae1d22f47c0516abc4141e09f4ddf6ee6f4dbfbf08a7025bea10a4b8794658a4cd8ebb1024b963f239a9bfe02c2057fc6\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"delegations\":
-        {\n\t\t\t\"keys\": {\n\t\t\t\t\"3b60e337a003f0465d881e34051b1350f0041b931bd68d95ce2066c81d36de1b\":
-        {\n\t\t\t\t\t\"keytype\": \"ecdsa\",\n\t\t\t\t\t\"scheme\": \"ecdsa-sha2-nistp256\",\n\t\t\t\t\t\"keyid_hash_algorithms\":
-        [\n\t\t\t\t\t\t\"sha256\",\n\t\t\t\t\t\t\"sha512\"\n\t\t\t\t\t],\n\t\t\t\t\t\"keyval\":
-        {\n\t\t\t\t\t\t\"public\": \"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoLrh0jmOfHWLwsyo/4oGbldF91WV\\nfXvxVlDhW8fZwP/3vTnliBkDp5sH8/Dpm1SBOHkqENVt1+4Un/sFtl2zAQ==\\n-----END
-        PUBLIC KEY-----\\n\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"roles\": [\n\t\t\t\t{\n\t\t\t\t\t\"name\":
-        \"registry.npmjs.org\",\n\t\t\t\t\t\"keyids\": [\n\t\t\t\t\t\t\"3b60e337a003f0465d881e34051b1350f0041b931bd68d95ce2066c81d36de1b\"\n\t\t\t\t\t],\n\t\t\t\t\t\"threshold\":
-        1,\n\t\t\t\t\t\"terminating\": true,\n\t\t\t\t\t\"paths\": [\n\t\t\t\t\t\t\"registry.npmjs.org/*\"\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t]\n\t\t}\n\t},\n\t\"signatures\":
-        [\n\t\t{\n\t\t\t\"keyid\": \"3c344aa068fd4cc4e87dc50b612c02431fbc771e95003993683a2b0bf260cf0e\",\n\t\t\t\"sig\":
-        \"30440220764f1edad367a55d340eb7a97c0c8f847c47fa3fd05cadf3e246ee8ced7e504002200ebe44b01d6f59a348041c3845dda0980754893ddc1a9c8bfaa98e6b1f0b4627\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
-        \"ec81669734e017996c5b85f3d02c3de1dd4637a152019fe1af125d2f9368b95e\",\n\t\t\t\"sig\":
-        \"304502202d4955e47ab4a6ba6aaaa372bf50084e3cea0149da09f28807285fa306af38ae022100947cb4f41332f3f3215b78ccb897177e122f3de7e682ac19f8f3c835bbdc75f4\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
-        \"1e1d65ce98b10addad4764febf7dda2d0436b3d3a3893579c0dddaea20e54849\",\n\t\t\t\"sig\":
-        \"3045022015062f271a9cab84d5ffdbf878a42a4fc0754c1fa91822e38242af3546eaada8022100f0d766d4aca8ba675cf0b715104b765f81b4772cb53915db253fc437980e9e76\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
-        \"e2f59acb9488519407e18cbfc9329510be03c04aca9929d2f0301343fec85523\",\n\t\t\t\"sig\":
-        \"3045022100cccbbbfa8a87a648f6cd18f881b6643bb2fcb5f812678af5f1ed676e574eae3902200faaf1083c5bc95471ba6d1c7da1d7fcbabfaa32cdc27c215ef9b58b4c3d41c0\"\n\t\t},\n\t\t{\n\t\t\t\"keyid\":
-        \"fdfa83a07b5a83589b87ded41f77f39d232ad91f7cce52868dacd06ba089849f\",\n\t\t\t\"sig\":
-        \"304402203161c4a74acc63ea50af6f78e32248366bad10d823fe38ca190780ca70cf1124022051dd0734f33253304a814e10e0387a82770ee6905ace85c03b645df1109a6b38\"\n\t\t}\n\t]\n}"
-  recorded_at: Thu, 25 Apr 2024 23:31:16 GMT
-recorded_with: VCR 6.2.0
+      string: |-
+        {
+         "signatures": [
+          {
+           "keyid": "6f260089d5923daf20166ca657c543af618346ab971884a99962b01988bbe0c3",
+           "sig": "3045022100cffdd70aff94fab0127ac749c64449d5f644c7195971bfdca57879d5f645ab960220129ed6aeb07a57d9554af28941543bbb58f28c4c60d28a819f2294d290ff6cd9"
+          },
+          {
+           "keyid": "e71a54d543835ba86adad9460379c7641fb8726d164ea766801a1c522aba7ea2",
+           "sig": "30450220208c663d230a0ebb3a2b964020d019394112e216d4964c743ad2e61cebc43b52022100c2964f3fa7e77cd3abe13640d91b53d1a294470b65211a42f3f7764064c28ce4"
+          },
+          {
+           "keyid": "22f4caec6d8e6f9555af66b3d4c3cb06a3bb23fdc7e39c916c61f462e6f52b06",
+           "sig": "304502210093afa3a6d28f67f6aace8c6c5258282ec0784ce82da93589e2870b522c1b685502205374c8871e12e07f856f83e780b626dd5a00a032285d4436f615cdb9d637c3c3"
+          },
+          {
+           "keyid": "61643838125b440b40db6942f5cb5a31c0dc04368316eb2aaa58b95904a58222",
+           "sig": "3044022006b5eae637d0b66f4f72759f86e86840f6a9a580b3baf7303a046d8fac1c0872022053c1b8a6fbce7e37a7e46501019a160f4d833efb48e7ca5bd274df54b2bbce3f"
+          },
+          {
+           "keyid": "a687e5bf4fab82b0ee58d46e05c9535145a2c9afb458f43d42b45ca0fdce2a70",
+           "sig": "304502203d51eac2b34f6f06178e86e484d192f7a40b53df47e2ba0540d2e5a397d1e92b0221009833e3bb41c3bd28bc1adc06a74e5e7c73a6c9d9a1648ab558cfbdd380a2c4e2"
+          }
+         ],
+         "signed": {
+          "_type": "targets",
+          "delegations": {
+           "keys": {
+            "5e3a4021b11a425fd0a444f1670457ce5b15bbe036144f2417426f7f4b9721da": {
+             "keytype": "ecdsa",
+             "keyval": {
+              "public": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEVfei1dXQRVeArCMcTDgxJtYg+Fs7\nV87DjhQbGlRJPyC7SW5TbNNkmvpmi4LeTv6moLVZ7T2nVqiRZbSkD+cf8w==\n-----END PUBLIC KEY-----\n"
+             },
+             "scheme": "ecdsa-sha2-nistp256",
+             "x-tuf-on-ci-online-uri": "azurekms://npm-tuf-delegate.vault.azure.net/keys/npm-tuf-delegate-2024-08/e2772c1d01ca400da571096889f1660e"
+            }
+           },
+           "roles": [
+            {
+             "keyids": [
+              "5e3a4021b11a425fd0a444f1670457ce5b15bbe036144f2417426f7f4b9721da"
+             ],
+             "name": "registry.npmjs.org",
+             "paths": [
+              "registry.npmjs.org/*"
+             ],
+             "terminating": true,
+             "threshold": 1
+            }
+           ]
+          },
+          "expires": "2034-08-24T07:16:33Z",
+          "spec_version": "1.0",
+          "targets": {
+           "artifact.pub": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "usage": "Unknown"
+             }
+            },
+            "hashes": {
+             "sha256": "59ebf97a9850aecec4bc39c1f5c1dc46e6490a6b5fd2a6cacdcac0c3a6fc4cbf",
+             "sha512": "308fd1d1d95d7f80aa33b837795251cc3e886792982275e062409e13e4e236ffc34d676682aa96fdc751414de99c864bf132dde71581fa651c6343905e3bf988"
+            },
+            "length": 177
+           },
+           "ctfe.pub": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "uri": "https://ctfe.sigstore.dev/test",
+              "usage": "CTFE"
+             }
+            },
+            "hashes": {
+             "sha256": "7fcb94a5d0ed541260473b990b99a6c39864c1fb16f3f3e594a5a3cebbfe138a",
+             "sha512": "4b20747d1afe2544238ad38cc0cc3010921b177d60ac743767e0ef675b915489bd01a36606c0ff83c06448622d7160f0d866c83d20f0c0f44653dcc3f9aa0bd4"
+            },
+            "length": 177
+           },
+           "ctfe_2022.pub": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "uri": "https://ctfe.sigstore.dev/2022",
+              "usage": "CTFE"
+             }
+            },
+            "hashes": {
+             "sha256": "270488a309d22e804eeb245493e87c667658d749006b9fee9cc614572d4fbbdc",
+             "sha512": "e83fa4f427b24ee7728637fad1b4aa45ebde2ba02751fa860694b1bb16059a490328f9985e51cc70e4d237545315a1bc866dc4fdeef2f6248d99cc7a6077bf85"
+            },
+            "length": 178
+           },
+           "fulcio.crt.pem": {
+            "custom": {
+             "sigstore": {
+              "status": "Expired",
+              "uri": "https://fulcio.sigstore.dev",
+              "usage": "Fulcio"
+             }
+            },
+            "hashes": {
+             "sha256": "f360c53b2e13495a628b9b8096455badcb6d375b185c4816d95a5d746ff29908",
+             "sha512": "0713252a7fd17f7f3ab12f88a64accf2eb14b8ad40ca711d7fe8b4ecba3b24db9e9dffadb997b196d3867b8f9ff217faf930d80e4dab4e235c7fc3f07be69224"
+            },
+            "length": 744
+           },
+           "fulcio_intermediate_v1.crt.pem": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "uri": "https://fulcio.sigstore.dev",
+              "usage": "Fulcio"
+             }
+            },
+            "hashes": {
+             "sha256": "f8cbecf186db7714624a5f4e99da31a917cbef70a94dd6921f5c3ca969dfe30a",
+             "sha512": "0f99f47dbc26c5f1e3cba0bfd9af4245a26e5cb735d6ef005792ec7e603f66fdb897de985973a6e50940ca7eff5e1849719e967b5ad2dac74a29115a41cf6f21"
+            },
+            "length": 789
+           },
+           "fulcio_v1.crt.pem": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "uri": "https://fulcio.sigstore.dev",
+              "usage": "Fulcio"
+             }
+            },
+            "hashes": {
+             "sha256": "f989aa23def87c549404eadba767768d2a3c8d6d30a8b793f9f518a8eafd2cf5",
+             "sha512": "f2e33a6dc208cee1f51d33bbea675ab0f0ced269617497985f9a0680689ee7073e4b6f8fef64c91bda590d30c129b3070dddce824c05bc165ac9802f0705cab6"
+            },
+            "length": 740
+           },
+           "rekor.pub": {
+            "custom": {
+             "sigstore": {
+              "status": "Active",
+              "uri": "https://rekor.sigstore.dev",
+              "usage": "Rekor"
+             }
+            },
+            "hashes": {
+             "sha256": "dce5ef715502ec9f3cdfd11f8cc384b31a6141023d3e7595e9908a81cb6241bd",
+             "sha512": "0ae7705e02db33e814329746a4a0e5603c5bdcd91c96d072158d71011a2695788866565a2fec0fe363eb72cbcaeda39e54c5fe8d416daf9f3101fdba4217ef35"
+            },
+            "length": 178
+           },
+           "trusted_root.json": {
+            "hashes": {
+             "sha256": "4364d7724c04cc912ce2a6c45ed2610e8d8d1c4dc857fb500292738d4d9c8d2c",
+             "sha512": "fdebade075c4840d40f1806a14d0660ae1d22f47c0516abc4141e09f4ddf6ee6f4dbfbf08a7025bea10a4b8794658a4cd8ebb1024b963f239a9bfe02c2057fc6"
+            },
+            "length": 7014
+           }
+          },
+          "version": 10,
+          "x-tuf-on-ci-expiry-period": 3650,
+          "x-tuf-on-ci-signing-period": 31
+         }
+        }
+  recorded_at: Tue, 24 Sep 2024 19:32:15 GMT
+recorded_with: VCR 6.3.1
