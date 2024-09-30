@@ -86,7 +86,26 @@ module Sigstore
         raise Error::InvalidVerificationInput, "bundle with message_signature requires an artifact"
       end
 
-      @hashed_input = OpenSSL::Digest.new("SHA256").update(artifact.artifact)
+      case artifact.data
+      when :artifact_uri
+        unless artifact.artifact_uri.start_with?("sha256:")
+          raise Error::InvalidVerificationInput,
+                "artifact_uri must be prefixed with 'sha256:'"
+        end
+
+        @hashed_input = Common::V1::HashOutput.new.tap do |hash_output|
+          hash_output.algorithm = Common::V1::HashAlgorithm::SHA2_256
+          hexdigest = artifact.artifact_uri.split(":", 2).last
+          hash_output.digest = Internal::Util.hex_decode(hexdigest)
+        end
+      when :artifact
+        @hashed_input = Common::V1::HashOutput.new.tap do |hash_output|
+          hash_output.algorithm = Common::V1::HashAlgorithm::SHA2_256
+          hash_output.digest = OpenSSL::Digest.new("SHA256").update(artifact.artifact).digest
+        end
+      else
+        raise Error::InvalidVerificationInput, "Unsupported artifact data: #{artifact.data}"
+      end
 
       freeze
     end
@@ -189,8 +208,8 @@ module Sigstore
           },
           "data" => {
             "hash" => {
-              "algorithm" => hashed_input.name.downcase,
-              "value" => hashed_input.hexdigest
+              "algorithm" => Internal::Util.hash_algorithm_name(hashed_input.algorithm),
+              "value" => Internal::Util.hex_encode(hashed_input.digest)
             }
           }
         },

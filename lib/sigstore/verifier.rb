@@ -175,8 +175,7 @@ module Sigstore
 
       case bundle.content
       when :message_signature
-        verified = signing_key.verify(input.hashed_input.name, bundle.message_signature.signature,
-                                      input.artifact.artifact)
+        verified = verify_raw(signing_key, bundle.message_signature.signature, input.hashed_input.digest)
         return VerificationFailure.new("Signature verification failed") unless verified
       when :dsse_envelope
         verify_dsse(bundle.dsse_envelope, signing_key) or
@@ -197,6 +196,19 @@ module Sigstore
     end
 
     private
+
+    def verify_raw(public_key, signature, data)
+      if public_key.respond_to?(:verify_raw)
+        public_key.verify_raw(nil, signature, data)
+      else
+        case public_key
+        when OpenSSL::PKey::EC
+          public_key.dsa_verify_asn1(data, signature)
+        else
+          raise Error::Unimplemented, "unsupported public key type: #{public_key.class} for raw verification"
+        end
+      end
+    end
 
     def verify_dsse(dsse_envelope, public_key)
       payload = dsse_envelope.payload
@@ -224,12 +236,13 @@ module Sigstore
       digest = subject.fetch("digest")
       raise Error::InvalidBundle, "Expected in-toto statement with digest" if !digest || digest.empty?
 
+      expected_hexdigest = Internal::Util.hex_encode(input.hashed_input.digest)
       digest.each do |name, value|
-        next if input.hashed_input.hexdigest == value
+        next if expected_hexdigest == value
 
         return VerificationFailure.new(
-          "in-toto subject does not match for #{input.hashed_input.name} of #{subject.fetch("name")}: " \
-          "expected #{name} to be #{value}, got #{input.hashed_input.hexdigest}"
+          "in-toto subject does not match for #{input.hashed_input.algorithm} of #{subject.fetch("name")}: " \
+          "expected #{name} to be #{value}, got #{expected_hexdigest}"
         )
       end
     end

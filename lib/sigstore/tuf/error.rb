@@ -29,6 +29,7 @@ module Sigstore::TUF
 
     class BadUpdateOrder < Error; end
     class InvalidData < Error; end
+    class DuplicateKeys < Error; end
 
     # An error occurred while attempting to download a file.
     class DownloadError < Error; end

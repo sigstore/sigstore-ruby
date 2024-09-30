@@ -97,12 +97,11 @@ module Sigstore
             raise ArgumentError,
                   "key must be an OpenSSL::PKey::EC, is #{@key.inspect}"
           end
-          raise ArgumentError, "schema must be #{schema}" unless @schema == schema
 
           case @schema
           when "ecdsa-sha2-nistp256"
             unless @key.group.curve_name == "prime256v1"
-              raise ArgumentError, "Expected prime256v1 curve, got #{key.group.curve_name}"
+              raise ArgumentError, "Expected prime256v1 curve, got #{@key.group.curve_name}"
             end
           else
             raise ArgumentError, "Unsupported schema #{schema}"

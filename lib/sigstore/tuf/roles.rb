@@ -76,9 +76,11 @@ module Sigstore::TUF
     end
 
     def verify_delegate(type, bytes, signatures)
-      verified_key_ids = Set.new
+      if (duplicate_keys = signatures.map { |sig| sig.fetch("keyid") }.tally.select { |_, count| count > 1 }).any?
+        raise Error::DuplicateKeys, "Duplicate keys found in signatures: #{duplicate_keys.inspect}"
+      end
 
-      signatures.each do |signature|
+      count = signatures.count do |signature|
         key_id = signature.fetch("keyid")
         unless @keys.include?(key_id)
           logger.warn "Unknown key_id=#{key_id.inspect} in signatures for #{type}"
@@ -89,12 +91,11 @@ module Sigstore::TUF
         signature_bytes = [signature.fetch("sig")].pack("H*")
         verified = key.verify("sha256", signature_bytes, bytes)
 
-        added = verified_key_ids.add?(key_id) if verified
         logger.debug do
-          "key_id=#{key_id.inspect} type=#{type} verified=#{verified} added=#{added.nil? ? added.inspect : true}"
+          "key_id=#{key_id.inspect} type=#{type} verified=#{verified}"
         end
+        verified
       end
-      count = verified_key_ids.size
 
       return unless count < @threshold
 
