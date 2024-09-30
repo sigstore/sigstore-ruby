@@ -175,8 +175,7 @@ module Sigstore
 
       case bundle.content
       when :message_signature
-        verified = signing_key.verify_raw(nil, bundle.message_signature.signature,
-                                          input.hashed_input.digest)
+        verified = verify_raw(signing_key, bundle.message_signature.signature, input.hashed_input.digest)
         return VerificationFailure.new("Signature verification failed") unless verified
       when :dsse_envelope
         verify_dsse(bundle.dsse_envelope, signing_key) or
@@ -197,6 +196,19 @@ module Sigstore
     end
 
     private
+
+    def verify_raw(public_key, signature, data)
+      if public_key.respond_to?(:verify_raw)
+        public_key.verify_raw(nil, signature, data)
+      else
+        case public_key
+        when OpenSSL::PKey::EC
+          public_key.dsa_verify_asn1(data, signature)
+        else
+          raise Error::Unimplemented, "unsupported public key type: #{public_key.class} for raw verification"
+        end
+      end
+    end
 
     def verify_dsse(dsse_envelope, public_key)
       payload = dsse_envelope.payload
