@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: "0 12 * * *"
 
+permissions: {}
+
 jobs:
   ruby-versions:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@master
