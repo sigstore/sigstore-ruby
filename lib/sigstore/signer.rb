@@ -70,7 +70,8 @@ module Sigstore
     def generate_csr(keypair)
       csr = OpenSSL::X509::Request.new
 
-      csr.version = 0
+      # The subject is unused, but must be set to avoid an error on JRuby
+      csr.subject = OpenSSL::X509::Name.new
       csr.public_key = keypair
 
       # The subject in the CertificationRequestInfo is an X.501 RelativeDistinguishedName.
@@ -90,7 +91,7 @@ module Sigstore
         )
       )
 
-      csr.sign keypair, "SHA256"
+      csr.sign keypair, OpenSSL::Digest.new("SHA256")
 
       logger.debug { "Generated CSR" }
 

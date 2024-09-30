@@ -42,15 +42,7 @@ module Sigstore
           pkey = OpenSSL::PKey::EC.new(key_bytes)
           EDCSA.new(key_type, schema, pkey, key_id: key_id)
         when "ed25519"
-          raw = [key_bytes].pack("H*")
-          # needed because older versions of OpenSSL don't implement OpenSSL::PKey.new_raw_public_key
-          pem = <<~PEM
-            -----BEGIN PUBLIC KEY-----
-            MCowBQYDK2VwAyEA#{Internal::Util.base64_encode(raw)}
-            -----END PUBLIC KEY-----
-          PEM
-          # pkey = OpenSSL::PKey.new_raw_public_key("ed25519", raw)
-          pkey = OpenSSL::PKey.read(pem)
+          pkey = ED25519.pkey_from_der([key_bytes].pack("H*"))
           ED25519.new(key_type, schema, pkey, key_id: key_id)
         when "rsa"
           pkey = OpenSSL::PKey::RSA.new(key_bytes)
@@ -128,7 +120,9 @@ module Sigstore
           end
 
           case @schema
-          when "rsassa-pss-sha256", "rsa-pkcs1v15-sha256"
+          when "rsassa-pss-sha256"
+            raise Error::UnsupportedPlatform, "RSA-PSS verification unsupported" unless @key.respond_to?(:verify_pss)
+          when "rsa-pkcs1v15-sha256"
             # supported
           else
             raise ArgumentError, "Unsupported schema #{schema}"
@@ -148,6 +142,19 @@ module Sigstore
       end
 
       class ED25519 < Key
+        def self.pkey_from_der(raw)
+          if OpenSSL::PKey.respond_to?(:new_raw_public_key)
+            OpenSSL::PKey.new_raw_public_key("ed25519", raw)
+          else
+            pem = <<~PEM
+              -----BEGIN PUBLIC KEY-----
+              MCowBQYDK2VwAyEA#{Internal::Util.base64_encode(raw)}
+              -----END PUBLIC KEY-----
+            PEM
+            OpenSSL::PKey.read(pem)
+          end
+        end
+
         def initialize(...)
           super
           unless @key_type == "ed25519"
