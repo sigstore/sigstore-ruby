@@ -308,6 +308,8 @@ module Sigstore
               tag = general_name.tag
 
               case tag
+              when 1
+                [:otherName, general_name.value]
               when 6
                 [:uniformResourceIdentifier, general_name.value]
               else
