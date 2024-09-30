@@ -19,6 +19,19 @@ module Sigstore
     module Util
       module_function
 
+      def hash_algorithm_name(algorithm)
+        case algorithm
+        when Common::V1::HashAlgorithm::SHA2_256
+          "sha256"
+        when Common::V1::HashAlgorithm::SHA2_384
+          "sha384"
+        when Common::V1::HashAlgorithm::SHA2_512
+          "sha512"
+        else
+          raise ArgumentError, "Unrecognized hash algorithm #{algorithm}"
+        end
+      end
+
       def hex_encode(string)
         string.unpack1("H*")
       end

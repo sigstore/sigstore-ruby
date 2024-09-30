@@ -82,6 +82,13 @@ module Sigstore
         false
       end
 
+      def verify_raw(signature, data)
+        @key.verify_raw(nil, signature, data)
+      rescue OpenSSL::PKey::PKeyError => e
+        logger.debug { "Verification failed: #{e}" }
+        false
+      end
+
       def public_to_der
         @key.public_to_der
       end

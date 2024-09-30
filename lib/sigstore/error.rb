@@ -25,6 +25,7 @@ module Sigstore
     class NoSignature < Error; end
     class InvalidKey < Error; end
     class InvalidCheckpoint < Error; end
+    class InvalidVerificationInput < Error; end
 
     class Signing < Error; end
     class InvalidIdentityToken < Error; end

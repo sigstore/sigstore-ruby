@@ -187,7 +187,7 @@ module Sigstore
       all_materials = []
 
       files.each do |file|
-        raise Thor::InvocationError, "File not found: #{file}" unless File.exist?(file)
+        raise Thor::InvocationError, "File not found: #{file}" unless File.exist?(file) || file.start_with?("sha256:")
 
         sig = options[:signature]
         cert = options[:certificate]
@@ -215,7 +215,12 @@ module Sigstore
 
       input_map.each do |file, inputs|
         artifact = Sigstore::Verification::V1::Artifact.new
-        artifact.artifact = File.binread(file)
+        case file
+        when /\Asha256:/
+          artifact.artifact_uri = file
+        else
+          artifact.artifact = File.binread(file)
+        end
 
         verification_input = Sigstore::Verification::V1::Input.new
         verification_input.artifact = artifact
