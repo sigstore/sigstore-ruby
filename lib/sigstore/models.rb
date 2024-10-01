@@ -262,7 +262,7 @@ module Sigstore
             dsse_envelope.signatures.map do |sig|
               {
                 "signature" => Internal::Util.base64_encode(sig.sig),
-                "verifier" => Internal::Util.base64_encode(certificate.to_pem)
+                "verifier" => Internal::Util.base64_encode(leaf_certificate.to_pem)
               }
             end
         }

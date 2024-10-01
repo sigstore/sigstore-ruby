@@ -90,7 +90,7 @@ module Sigstore
         san_ext = cert.extension(Sigstore::Internal::X509::Extension::SubjectAlternativeName)
         raise Error::InvalidCertificate, "Certificate does not contain subjectAltName extension" unless san_ext
 
-        verified = san_ext.general_names.include?([:uniformResourceIdentifier, @identity])
+        verified = san_ext.general_names.any? { |_, id| id == @identity }
         unless verified
           return VerificationFailure.new(
             "Certificate's SANs do not match #{@identity}; actual SANs: #{san_ext.general_names}"
