@@ -9,8 +9,8 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.6)
-      public_suffix (>= 2.0.2, < 6.0)
+    addressable (2.8.7)
+      public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.2)
     base64 (0.2.0)
     bigdecimal (3.1.8)
@@ -19,7 +19,7 @@ GEM
       bigdecimal
       rexml
     docile (1.4.0)
-    hashdiff (1.1.0)
+    hashdiff (1.1.1)
     json (2.7.2)
     json (2.7.2-java)
     language_server-protocol (3.17.0.3)
@@ -40,13 +40,13 @@ GEM
       protobug_well_known_protos (= 0.1.0)
     protobug_well_known_protos (0.1.0)
       protobug (= 0.1.0)
-    public_suffix (5.0.5)
+    public_suffix (6.0.1)
     racc (1.8.1)
     racc (1.8.1-java)
     rainbow (3.1.1)
     rake (13.2.1)
     regexp_parser (2.9.2)
-    rexml (3.3.7)
+    rexml (3.3.8)
     rubocop (1.66.1)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
@@ -79,7 +79,7 @@ GEM
     uri (0.13.1)
     vcr (6.3.1)
       base64
-    webmock (3.23.1)
+    webmock (3.24.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -105,17 +105,17 @@ DEPENDENCIES
   thor (~> 1.3)
   timecop (~> 0.9.10)
   vcr (~> 6.3)
-  webmock (~> 3.23)
+  webmock (~> 3.24)
 
 CHECKSUMS
-  addressable (2.8.6) sha256=798f6af3556641a7619bad1dce04cdb6eb44b0216a991b0396ea7339276f2b47
+  addressable (2.8.7) sha256=462986537cf3735ab5f3c0f557f14155d778f4b43ea4f485a9deb9c8f7c58232
   ast (2.4.2) sha256=1e280232e6a33754cde542bc5ef85520b74db2aac73ec14acef453784447cc12
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   bigdecimal (3.1.8) sha256=a89467ed5a44f8ae01824af49cbc575871fa078332e8f77ea425725c1ffe27be
   bigdecimal (3.1.8-java) sha256=b9e94c14623fff8575f17a10320852219bbba92ecff4977571503d942687326e
   crack (1.0.0) sha256=c83aefdb428cdc7b66c7f287e488c796f055c0839e6e545fec2c7047743c4a49
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
-  hashdiff (1.1.0) sha256=b5465f0e7375f1ee883f53a766ece4dbc764b7674a7c5ffd76e79b2f5f6fc9c9
+  hashdiff (1.1.1) sha256=c7966316726e0ceefe9f5c6aef107ebc3ccfef8b6db55fe3934f046b2cf0936a
   json (2.7.2) sha256=1898b5cbc81cd36c0fd4d0b7ad2682c39fb07c5ff682fc6265f678f550d4982c
   json (2.7.2-java) sha256=138e3038b5361b3d06ee2e8aa2be00bed0d0de4ef5f1553fc5935e5b93aca7ee
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
@@ -127,13 +127,13 @@ CHECKSUMS
   protobug_googleapis_field_behavior_protos (0.1.0) sha256=db48ef6a5913b2355b4a6931ab400a9e3e995fb48499977a3ad0be6365f9e265
   protobug_sigstore_protos (0.1.0) sha256=4ad1eebaf6454131b6f432dda50ad0e513773613474b92470847614a5acacce1
   protobug_well_known_protos (0.1.0) sha256=356757f562453bb34a28f12e8e9fa357346cca35a6807a549837c3fe256bb5b3
-  public_suffix (5.0.5) sha256=72c340218bb384610536919988705cc29e09749c0021fd7005f715c7e5dfc493
+  public_suffix (6.0.1) sha256=61d44e1cab5cbbbe5b31068481cf16976dd0dc1b6b07bd95617ef8c5e3e00c6f
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   racc (1.8.1-java) sha256=54f2e6d1e1b91c154013277d986f52a90e5ececbe91465d29172e49342732b98
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
-  rexml (3.3.7) sha256=62a3a4d288ace18830ad6ca8aba845037d231c4f8cb481ba270ca1b75b605027
+  rexml (3.3.8) sha256=f68fd96345330a1062896d0d0401324b0dae0ee20f784791b0843db96b212167
   rubocop (1.66.1) sha256=0679c263b1164fd003b8590ae83b3e9e9bf72282d411755f227f1d6268ee5ee7
   rubocop-ast (1.32.3) sha256=40201e861c73a3c2d59428c7627828ef81fb2f8a306bc4a1c1801452afe3fe0f
   rubocop-performance (1.22.1) sha256=9ed9737af1ee90655654b483e0eac4e64702139e85d33335bf744b57a309a679
@@ -149,7 +149,7 @@ CHECKSUMS
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
   uri (0.13.1) sha256=df2d8b13e3e8c8a43432637e2ace4f9de7b42674361b4dd26302b40f7d7fcd1e
   vcr (6.3.1) sha256=37b56e157e720446a3f4d2d39919cabef8cb7b6c45936acffd2ef8229fec03ed
-  webmock (3.23.1) sha256=0fa738c0767d1c4ec8cc57f6b21998f0c238c8a5b32450df1c847f2767140d95
+  webmock (3.24.0) sha256=be01357f6fc773606337ca79f3ba332b7d52cbe5c27587671abc0572dbec7122
 
 BUNDLED WITH
    2.5.16
