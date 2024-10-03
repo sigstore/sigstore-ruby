@@ -84,13 +84,13 @@ jobs:
           bundler-cache: true
 
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@63fbf5b0118e007a907f2b44a4530bb45ce58eb3
+        uses: sigstore/sigstore-conformance@e0d6a7e0d402c8f9abe1dca102de8c42de9179d5
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@63fbf5b0118e007a907f2b44a4530bb45ce58eb3
+        uses: sigstore/sigstore-conformance@e0d6a7e0d402c8f9abe1dca102de8c42de9179d5
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
@@ -135,7 +135,7 @@ jobs:
         run: touch requirements.txt
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@96c2ed8286e02079620bdbf7ca02993f9fb8020e
+        uses: theupdateframework/tuf-conformance@35ac4c3ef893e4d7dd080d44ab97a9a292d8af72
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
