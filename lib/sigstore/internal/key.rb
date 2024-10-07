@@ -40,13 +40,13 @@ module Sigstore
         case key_type
         when "ecdsa", "ecdsa-sha2-nistp256"
           pkey = OpenSSL::PKey::EC.new(key_bytes)
-          EDCSA.new(key_type, schema, pkey, key_id: key_id)
+          EDCSA.new(key_type, schema, pkey, key_id:)
         when "ed25519"
           pkey = ED25519.pkey_from_der([key_bytes].pack("H*"))
-          ED25519.new(key_type, schema, pkey, key_id: key_id)
+          ED25519.new(key_type, schema, pkey, key_id:)
         when "rsa"
           pkey = OpenSSL::PKey::RSA.new(key_bytes)
-          RSA.new(key_type, schema, pkey, key_id: key_id)
+          RSA.new(key_type, schema, pkey, key_id:)
         else
           raise ArgumentError, "Unsupported key type #{key_type}"
         end.tap do |key|

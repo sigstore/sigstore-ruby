@@ -52,7 +52,7 @@ class Sigstore::TUFTest < Test::Unit::TestCase
     targets_dir = File.join(Dir.home, "custom-targets")
     metadata_dir = File.join(Dir.home, "custom-metadata")
     updater = Sigstore::TUF::TrustUpdater.new("https://tuf-repo-cdn.sigstore.dev", true,
-                                              metadata_dir: metadata_dir, targets_dir: targets_dir)
+                                              metadata_dir:, targets_dir:)
     assert_equal(File.join(targets_dir, "trusted_root.json"), updater.trusted_root_path)
   end
 end

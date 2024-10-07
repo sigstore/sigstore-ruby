@@ -88,7 +88,7 @@ module Sigstore::TUF
         length = meta_dict.fetch("length", nil)
         hashes = meta_dict.fetch("hashes", nil)
 
-        new(version: version, length: length, hashes: hashes,
+        new(version:, length:, hashes:,
             unrecognized_fields: meta_dict.slice(*(meta_dict.keys - %w[version length hashes])))
       end
     end

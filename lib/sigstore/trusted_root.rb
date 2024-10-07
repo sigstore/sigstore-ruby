@@ -92,10 +92,10 @@ module Sigstore
     end
 
     def ca_keys(certificate_authorities, allow_expired:)
-      return enum_for(__method__, certificate_authorities, allow_expired: allow_expired) unless block_given?
+      return enum_for(__method__, certificate_authorities, allow_expired:) unless block_given?
 
       certificate_authorities.each do |ca|
-        next unless timerange_valid?(ca.valid_for, allow_expired: allow_expired)
+        next unless timerange_valid?(ca.valid_for, allow_expired:)
 
         ca.cert_chain.certificates.each do |cert|
           yield cert.raw_bytes

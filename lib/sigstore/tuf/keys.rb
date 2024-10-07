@@ -25,7 +25,7 @@ module Sigstore::TUF
         keyval = key_data.fetch("keyval")
         public_key_data = keyval.fetch("public")
 
-        key = Sigstore::Internal::Key.read(key_type, scheme, public_key_data, key_id: key_id)
+        key = Sigstore::Internal::Key.read(key_type, scheme, public_key_data, key_id:)
 
         [key_id, key]
       end
@@ -35,8 +35,8 @@ module Sigstore::TUF
       @keys.fetch(key_id)
     end
 
-    def each(&block)
-      @keys.each(&block)
+    def each(&)
+      @keys.each(&)
     end
   end
 end

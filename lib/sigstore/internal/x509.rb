@@ -384,11 +384,11 @@ module Sigstore
 
           if RUBY_VERSION >= "3.1"
             def unpack_at(string, format, offset:)
-              string.unpack(format, offset: offset)
+              string.unpack(format, offset:)
             end
 
             def unpack1_at(string, format, offset:)
-              string.unpack1(format, offset: offset)
+              string.unpack1(format, offset:)
             end
           else
             def unpack_at(string, format, offset:)
@@ -406,11 +406,11 @@ module Sigstore
             len = string.bytesize
             list = []
             while offset < len
-              sct_version, sct_log_id, sct_timestamp, sct_extensions_len = unpack_at(string, "Ca32Q>n", offset: offset)
+              sct_version, sct_log_id, sct_timestamp, sct_extensions_len = unpack_at(string, "Ca32Q>n", offset:)
               offset += 1 + 32 + 8 + 2
               raise Error::Unimplemented, "expect sct version to be 0, got #{sct_version}" unless sct_version.zero?
 
-              sct_extensions_bytes = unpack1_at(string, "a#{sct_extensions_len}", offset: offset).b
+              sct_extensions_bytes = unpack1_at(string, "a#{sct_extensions_len}", offset:).b
               offset += sct_extensions_len
 
               unless sct_extensions_len.zero?
@@ -419,9 +419,9 @@ module Sigstore
               end
 
               sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = unpack_at(string, "CCn",
-                                                                                            offset: offset)
+                                                                                            offset:)
               offset += 1 + 1 + 2
-              sct_signature_bytes = unpack1_at(string, "a#{sct_signature_len}", offset: offset).b
+              sct_signature_bytes = unpack1_at(string, "a#{sct_signature_len}", offset:).b
               offset += sct_signature_len
               list << Timestamp.new(
                 version: sct_version,

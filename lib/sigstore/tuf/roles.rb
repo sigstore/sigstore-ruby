@@ -37,8 +37,8 @@ module Sigstore::TUF
         end
     end
 
-    def each(&block)
-      @roles.each(&block)
+    def each(&)
+      @roles.each(&)
     end
 
     def verify_delegate(type, bytes, signatures)

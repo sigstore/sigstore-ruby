@@ -15,7 +15,7 @@ jobs:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@master
     with:
       engine: all
-      min_version: 3.0
+      min_version: 3.1
 
   test:
     needs: ruby-versions
@@ -107,7 +107,7 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') || (matrix.ruby == '3.0') }}"
+    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') }}"
     strategy:
       fail-fast: false
       matrix:
@@ -140,7 +140,7 @@ jobs:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
         if: |
-          ${{ matrix.os }} == "ubuntu-latest" && ${{ matrix.ruby }} != "3.0"
+          ${{ matrix.os }} == "ubuntu-latest"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0

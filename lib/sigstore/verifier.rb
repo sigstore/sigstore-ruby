@@ -47,11 +47,11 @@ module Sigstore
     end
 
     def self.production(trust_root: TrustedRoot.production)
-      for_trust_root(trust_root: trust_root)
+      for_trust_root(trust_root:)
     end
 
     def self.staging(trust_root: TrustedRoot.staging)
-      for_trust_root(trust_root: trust_root)
+      for_trust_root(trust_root:)
     end
 
     def verify(input:, policy:, offline:)
@@ -79,7 +79,7 @@ module Sigstore
       begin
         # TODO: should this instead be an input to the verify method?
         # See https://docs.google.com/document/d/1kbhK2qyPPk8SLavHzYSDM8-Ueul9_oxIMVFuWMWKz0E/edit?disco=AAABQVV-gT0
-        entry = find_rekor_entry(bundle, input.hashed_input, offline: offline)
+        entry = find_rekor_entry(bundle, input.hashed_input, offline:)
       rescue Sigstore::Error::MissingRekorEntry
         return VerificationFailure.new("Rekor entry not found")
       else
@@ -93,7 +93,7 @@ module Sigstore
         end
       end
 
-      Internal::SET.verify_set(keyring: @rekor_keyring, entry: entry) if entry.inclusion_promise
+      Internal::SET.verify_set(keyring: @rekor_keyring, entry:) if entry.inclusion_promise
 
       timestamps << Time.at(entry.integrated_time).utc
 
