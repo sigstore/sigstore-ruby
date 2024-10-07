@@ -85,7 +85,7 @@ module Sigstore
                            URI.join("#{@repo_url.to_s.chomp("/")}/", "targets/"),
           target_dir: @targets_dir,
           fetcher: method(:fetch),
-          config: config
+          config:
         )
       end
 
@@ -93,7 +93,7 @@ module Sigstore
         app_name = "sigstore-ruby"
         app_author = "segiddins"
 
-        repo_base = encode_uri_component(url)
+        repo_base = URI.encode_uri_component(url)
         home = Dir.home
 
         data_home = ENV.fetch("XDG_DATA_HOME", File.join(home, ".local", "share"))
@@ -102,14 +102,6 @@ module Sigstore
         tuf_cache_dir = File.join(cache_home, app_name, app_author, "tuf")
 
         [File.join(tuf_data_dir, repo_base), File.join(tuf_cache_dir, repo_base)]
-      end
-
-      def encode_uri_component(str)
-        if URI.respond_to?(:encode_uri_component)
-          URI.encode_uri_component(str)
-        else
-          URI.encode_www_form_component(str).gsub("+", "%20")
-        end
       end
 
       def trusted_root_path

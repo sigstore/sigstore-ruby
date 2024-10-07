@@ -26,7 +26,7 @@ module Sigstore
           signed_note = SignedNote.from_text(text)
           checkpoint = LogCheckpoint.from_text(signed_note.note)
 
-          new(signed_note: signed_note, checkpoint: checkpoint)
+          new(signed_note:, checkpoint:)
         end
       end
 
@@ -57,10 +57,10 @@ module Sigstore
 
             sig_hash = signature_bytes.slice!(0, 4).unpack1("a4")
 
-            Signature.new(name: name, sig_hash: sig_hash, signature: signature_bytes)
+            Signature.new(name:, sig_hash:, signature: signature_bytes)
           end
 
-          new(note: note, signatures: signatures)
+          new(note:, signatures:)
         end
 
         def verify(rekor_keyring, key_id)
@@ -72,7 +72,7 @@ module Sigstore
                     "sig_hash hint #{signature.sig_hash.inspect} does not match key_id #{sig_hash.inspect}"
             end
 
-            rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data: data)
+            rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data:)
           end
         end
       end
@@ -91,7 +91,7 @@ module Sigstore
 
           raise Error::InvalidCheckpoint, "empty origin" if origin.empty?
 
-          new(origin: origin, log_size: log_size, log_hash: root_hash, other_content: lines)
+          new(origin:, log_size:, log_hash: root_hash, other_content: lines)
         end
       end
 

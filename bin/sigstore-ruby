@@ -69,7 +69,7 @@ module Sigstore
       )
 
       verified = files_with_materials.all? do |file, input|
-        result = verifier.verify(input: input, policy: policy, offline: options[:offline])
+        result = verifier.verify(input:, policy:, offline: options[:offline])
 
         if result.verified?
           say "OK: #{file}"
@@ -98,7 +98,7 @@ module Sigstore
       contents = File.binread(file)
       bundle = Sigstore::Signer.new(
         jwt: options[:identity_token],
-        trusted_root: trusted_root
+        trusted_root:
       ).sign(contents)
 
       File.binwrite(options[:bundle], bundle.to_json) if options[:bundle]
@@ -204,10 +204,10 @@ module Sigstore
         if options[:signature] || options[:certificate]
           missing << sig unless File.exist?(sig)
           missing << cert unless File.exist?(cert)
-          input_map[file] = { cert: cert, sig: sig }
+          input_map[file] = { cert:, sig: }
         else
           missing << bundle unless File.exist?(bundle)
-          input_map[file] = { bundle: bundle }
+          input_map[file] = { bundle: }
         end
 
         raise Thor::InvocationError, "Missing files: #{missing.join(", ")}" if missing.any?
