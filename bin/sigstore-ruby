@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-ENV["BUNDLE_GEMFILE"] = File.expand_path("../Gemfile", __dir__)
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
 require "bundler/setup"
 
 require "thor"
@@ -90,8 +90,6 @@ module Sigstore
     option :bundle, type: :string, desc: "Path to write the signed bundle to"
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
-    exclusive :bundle, :signature
-    exclusive :bundle, :certificate
     def sign(file)
       require "sigstore/signer"
 
