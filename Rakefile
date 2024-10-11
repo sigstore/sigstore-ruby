@@ -70,7 +70,7 @@ task :find_action_versions do # rubocop:disable Rake/Desc
   @action_versions = actions.transform_values(&:first)
 end
 
-task test: %w[sigstore_conformance]
+task test: %w[sigstore_conformance cedar_integration_tests]
 
 desc "Update the vendored data files"
 task :update_data do
@@ -166,6 +166,12 @@ GitRepo.define_task(tuf_conformance: %w[find_action_versions]).tap do |task|
   task.path = "test/tuf-conformance"
   task.url = "https://github.com/theupdateframework/tuf-conformance.git"
   task.commit = -> { @action_versions.fetch("theupdateframework/tuf-conformance") }
+end
+
+GitRepo.define_task(cedar_integration_tests: []).tap do |task|
+  task.path = "test/cedar-integration-tests"
+  task.url = "https://github.com/cedar-policy/cedar-integration-tests.git"
+  task.commit = "3903b933e29fd60f2c40d779b250cd4ffb150f5d"
 end
 
 namespace :tuf_conformance do

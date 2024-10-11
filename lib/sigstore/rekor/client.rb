@@ -27,7 +27,7 @@ module Sigstore
 
         net = defined?(Gem::Net) ? Gem::Net : Net
         @session = net::HTTP.new(@url.host, @url.port)
-        @session.use_ssl = true
+        @session.use_ssl = @url.scheme != "http"
       end
 
       def self.production

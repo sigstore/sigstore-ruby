@@ -112,7 +112,7 @@ module Sigstore
         { "Content-Type" => "application/json" }
       )
 
-      unless resp.code == "200"
+      unless resp.code == "200" || resp.code == "201"
         raise Error::Signing,
               "#{resp.code} #{resp.message}\n\n#{resp.body}"
       end

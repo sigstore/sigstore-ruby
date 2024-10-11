@@ -1,0 +1,43 @@
+description "A policy for RubyGems"
+
+def "githubAttestation" owner="string" repository="string" workflow="string" environment="string?" {
+  attestation {
+    x509.Issuer "https://token.actions.githubusercontent.com"
+    x509.Repository (var)"repository"
+    x509.Workflow (var)"workflow"
+
+    $if (var)"environment" { x509.Environment (var)"environment" }
+    $elseif (var)"environment" { x509.Environment (var)"environment" }
+    $else { x509.Environment "production" }
+
+    $oneOf {
+      messageSignature
+      $all {
+        dsseEnvelope.payloadType "application/vnd.in-toto+json"
+        dsseEnvelope.payload {
+          _type "https://in-toto.io/Statement/v1"
+          predicateType "https://slsa.dev/provenance/v1"
+          predicate.buildDefinition.externalParameters.workflow.repository (var)"repository"
+        }
+      }
+    }
+  }
+}
+
+rubygem "bundler" {
+  version.major.$gte 7
+  platform "ruby"
+  source "https://rubygems.org"
+
+  %githubAttestation owner="rubygems" repo="bundler" workflow=".github/workflows/release.yml"
+}
+
+rubygem "bundler" {
+  version.major.$lt 3
+  platform "ruby"
+  source "https://rubygems.org"
+}
+
+/-test "test" {
+  x "y"
+}

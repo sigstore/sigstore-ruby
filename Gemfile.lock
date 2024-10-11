@@ -29,10 +29,17 @@ GEM
     hashdiff (1.1.1)
     json (2.8.2)
     json (2.8.2-java)
+    kdl (1.0.6)
+      base64 (~> 0.2.0)
+      bigdecimal (~> 3.1.6)
+      racc (~> 1.5)
+      simpleidn (~> 0.2.1)
     language_server-protocol (3.17.0.3)
+    literal (1.1.0)
     net-http (0.5.0)
       uri
     parallel (1.26.3)
+    paramesan (1.0.1)
     parser (3.3.6.0)
       ast (~> 2.4.1)
       racc
@@ -78,6 +85,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
+    simpleidn (0.2.3)
     test-unit (3.6.4)
       power_assert
     thor (1.3.2)
@@ -101,7 +109,9 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  base64 (~> 0.2.0)
+  kdl (~> 1.0)
+  literal
+  paramesan (~> 1.0)
   rake (~> 13.2)
   rubocop (~> 1.67)
   rubocop-performance (~> 1.23)
@@ -126,9 +136,12 @@ CHECKSUMS
   hashdiff (1.1.1) sha256=c7966316726e0ceefe9f5c6aef107ebc3ccfef8b6db55fe3934f046b2cf0936a
   json (2.8.2) sha256=dd4fa6c9c81daecf72b86ea36e56ed8955fdbb4d4dc379c93d313a59344486cf
   json (2.8.2-java) sha256=7a7321efd8fad215a1afe92b5f16546203f193781da2d5c01587600cc00aa302
+  kdl (1.0.6) sha256=372b05de298a7fd757fbc421f71464807ffbf24f32862938236e807858d6f574
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
+  literal (1.1.0) sha256=92dc4f78fc7b6e1eaefd9929eacfc80bd14182a55e883aadfe52f2a62b2c9275
   net-http (0.5.0) sha256=ed7f88205afe03bf53142a4b81ded91f2c01522dcf03089cb6ad4acb476ce1da
   parallel (1.26.3) sha256=d86babb7a2b814be9f4b81587bf0b6ce2da7d45969fab24d8ae4bf2bb4d4c7ef
+  paramesan (1.0.1) sha256=b1b2c0f855273201b94f0a4fb5c2ab11e67265ec4e1448181823438de2562db0
   parser (3.3.6.0) sha256=25d4e67cc4f0f7cab9a2ae1f38e2005b6904d2ea13c34734511d0faad038bc3b
   power_assert (2.0.4) sha256=43da564b535c758f2fc8c80fee031b744b4d4b388362d8c1ba669a0dc81be0c5
   protobug (0.1.0) sha256=5bf1356cedf99dcf311890743b78f5e602f62ca703e574764337f1996b746bf2
@@ -152,6 +165,7 @@ CHECKSUMS
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
+  simpleidn (0.2.3) sha256=08ce96f03fa1605286be22651ba0fc9c0b2d6272c9b27a260bc88be05b0d2c29
   test-unit (3.6.4) sha256=7a4bd7dd2fb6d372c8b7499d04fd6478b7163518c6e577cbf2a4cddc8cda7688
   thor (1.3.2) sha256=eef0293b9e24158ccad7ab383ae83534b7ad4ed99c09f96f1a6b036550abbeda
   timecop (0.9.10) sha256=12ba45ce57cdcf6b1043cb6cdffa6381fd89ce10d369c28a7f6f04dc1b0cd8eb
