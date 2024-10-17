@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and sign artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
+        with:
+          # NOTE: We intentionally don't use a cache in the release step,
+          # to reduce the risk of cache poisoning.
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: deps
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Set source date epoch
+        run: |
+          # Set SOURCE_DATE_EPOCH to the commit date of the last commit.
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" >> $GITHUB_ENV
+
+      - name: build
+        run: bin/rake build
+
+      - name: Check release and tag name match built version
+        run: |
+          for gem in pkg/*.gem; do
+            gemspec_version=$(gem spec ${gem} version | ruby -ryaml -e 'puts YAML.safe_load(ARGF.read, permitted_classes: [Gem::Version])')
+            if [ "${RELEASE_TAG_NAME}" != "v${gemspec_version}" ]; then
+              echo "Release tag name '${RELEASE_TAG_NAME}' does not match gemspec version 'v${gemspec_version}'"
+              exit 1
+            fi
+          done
+        env:
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+
+      - name: sign
+        run: |
+          # we smoke-test sigstore by installing each of the distributions
+          # we've built in a fresh environment and using each to sign and
+          # verify for itself, using the ambient OIDC identity
+          for dist in pkg/*; do
+            ./bin/smoketest "${dist}"
+          done
+
+      - name: Generate hashes for provenance
+        shell: bash
+        id: hash
+        working-directory: pkg
+        run: |
+          # sha256sum generates sha256 hash for all artifacts.
+          # base64 -w0 encodes to base64 and outputs on a single line.
+          # sha256sum artifact1 artifact2 ... | base64 -w0
+          echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+
+      - name: Save hashes
+        run: echo "$HASHES" | base64 -d > pkg/sha256sum.txt
+        env:
+          HASHES: ${{ steps.hash.outputs.hashes }}
+
+      - name: Upload built packages
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: built-packages
+          path: ./pkg/
+          if-no-files-found: warn
+
+      - name: Upload smoketest-artifacts
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: smoketest-artifacts
+          path: smoketest-artifacts/
+          if-no-files-found: warn
+
+  generate-provenance:
+    needs: [build]
+    name: Generate build provenance
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    # Currently this action needs to be referred by tag. More details at:
+    # https://github.com/slsa-framework/slsa-github-generator#verification-of-provenance
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      provenance-name: provenance-sigstore-${{ github.event.release.tag_name }}.intoto.jsonl
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-assets: true
+
+  release-rubygems:
+    needs: [build, generate-provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      # Used to authenticate to RubyGems.org via OIDC.
+      id-token: write
+    steps:
+      - name: Download artifacts directories # goes to current working directory
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@5364b597d07d29bd91379d9ee527ef013505d022 # main
+        with:
+          trusted-publisher: true
+
+      - name: publish
+        run: |
+          for gem in built-packages/*.gem; do
+            gem push "$gem"
+          done
+
+  release-github:
+    needs: [build, generate-provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to upload release assets.
+      contents: write
+    steps:
+      - name: Download artifacts directories # goes to current working directory
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+
+      - name: Upload artifacts to github
+        # Confusingly, this action also supports updating releases, not
+        # just creating them. This is what we want here, since we've manually
+        # created the release that triggered the action.
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        with:
+          # smoketest-artifacts/ contains the signatures and certificates.
+          files: |
+            built-packages/*
+            smoketest-artifacts/*
