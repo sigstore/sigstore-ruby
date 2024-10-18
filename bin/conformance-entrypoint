@@ -24,5 +24,5 @@ ENV.update(
 )
 
 load File.expand_path("sigstore-ruby", __dir__)
-ARGV.delete("--verify-digest")
-Sigstore::CLI.start(ARGV)
+
+Sigstore::CLI.start(ARGV << "--no-update-trusted-root")
