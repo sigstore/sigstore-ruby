@@ -12,16 +12,15 @@ permissions: {}
 
 jobs:
   ruby-versions:
-    uses: ruby/actions/.github/workflows/ruby_versions.yml@master
+    uses: ruby/actions/.github/workflows/ruby_versions.yml@3fbf038d6f0d8043b914f923764c61bc2a114a77
     with:
-      engine: all
+      engine: cruby-truffleruby
       min_version: 3.1
 
   test:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: Test Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +57,6 @@ jobs:
   sigstore-conformance:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.ruby, 'jruby') }}
     name: Sigstore Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -107,7 +105,6 @@ jobs:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
     name: TUF Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
-    continue-on-error: "${{ startsWith(matrix.ruby, 'jruby') }}"
     strategy:
       fail-fast: false
       matrix:

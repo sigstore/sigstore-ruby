@@ -55,6 +55,7 @@ module Sigstore
     option :offline, type: :boolean, desc: "Do not fetch the latest timestamp from the Rekor server"
     option :bundle, type: :string, desc: "Path to the signed bundle"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
+    option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     exclusive :bundle, :signature
     exclusive :bundle, :certificate
     def verify(*files)
@@ -90,6 +91,8 @@ module Sigstore
     option :bundle, type: :string, desc: "Path to write the signed bundle to"
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
+    option :trusted_root, type: :string, desc: "Path to the trusted root"
+    option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     def sign(file)
       require "sigstore/signer"
 
@@ -166,7 +169,11 @@ module Sigstore
     def trusted_root
       return Sigstore::TrustedRoot.from_file(options[:trusted_root]) if options[:trusted_root]
 
-      options[:staging] ? Sigstore::TrustedRoot.staging : Sigstore::TrustedRoot.production
+      if options[:staging]
+        Sigstore::TrustedRoot.staging(offline: !options[:update_trusted_root])
+      else
+        Sigstore::TrustedRoot.production(offline: !options[:update_trusted_root])
+      end
     end
 
     def collect_verification_state(files)

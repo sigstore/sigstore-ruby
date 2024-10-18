@@ -4,7 +4,7 @@ require "simplecov"
 SimpleCov.configure do
   add_filter "test/"
 end
-SimpleCov.start
+SimpleCov.start if ENV["COVERAGE"]
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "sigstore"
