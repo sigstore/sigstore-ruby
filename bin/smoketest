@@ -29,11 +29,9 @@ RUBY
 
 id_token ||= Net::HTTP.get_response(
   URI(ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_URL")),
-  { "Authorization" => "bearer #{ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_TOKEN")}" }
-) do |res|
-  res.value
-  res.body
-end
+  { "Authorization" => "bearer #{ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_TOKEN")}" },
+  &:value
+).body
 
 sh(env, File.expand_path("sigstore-ruby", __dir__),
    "sign", dist, "--identity-token=#{id_token}",
