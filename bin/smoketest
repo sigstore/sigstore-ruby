@@ -4,6 +4,7 @@
 require "fileutils"
 require "rake"
 require "net/http"
+require "json"
 
 include FileUtils # rubocop:disable Style/MixinUsage
 
@@ -31,7 +32,7 @@ id_token ||= Net::HTTP.get_response(
   URI(ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_URL") + "&audience=#{URI.encode_uri_component("sigstore")}"),
   { "Authorization" => "bearer #{ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_TOKEN")}" },
   &:value
-).body
+).body.then { JSON.parse(_1).fetch("value") }
 
 sh(env, File.expand_path("sigstore-ruby", __dir__),
    "sign", dist, "--identity-token=#{id_token}",
