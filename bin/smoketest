@@ -28,7 +28,7 @@ File.write("smoketest-gem-home/Gemfile", <<~RUBY)
 RUBY
 
 id_token ||= Net::HTTP.get_response(
-  URI(ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_URL")),
+  URI(ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_URL") + "&audience=#{URI.encode_uri_component("sigstore")}"),
   { "Authorization" => "bearer #{ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_TOKEN")}" },
   &:value
 ).body
