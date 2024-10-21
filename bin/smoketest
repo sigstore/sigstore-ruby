@@ -42,18 +42,20 @@ sh(env, File.expand_path("sigstore-ruby", __dir__),
    exception: true)
 
 cert_identity = "#{ENV.fetch("GITHUB_SERVER_URL")}/#{ENV.fetch("GITHUB_REPOSITORY")}" \
-                "/.github/workflows/release-with-provenance.yml@#{ENV.fetch("GITHUB_REF")}"
+                "/.github/workflows/#{ENV.fetch("WORKFLOW_NAME", "release")}.yml@#{ENV.fetch("GITHUB_REF")}"
 
 sh(env, File.expand_path("sigstore-ruby", __dir__),
-   "verify", dist,
+   "verify",
    "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
    "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-   "--cert-oidc-issuer=https://token.actions.githubusercontent.com",
-   "--cert-identity=#{cert_identity}",
+   "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+   "--certificate-identity=#{cert_identity}",
+   dist,
    exception: true)
 sh(env, File.expand_path("sigstore-ruby", __dir__),
-   "verify", dist,
+   "verify",
    "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-   "--cert-oidc-issuer=https://token.actions.githubusercontent.com",
-   "--cert-identity=#{cert_identity}",
+   "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+   "--certificate-identity=#{cert_identity}",
+   dist,
    exception: true)

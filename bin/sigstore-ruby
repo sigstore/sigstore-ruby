@@ -178,7 +178,7 @@ module Sigstore
 
     def collect_verification_state(files)
       if (options[:certificate] || options[:signature] || options[:bundle]) && files.size > 1
-        raise Thor::InvocationError, "Too many arguments"
+        raise Thor::InvocationError, "Too many files specified: #{files.inspect}"
       end
 
       if options[:bundle] && (options[:certificate] || options[:signature])
