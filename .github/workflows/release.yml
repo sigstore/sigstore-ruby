@@ -122,7 +122,7 @@ jobs:
           bundler-cache: false
 
       - name: Configure RubyGems credentials
-        uses: rubygems/configure-rubygems-credentials@2fc7b42c46c46844fa52a1554212acd445708860 # main
+        uses: rubygems/configure-rubygems-credentials@a2b9242bc411d79356771fc9b9ddebcc3cd1b5dd # main
         with:
           trusted-publisher: true
 
