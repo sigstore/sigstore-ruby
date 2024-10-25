@@ -38,6 +38,8 @@ module Sigstore
 
         def self.read(certificate_bytes)
           new(OpenSSL::X509::Certificate.new(certificate_bytes))
+        rescue OpenSSL::X509::CertificateError => e
+          raise Error::InvalidCertificate, e.message
         end
 
         def tbs_certificate_der
@@ -104,7 +106,7 @@ module Sigstore
 
           key_usage = extension(Extension::KeyUsage) ||
                       raise(Error::InvalidCertificate,
-                            "no keyUsage in #{@x509_certificate.extensions.map(&:to_h)}")
+                            "no keyUsage in #{openssl.extensions.map(&:to_h)}")
 
           unless key_usage.digital_signature
             raise Error::InvalidCertificate,

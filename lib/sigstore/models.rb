@@ -80,6 +80,12 @@ module Sigstore
 
     def initialize(*)
       super
+
+      unless bundle.is_a?(Bundle::V1::Bundle)
+        raise ArgumentError,
+              "bundle must be a #{Bundle::V1::Bundle}, is #{bundle.class}"
+      end
+
       @trusted_root = TrustedRoot.new(artifact_trust_root)
       @sbundle = SBundle.new(bundle)
       if sbundle.message_signature? && !artifact
@@ -138,13 +144,19 @@ module Sigstore
         expected_hashed_rekord_tlog_entry(hashed_input)
       when :dsse_envelope
         rekor_entry = verification_material.tlog_entries.first
-        case JSON.parse(rekor_entry.canonicalized_body).values_at("kind", "apiVersion")
+        canonicalized_body = begin
+          JSON.parse(rekor_entry.canonicalized_body)
+        rescue JSON::ParserError
+          raise Error::InvalidBundle, "expected canonicalized_body to be JSON"
+        end
+
+        case kind_version = canonicalized_body.values_at("kind", "apiVersion")
         when %w[dsse 0.0.1]
           expected_dsse_0_0_1_tlog_entry
         when %w[intoto 0.0.2]
           expected_intoto_0_0_2_tlog_entry
         else
-          raise Error::InvalidRekorEntry, "Unhandled rekor entry kind/version: #{t.inspect}"
+          raise Error::InvalidRekorEntry, "Unhandled rekor entry kind/version: #{kind_version.inspect}"
         end
       else
         raise Error::InvalidBundle, "expected either message_signature or dsse_envelope"
@@ -154,6 +166,8 @@ module Sigstore
     private
 
     def validate_version!
+      raise Error::InvalidBundle, "bundle requires verification material" unless verification_material
+
       case bundle_type
       when BundleType::BUNDLE_0_1
         unless verification_material.tlog_entries.all?(&:inclusion_promise)
@@ -169,7 +183,7 @@ module Sigstore
           raise Error::InvalidBundle,
                 "must contain an inclusion proof"
         end
-        unless verification_material.tlog_entries.all? { |t| t.inclusion_proof.checkpoint.envelope }
+        unless verification_material.tlog_entries.all? { |t| t.inclusion_proof.checkpoint&.envelope }
           raise Error::InvalidBundle,
                 "inclusion proof must contain a checkpoint"
         end
@@ -192,9 +206,9 @@ module Sigstore
       when :certificate
         @leaf_certificate = Internal::X509::Certificate.read(verification_material.certificate.raw_bytes)
       else
-        raise Error::InvalidBundle, "Unsupported bundle content: #{content}"
+        raise Error::InvalidBundle, "Unsupported bundle content: #{content.inspect}"
       end
-      raise Error::InvalidBundle, "Expected leaf certificate" unless @leaf_certificate.leaf?
+      raise Error::InvalidBundle, "expected certificate to be leaf" unless @leaf_certificate.leaf?
     end
 
     def expected_hashed_rekord_tlog_entry(hashed_input)

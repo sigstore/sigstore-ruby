@@ -239,7 +239,7 @@ module Sigstore
           b64_sig = Gem.read_binary(inputs[:sig])
           signature = b64_sig.unpack1("m")
 
-          verification_input.bundle = Sigstore::SBundle.for_cert_bytes_and_signature(cert_pem, signature)
+          verification_input.bundle = Sigstore::SBundle.for_cert_bytes_and_signature(cert_pem, signature).__getobj__
         end
 
         say "Verifying #{file}..."

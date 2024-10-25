@@ -183,7 +183,12 @@ module Sigstore
 
         case bundle.dsse_envelope.payloadType
         when "application/vnd.in-toto+json"
-          verify_in_toto(input, JSON.parse(bundle.dsse_envelope.payload))
+          in_toto = begin
+            JSON.parse(bundle.dsse_envelope.payload)
+          rescue JSON::ParserError
+            raise Error::InvalidBundle, "invalid JSON for in-toto statement in DSSE payload"
+          end
+          verify_in_toto(input, in_toto)
         else
           raise Sigstore::Error::Unimplemented,
                 "unsupported DSSE payload type: #{bundle.dsse_envelope.payloadType.inspect}"
@@ -432,7 +437,11 @@ module Sigstore
 
       logger.debug { "Found rekor entry: #{entry}" }
 
-      actual_body = JSON.parse(entry.canonicalized_body)
+      actual_body = begin
+        JSON.parse(entry.canonicalized_body)
+      rescue JSON::ParserError
+        raise Error::InvalidRekorEntry, "invalid JSON in rekor entry canonicalized_body"
+      end
       if bundle.dsse_envelope?
         # since the hash is over the uncanonicalized envelope, we need to remove it
         #
