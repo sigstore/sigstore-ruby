@@ -21,7 +21,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@7d3497fd78c07c0d84ebafa58d8dac60cd1f0763 # v1.199.0
+      - uses: ruby/setup-ruby@217c988b8c2bf2bacb2d5c78a7e7b18f8c34daed # v1.200.0
         with:
           # NOTE: We intentionally don't use a cache in the release step,
           # to reduce the risk of cache poisoning.
@@ -116,7 +116,7 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@7d3497fd78c07c0d84ebafa58d8dac60cd1f0763 # v1.199.0
+        uses: ruby/setup-ruby@217c988b8c2bf2bacb2d5c78a7e7b18f8c34daed # v1.200.0
         with:
           ruby-version: "3.3"
           bundler-cache: false
