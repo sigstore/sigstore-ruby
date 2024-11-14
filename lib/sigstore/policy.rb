@@ -51,12 +51,14 @@ module Sigstore
       OID = "1.3.6.1.4.1.57264.1.1"
     end
 
-    class OIDCIssuerV2 < SingleX509ExtPolicy
-      OID = "1.3.6.1.4.1.57264.1.8"
-
+    class SingleX509ExtDerEncodedPolicy < SingleX509ExtPolicy
       def ext_value(ext)
         OpenSSL::ASN1.decode(ext.value_der).value
       end
+    end
+
+    class OIDCIssuerV2 < SingleX509ExtDerEncodedPolicy
+      OID = "1.3.6.1.4.1.57264.1.8"
     end
 
     class AnyOf
