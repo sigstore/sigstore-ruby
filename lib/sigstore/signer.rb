@@ -99,7 +99,7 @@ module Sigstore
         credentials: {
           oidcIdentityToken: @identity_token.raw_token
         },
-        certificateSigningRequest: csr.to_pem
+        certificateSigningRequest: Internal::Util.base64_encode(csr.to_pem)
       }
     end
 
