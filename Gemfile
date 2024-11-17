@@ -4,6 +4,7 @@ source "https://rubygems.org"
 
 # Specify your gem's dependencies in sigstore.gemspec
 gemspec
+gemspec path: "cli"
 
 gem "base64", "~> 0.2.0" # Until https://github.com/vcr/vcr/commit/5c9230b43b6a51dec78941d16bf8e2954042964c is released
 gem "rake", "~> 13.2"

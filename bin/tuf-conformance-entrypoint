@@ -44,5 +44,5 @@ end
 ARGV.prepend("tuf")
 ARGV[2, 0] = args
 
-load File.expand_path("sigstore-ruby", __dir__)
+require "sigstore/cli"
 Sigstore::CLI.start(ARGV)

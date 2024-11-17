@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-load File.expand_path("../../bin/sigstore-ruby", __dir__)
+require "sigstore/cli"
 
 class Sigstore::ConformanceTest < Test::Unit::TestCase
   def test_verify_signature_invalid

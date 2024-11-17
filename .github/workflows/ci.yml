@@ -175,12 +175,7 @@ jobs:
         run: bin/rake build
       - name: Run the smoketest
         run: |
-          # we smoke-test sigstore by installing each of the distributions
-          # we've built in a fresh environment and using each to sign and
-          # verify for itself, using the ambient OIDC identity
-          for dist in pkg/*; do
-            ./bin/smoketest "${dist}"
-          done
+          ./bin/smoketest pkg/*.gem
         env:
           WORKFLOW_NAME: ci
 
