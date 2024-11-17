@@ -34,7 +34,7 @@ module Sigstore::Internal
         buffer << "["
         data.each_with_index do |v, i|
           buffer << "," unless i.zero?
-          buffer << canonical_generate(v)
+          canonical_generate(v, buffer)
         end
         buffer << "]"
       when Hash
@@ -51,7 +51,9 @@ module Sigstore::Internal
           else
             comma = true
           end
-          buffer << canonical_generate(k) << ":" << canonical_generate(v)
+          canonical_generate(k, buffer)
+          buffer << ":"
+          canonical_generate(v, buffer)
         end
         buffer << "}"
       else
