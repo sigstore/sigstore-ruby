@@ -23,6 +23,5 @@ ENV.update(
   "XDG_CACHE_HOME" => nil
 )
 
-load File.expand_path("sigstore-ruby", __dir__)
-
+require "sigstore/cli"
 Sigstore::CLI.start(ARGV << "--no-update-trusted-root")

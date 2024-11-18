@@ -1,12 +1,7 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
-
-ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
-require "bundler/setup"
 
 require "thor"
 require "sigstore"
-require "sigstore/error"
 
 module Sigstore
   class CLI < Thor
@@ -44,7 +39,7 @@ module Sigstore
       Sigstore.logger.level = options[:debug] ? Logger::DEBUG : Logger::INFO
     end
 
-    package_name "sigstore-ruby"
+    package_name "sigstore-cli"
 
     desc "verify FILE", "Verify a signature"
     option :staging, type: :boolean, desc: "Use the staging trusted root"
@@ -59,10 +54,6 @@ module Sigstore
     exclusive :bundle, :signature
     exclusive :bundle, :certificate
     def verify(*files)
-      require "sigstore/verifier"
-      require "sigstore/models"
-      require "sigstore/policy"
-
       verifier, files_with_materials = collect_verification_state(files)
       policy = Sigstore::Policy::Identity.new(
         identity: options[:certificate_identity],
@@ -87,14 +78,18 @@ module Sigstore
 
     desc "sign ARTIFACT", "Sign a file"
     option :staging, type: :boolean, desc: "Use the staging trusted root"
-    option :identity_token, type: :string, desc: "Identity token to use for signing", required: true
+    option :identity_token, type: :string, desc: "Identity token to use for signing"
     option :bundle, type: :string, desc: "Path to write the signed bundle to"
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     def sign(file)
-      require "sigstore/signer"
+      self.options = options.merge(identity_token: IdToken.detect_credential).freeze if options[:identity_token].nil?
+      unless options[:identity_token]
+        raise Error::InvalidIdentityToken,
+              "Failed to detect an ambient identity token, please provide one via --identity-token"
+      end
 
       contents = File.binread(file)
       bundle = Sigstore::Signer.new(
@@ -112,9 +107,6 @@ module Sigstore
 
     desc "display", "Display sigstore bundle(s)"
     def display(*files)
-      require "sigstore/models"
-      require "sigstore/internal/x509"
-
       files.each do |file|
         bundle_bytes = Gem.read_binary(file)
         bundle = SBundle.new Bundle::V1::Bundle.decode_json(bundle_bytes, registry: Sigstore::REGISTRY)
@@ -147,7 +139,6 @@ module Sigstore
       option :cached, type: :boolean, desc: "Return cached targets only"
       option :target_base_url, type: :string, desc: "Base URL for the targets"
       def download_target(*targets)
-        require "sigstore/tuf"
         trust_updater = Sigstore::TUF::TrustUpdater.new(
           options[:metadata_url], false,
           metadata_dir: options[:metadata_dir], targets_dir: options[:targets_dir],
@@ -179,7 +170,6 @@ module Sigstore
       option :metadata_url, type: :string, desc: "URL to the metadata", required: true
       option :metadata_dir, type: :string, desc: "Directory to store the metadata", required: true
       def refresh
-        require "sigstore/tuf"
         Sigstore::TUF::TrustUpdater.new(
           options[:metadata_url], false,
           metadata_dir: options[:metadata_dir]
@@ -276,4 +266,4 @@ module Sigstore
   end
 end
 
-Sigstore::CLI.start if $PROGRAM_NAME == __FILE__
+require "sigstore/cli/id_token"

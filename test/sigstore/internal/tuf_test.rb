@@ -9,7 +9,7 @@ class Sigstore::TUFTest < Test::Unit::TestCase
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Fexample.com/trusted_root.json"
+        ".cache/sigstore-ruby/sigstore/tuf/https%3A%2F%2Fexample.com/trusted_root.json"
       ),
       updater.trusted_root_path
     )
@@ -21,7 +21,7 @@ class Sigstore::TUFTest < Test::Unit::TestCase
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstore.dev/trusted_root.json"
+        ".cache/sigstore-ruby/sigstore/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstore.dev/trusted_root.json"
       ),
       updater.trusted_root_path
     )
@@ -37,7 +37,7 @@ class Sigstore::TUFTest < Test::Unit::TestCase
     assert_equal(
       File.join(
         Dir.home,
-        ".cache/sigstore-ruby/segiddins/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstage.dev/trusted_root.json"
+        ".cache/sigstore-ruby/sigstore/tuf/https%3A%2F%2Ftuf-repo-cdn.sigstage.dev/trusted_root.json"
       ),
       updater.trusted_root_path
     )

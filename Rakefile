@@ -3,6 +3,15 @@
 require "bundler/gem_tasks"
 require "rake/testtask"
 
+directory "pkg"
+namespace "cli" do
+  Bundler::GemHelper.install_tasks(dir: "cli")
+  task build: "pkg" do # rubocop:disable Rake/Desc
+    FileUtils.cp_r FileList["cli/pkg/*"], "pkg"
+  end
+end
+task "build" => "cli:build" # rubocop:disable Rake/Desc
+
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.test_files = FileList["test/**/*_test.rb"]

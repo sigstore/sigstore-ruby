@@ -91,7 +91,7 @@ module Sigstore
 
       def get_dirs(url)
         app_name = "sigstore-ruby"
-        app_author = "segiddins"
+        app_author = "sigstore"
 
         repo_base = URI.encode_uri_component(url)
         home = Dir.home

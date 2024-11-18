@@ -8,7 +8,9 @@ require "json"
 
 include FileUtils # rubocop:disable Style/MixinUsage
 
-dist = ARGV[0] || raise(StandardError, "Usage: #{$PROGRAM_NAME} <dist>")
+raise(StandardError, "Usage: #{$PROGRAM_NAME} <dists...>") if ARGV.empty?
+
+dists = ARGV
 mkdir_p %w[smoketest-gem-home smoketest-artifacts]
 
 at_exit { rm_rf "smoketest-gem-home" }
@@ -20,42 +22,36 @@ env = {
   "BUNDLE_GEMFILE" => "smoketest-gem-home/Gemfile"
 }
 
-sh(env, "gem", "install", dist, "--no-document", exception: true)
-sh(env, "gem", "install", "thor", "--no-document", exception: true)
-
-File.write("smoketest-gem-home/Gemfile", <<~RUBY)
-  gem "sigstore"
-  gem "thor"
-RUBY
-
-id_token ||= Net::HTTP.get_response(
-  URI(ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_URL") + "&audience=#{URI.encode_uri_component("sigstore")}"),
-  { "Authorization" => "bearer #{ENV.fetch("ACTIONS_ID_TOKEN_REQUEST_TOKEN")}" },
-  &:value
-).body.then { JSON.parse(_1).fetch("value") }
-
-sh(env, File.expand_path("sigstore-ruby", __dir__),
-   "sign", dist, "--identity-token=#{id_token}",
-   "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
-   "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-   "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-   exception: true)
-
 cert_identity = "#{ENV.fetch("GITHUB_SERVER_URL")}/#{ENV.fetch("GITHUB_REPOSITORY")}" \
                 "/.github/workflows/#{ENV.fetch("WORKFLOW_NAME", "release")}.yml@#{ENV.fetch("GITHUB_REF")}"
 
-sh(env, File.expand_path("sigstore-ruby", __dir__),
-   "verify",
-   "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
-   "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-   "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
-   "--certificate-identity=#{cert_identity}",
-   dist,
-   exception: true)
-sh(env, File.expand_path("sigstore-ruby", __dir__),
-   "verify",
-   "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-   "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
-   "--certificate-identity=#{cert_identity}",
-   dist,
-   exception: true)
+sh(env, "gem", "install", *dists, "--no-document", exception: true)
+
+File.write("smoketest-gem-home/Gemfile", <<~RUBY)
+  gem "sigstore-cli"
+RUBY
+
+dists.each do |dist|
+  sh(env, File.expand_path("sigstore-cli", __dir__),
+     "sign", dist,
+     "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
+     "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
+     "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
+     exception: true)
+
+  sh(env, File.expand_path("sigstore-cli", __dir__),
+     "verify",
+     "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
+     "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
+     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-identity=#{cert_identity}",
+     dist,
+     exception: true)
+  sh(env, File.expand_path("sigstore-cli", __dir__),
+     "verify",
+     "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
+     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-identity=#{cert_identity}",
+     dist,
+     exception: true)
+end
