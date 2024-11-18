@@ -118,7 +118,7 @@ module Sigstore
 
         unless store_ctx.verify
           return VerificationFailure.new(
-            "failed to validate certification from fulcio cert chain: #{store_ctx.error_string}"
+            "failed to validate certificate from fulcio cert chain: #{store_ctx.error_string}"
           )
         end
 

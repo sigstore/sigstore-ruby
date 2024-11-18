@@ -110,6 +110,31 @@ module Sigstore
     end
     map "sign-bundle" => :sign
 
+    desc "display", "Display sigstore bundle(s)"
+    def display(*files)
+      require "sigstore/models"
+      require "sigstore/internal/x509"
+
+      files.each do |file|
+        bundle_bytes = Gem.read_binary(file)
+        bundle = SBundle.new Bundle::V1::Bundle.decode_json(bundle_bytes, registry: Sigstore::REGISTRY)
+
+        say "--- Bundle #{file} ---"
+        say "Media Type: #{bundle.media_type}"
+        say bundle.leaf_certificate.to_text
+
+        case bundle.content
+        when :message_signature
+          say "Signature over: #{bundle.message_signature.message_digest.algorithm} " \
+              "#{Internal::Util.hex_encode bundle.message_signature.message_digest.digest}"
+        when :dsse_envelope
+          say bundle.dsse_envelope.payloadType
+          say bundle.dsse_envelope.payload
+        else raise Error::InvalidBundle, "expected either message_signature or dsse_envelope"
+        end
+      end
+    end
+
     class TUF < Thor
       def self.exit_on_failure?
         true
