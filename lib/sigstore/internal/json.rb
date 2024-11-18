@@ -18,33 +18,44 @@ module Sigstore::Internal
   module JSON
     # Implements https://wiki.laptop.org/go/Canonical_JSON
     #
-    # TODO: This is a naive implementation. Performance can be improved by
-    #       serializing into a buffer instead of concatenating strings.
-    def self.canonical_generate(data)
+    def self.canonical_generate(data, buffer = +"")
       case data
       when NilClass
-        "null"
+        buffer << "null"
       when TrueClass
-        "true"
+        buffer << "true"
       when FalseClass
-        "false"
+        buffer << "false"
       when Integer
-        data.to_s
+        buffer << data.to_s
       when String
-        "\"#{data.gsub(/(["\\])/, '\\\\\1')}\""
+        buffer << '"' << data.gsub(/(["\\])/, '\\\\\1') << '"'
       when Array
-        contents = data.map { |v| canonical_generate(v) }.join(",")
-        "[#{contents}]"
+        buffer << "["
+        data.each_with_index do |v, i|
+          buffer << "," unless i.zero?
+          canonical_generate(v, buffer)
+        end
+        buffer << "]"
       when Hash
         contents = data.sort_by do |k, _|
           raise ArgumentError, "Non-string key in hash" unless k.is_a?(String)
 
           k.encode("utf-16").codepoints
         end
-        contents.map! do |k, v|
-          "#{canonical_generate(k)}:#{canonical_generate(v)}"
+        buffer << "{"
+        comma = false
+        contents.each do |k, v|
+          if comma
+            buffer << ","
+          else
+            comma = true
+          end
+          canonical_generate(k, buffer)
+          buffer << ":"
+          canonical_generate(v, buffer)
         end
-        "{#{contents.join(",")}}"
+        buffer << "}"
       else
         raise ArgumentError, "Unsupported data type: #{data.class}"
       end
