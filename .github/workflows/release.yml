@@ -16,6 +16,7 @@ jobs:
       id-token: write
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
+      built-gems: ${{ steps.list-gems.outputs.gems }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -40,9 +41,14 @@ jobs:
       - name: build
         run: bin/rake build
 
+      - name: List built gems
+        id: list-gems
+        run: |
+          echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
+
       - name: Check release and tag name match built version
         run: |
-          for gem in pkg/*.gem; do
+          for gem in ${BUILT_GEMS}; do
             gemspec_version=$(gem spec ${gem} version | ruby -ryaml -e 'puts YAML.safe_load(ARGF.read, permitted_classes: [Gem::Version])')
             if [ "${RELEASE_TAG_NAME}" != "v${gemspec_version}" ]; then
               echo "Release tag name '${RELEASE_TAG_NAME}' does not match gemspec version 'v${gemspec_version}'"
@@ -51,10 +57,13 @@ jobs:
           done
         env:
           RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+          BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
 
       - name: sign
         run: |
-          ./bin/smoketest pkg/*.gem
+          ./bin/smoketest ${BUILT_GEMS}
+        env:
+          BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
 
       - name: Generate hashes for provenance
         shell: bash
@@ -106,6 +115,12 @@ jobs:
     permissions:
       # Used to authenticate to RubyGems.org via OIDC.
       id-token: write
+    strategy:
+      matrix:
+        built-gem: ${{ fromJson(needs.build.outputs.built-gems) }}
+    concurrency:
+      group: release-rubygems
+    name: Publish ${{ matrix.built-gem }} to RubyGems
     steps:
       - name: Download artifacts directories # goes to current working directory
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -116,6 +131,19 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: false
 
+      - name: Clone rubygems HEAD
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: rubygems/rubygems
+          persist-credentials: false
+          fetch-depth: 0
+          ref: a5412d9a0e358893e20ac69a4c6c0c2bac59d888
+          path: rubygems
+
+      - name: Install rubygems HEAD
+        run: ruby setup.rb
+        working-directory: rubygems
+
       - name: Configure RubyGems credentials
         uses: rubygems/configure-rubygems-credentials@a2b9242bc411d79356771fc9b9ddebcc3cd1b5dd # main
         with:
@@ -123,9 +151,9 @@ jobs:
 
       - name: publish
         run: |
-          for gem in built-packages/*.gem; do
-            gem push "$gem"
-          done
+          gem push "$BUILT_GEM" --attestation "$(basename "$BUILT_GEM").sigstore.json"
+        env:
+          BUILT_GEM: ${{ matrix.built-gem }}
 
   release-github:
     needs: [build, generate-provenance]
