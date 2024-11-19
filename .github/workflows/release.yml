@@ -151,7 +151,7 @@ jobs:
 
       - name: publish
         run: |
-          gem push "built-packages/$(basename $BUILT_GEM)" --attestation "$(basename $BUILT_GEM).sigstore.json"
+          gem push "built-packages/$(basename $BUILT_GEM)" --attestation "smoketest-artifacts/$(basename $BUILT_GEM).sigstore.json"
         env:
           BUILT_GEM: ${{ matrix.built-gem }}
 
