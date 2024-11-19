@@ -173,10 +173,15 @@ jobs:
           bundler-cache: true
       - name: Build the gem
         run: bin/rake build
+      - name: List built gems
+        id: list-gems
+        run: |
+          echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
       - name: Run the smoketest
         run: |
-          ./bin/smoketest pkg/*.gem
+          ./bin/smoketest ${BUILT_GEMS}
         env:
+          BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
           WORKFLOW_NAME: ci
 
   all-tests-pass:

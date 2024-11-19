@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sigstore (0.2.0)
+    sigstore (0.2.1)
       net-http
       protobug_sigstore_protos (~> 0.1.0)
       uri
@@ -9,8 +9,8 @@ PATH
 PATH
   remote: cli
   specs:
-    sigstore-cli (0.2.0)
-      sigstore (= 0.2.0)
+    sigstore-cli (0.2.1)
+      sigstore (= 0.2.1)
       thor
 
 GEM
@@ -147,8 +147,8 @@ CHECKSUMS
   rubocop-performance (1.23.0) sha256=34ae78cb1bc5f1a0b34a34a1f9f6eec2cb8b8b9cafa2ce37982021e86fa49171
   rubocop-rake (0.6.0) sha256=56b6f22189af4b33d4f4e490a555c09f1281b02f4d48c3a61f6e8fe5f401d8db
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
-  sigstore (0.2.0)
-  sigstore-cli (0.2.0)
+  sigstore (0.2.1)
+  sigstore-cli (0.2.1)
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
