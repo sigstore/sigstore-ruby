@@ -36,7 +36,7 @@ GEM
     parser (3.3.6.0)
       ast (~> 2.4.1)
       racc
-    power_assert (2.0.3)
+    power_assert (2.0.4)
     protobug (0.1.0)
     protobug_googleapis_field_behavior_protos (0.1.0)
       protobug (= 0.1.0)
@@ -78,7 +78,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    test-unit (3.6.2)
+    test-unit (3.6.3)
       power_assert
     thor (1.3.2)
     timecop (0.9.10)
@@ -109,7 +109,7 @@ DEPENDENCIES
   sigstore!
   sigstore-cli!
   simplecov (~> 0.22.0)
-  test-unit (~> 3.0)
+  test-unit (~> 3.6)
   thor (~> 1.3)
   timecop (~> 0.9.10)
   vcr (~> 6.3)
@@ -130,7 +130,7 @@ CHECKSUMS
   net-http (0.5.0) sha256=ed7f88205afe03bf53142a4b81ded91f2c01522dcf03089cb6ad4acb476ce1da
   parallel (1.26.3) sha256=d86babb7a2b814be9f4b81587bf0b6ce2da7d45969fab24d8ae4bf2bb4d4c7ef
   parser (3.3.6.0) sha256=25d4e67cc4f0f7cab9a2ae1f38e2005b6904d2ea13c34734511d0faad038bc3b
-  power_assert (2.0.3) sha256=cd5e13c267370427c9804ce6a57925d6030613e341cb48e02eec1f3c772d4cf8
+  power_assert (2.0.4) sha256=43da564b535c758f2fc8c80fee031b744b4d4b388362d8c1ba669a0dc81be0c5
   protobug (0.1.0) sha256=5bf1356cedf99dcf311890743b78f5e602f62ca703e574764337f1996b746bf2
   protobug_googleapis_field_behavior_protos (0.1.0) sha256=db48ef6a5913b2355b4a6931ab400a9e3e995fb48499977a3ad0be6365f9e265
   protobug_sigstore_protos (0.1.0) sha256=4ad1eebaf6454131b6f432dda50ad0e513773613474b92470847614a5acacce1
@@ -152,7 +152,7 @@ CHECKSUMS
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
-  test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
+  test-unit (3.6.3) sha256=0524c7c0282098f2bc51f4879faead8524a140cd176d8d0cd99ae7de2dacf777
   thor (1.3.2) sha256=eef0293b9e24158ccad7ab383ae83534b7ad4ed99c09f96f1a6b036550abbeda
   timecop (0.9.10) sha256=12ba45ce57cdcf6b1043cb6cdffa6381fd89ce10d369c28a7f6f04dc1b0cd8eb
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
