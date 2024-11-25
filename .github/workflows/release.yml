@@ -145,7 +145,7 @@ jobs:
         working-directory: rubygems
 
       - name: Configure RubyGems credentials
-        uses: rubygems/configure-rubygems-credentials@1f1f4066e698be7d02a7e5b2a9960a752f78438f # main
+        uses: rubygems/configure-rubygems-credentials@f456a002d58f0de60b44383d10ae82316b18a166 # main
         with:
           trusted-publisher: true
 
