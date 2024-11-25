@@ -8,7 +8,7 @@ gemspec path: "cli"
 
 gem "base64", "~> 0.2.0" # Until https://github.com/vcr/vcr/commit/5c9230b43b6a51dec78941d16bf8e2954042964c is released
 gem "rake", "~> 13.2"
-gem "rubocop", "~> 1.67"
+gem "rubocop", "~> 1.68"
 gem "rubocop-performance", "~> 1.23"
 gem "rubocop-rake", "~> 0.6.0"
 gem "simplecov", "~> 0.22.0"

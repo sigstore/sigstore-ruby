@@ -54,7 +54,7 @@ GEM
     rake (13.2.1)
     regexp_parser (2.9.2)
     rexml (3.3.9)
-    rubocop (1.67.0)
+    rubocop (1.68.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
@@ -103,7 +103,7 @@ PLATFORMS
 DEPENDENCIES
   base64 (~> 0.2.0)
   rake (~> 13.2)
-  rubocop (~> 1.67)
+  rubocop (~> 1.68)
   rubocop-performance (~> 1.23)
   rubocop-rake (~> 0.6.0)
   sigstore!
@@ -142,7 +142,7 @@ CHECKSUMS
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
   rexml (3.3.9) sha256=d71875b85299f341edf47d44df0212e7658cbdf35aeb69cefdb63f57af3137c9
-  rubocop (1.67.0) sha256=8ccca7226e76d0a9974af960ea446d1fb38adf0c491214294e2fed75a85c378c
+  rubocop (1.68.0) sha256=07df508504d81e97174e8d21030f25d52c1be7ee8615939db43f3b377ea6c12b
   rubocop-ast (1.36.1) sha256=15d89a8953178bc32561d481a3620496e70933a228be1e3b6997b01b8d587b79
   rubocop-performance (1.23.0) sha256=34ae78cb1bc5f1a0b34a34a1f9f6eec2cb8b8b9cafa2ce37982021e86fa49171
   rubocop-rake (0.6.0) sha256=56b6f22189af4b33d4f4e490a555c09f1281b02f4d48c3a61f6e8fe5f401d8db
