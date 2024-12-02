@@ -6,7 +6,6 @@ source "https://rubygems.org"
 gemspec
 gemspec path: "cli"
 
-gem "base64", "~> 0.2.0" # Until https://github.com/vcr/vcr/commit/5c9230b43b6a51dec78941d16bf8e2954042964c is released
 gem "rake", "~> 13.2"
 gem "rubocop", "~> 1.67"
 gem "rubocop-performance", "~> 1.23"
@@ -17,3 +16,10 @@ gem "thor", "~> 1.3"
 gem "timecop", "~> 0.9.10"
 gem "vcr", "~> 6.3"
 gem "webmock", "~> 3.24"
+
+gem "literal"
+# gem "xdg", "~> 8.8"
+
+gem "kdl", "~> 1.0"
+
+gem "paramesan", "~> 1.0"

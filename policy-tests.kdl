@@ -1,0 +1,221 @@
+test "empty document" {
+  document {}
+  ast r#"["PolicySet", nil, [], []]"#
+
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby",
+      "version": {
+        "major": 7,
+        "minor": 0,
+        "patch": 0,
+        "exact": "7.0.0"
+      }
+    }"#
+
+    match false
+  }
+
+  example {
+    subject "{}"
+    match false
+  }
+}
+
+test "empty policy" {
+  document {
+    rubygem "rails" {}
+  }
+  /-ast r#"["PolicySet", nil, {}, []]"#
+
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby",
+      "version": {
+        "major": 7,
+        "minor": 0,
+        "patch": 0,
+        "exact": "7.0.0"
+      }
+    }"#
+
+    match true
+  }
+
+  example {
+    subject "{}"
+    match false
+  }
+}
+
+test "simple policy" {
+  document {
+    rubygem "rails" {
+      platform "ruby"
+    }
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby"
+    }"#
+
+    match true
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "boo",
+      "platform": "ruby"
+    }"#
+
+    match false
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "boo"
+    }"#
+
+    match false {
+      ""
+    }
+  }
+}
+
+test "policy with macro" {
+  document {
+    (def)semver_tilde major="integer" minor="integer?" patch="integer?" {
+      (var)"major_plus_one" {
+        (op)"+" 1 (var)"major"
+      }
+      major (var)"major"
+      /- major ">="=(var)"major"
+      /- major "<"=(var)"major_plus_one"
+    }
+    rubygem "rails" {
+      version {
+        (call)semver_tilde major=7 minor=1
+      }
+    }
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby",
+      "version": { "major": 7, "minor": 1 }
+    }"#
+
+    match true
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby",
+      "version": { "major": 3, "minor": 1 }
+    }"#
+
+    match false
+  }
+}
+
+test "policy with nested attribute" {
+  document {
+    rubygem "rails" {
+      version.major 7
+      version {
+        major 7
+      }
+    }
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "version": { "major": 7 }
+    }"#
+
+    match true
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "version": { "major": 6 }
+    }"#
+
+    match false
+  }
+}
+
+test "big policy" {
+  document {
+    description "A policy for RubyGems"
+
+    def "githubAttestation" owner="string" repository="string" workflow="string" environment="string?" {
+      attestation {
+        x509.Issuer "https://token.actions.githubusercontent.com"
+        x509.Repository (var)"repository"
+        x509.Workflow (var)"workflow"
+
+        $if (var)"environment" { x509.Environment (var)"environment" }
+        $elseif (var)"environment" { x509.Environment (var)"environment" }
+        $else { x509.Environment "production" }
+
+        $oneOf {
+          messageSignature
+          $all {
+            dsseEnvelope.payloadType "application/vnd.in-toto+json"
+            dsseEnvelope.payload {
+              _type "https://in-toto.io/Statement/v1"
+              predicateType "https://slsa.dev/provenance/v1"
+              predicate.buildDefinition.externalParameters.workflow.repository (var)"repository"
+            }
+          }
+        }
+      }
+    }
+
+    rubygem "bundler" {
+      version.major.$gte 7
+      platform "ruby"
+      source "https://rubygems.org"
+
+      %githubAttestation owner="rubygems" repo="bundler" workflow=".github/workflows/release.yml"
+    }
+
+    rubygem "bundler" {
+      version.major.$lt 3
+      platform "ruby"
+      source "https://rubygems.org"
+    }
+  }
+
+  example {
+    subject r#"{
+      "type": "rubygem",
+      "name": "rails",
+      "platform": "ruby",
+      "version": { "major": 3, "minor": 1 }
+    }"#
+
+    match false
+  }
+}
