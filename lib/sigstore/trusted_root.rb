@@ -59,13 +59,13 @@ module Sigstore
       keys
     end
 
-    def fulcio_cert_chain
-      certs = ca_keys(certificate_authorities, allow_expired: true).flat_map do |raw_bytes|
-        Internal::X509::Certificate.read(raw_bytes)
+    def fulcio_cert_chains
+      chains = ca_keys(certificate_authorities, allow_expired: true).map do |certs|
+        certs.map { |raw_bytes| Internal::X509::Certificate.read(raw_bytes) }
       end
-      raise Error::InvalidBundle, "Fulcio certificates not found in trusted root" if certs.empty?
+      raise Error::InvalidBundle, "Fulcio certificates not found in trusted root" if chains.none?(&:any?)
 
-      certs
+      chains
     end
 
     def tlog_for_signing
@@ -97,9 +97,7 @@ module Sigstore
       certificate_authorities.each do |ca|
         next unless timerange_valid?(ca.valid_for, allow_expired:)
 
-        ca.cert_chain.certificates.each do |cert|
-          yield cert.raw_bytes
-        end
+        yield ca.cert_chain.certificates.map(&:raw_bytes)
       end
     end
 
