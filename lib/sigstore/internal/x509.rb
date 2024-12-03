@@ -20,6 +20,74 @@ require "openssl"
 module Sigstore
   module Internal
     module X509
+      if RUBY_ENGINE == "jruby"
+        unless JOpenSSL::VERSION >= "0.15.3"
+          raise Error::UnsupportedPlatform, "JRuby support requires jruby-openssl >= 0.15.3, is #{JOpenSSL::VERSION}"
+        end
+
+        def self.validate_chain(trust_roots, leaf, time)
+          cert_factory = java.security.cert.CertificateFactory.getInstance("X.509")
+          cert_factory.generateCertificate(java.io.ByteArrayInputStream.new(leaf.to_der.to_java_bytes))
+          target = leaf.openssl.to_java
+
+          trust_anchors = Set.new
+          intermediate_certs = []
+          trust_roots.each do |chain|
+            root = chain.last
+
+            trust_anchors << java.security.cert.TrustAnchor.new(root.openssl.to_java, nil)
+            chain[..-2].each do |cert|
+              intermediate_certs << cert.openssl.to_java
+            end
+          end
+
+          cert_store_parameters = java.security.cert.CollectionCertStoreParameters.new(intermediate_certs)
+          cert_store = java.security.cert.CertStore.getInstance("Collection", cert_store_parameters)
+
+          cert_selector = java.security.cert.X509CertSelector.new
+          cert_selector.setCertificate(target)
+
+          pkix_builder_parameters = java.security.cert.PKIXBuilderParameters.new(trust_anchors, cert_selector)
+          pkix_builder_parameters.setDate(time) if time
+          pkix_builder_parameters.setRevocationEnabled(false)
+          pkix_builder_parameters.addCertStore(cert_store)
+
+          cert_path_builder = java.security.cert.CertPathBuilder.getInstance("PKIX")
+          cert_path_result = cert_path_builder.build(pkix_builder_parameters)
+          chain = cert_path_result.cert_path.getCertificates.map do |cert|
+            der = String.from_java_bytes(cert.getEncoded).b
+            Certificate.read(der)
+          end
+          chain.shift # remove the cert itself
+          chain << Certificate.read(
+            String.from_java_bytes(cert_path_result.get_trust_anchor.getTrustedCert.getEncoded).b
+          )
+          [chain, nil]
+        end
+      else
+        def self.validate_chain(trust_roots, leaf, time)
+          store = OpenSSL::X509::Store.new
+          intermediate_certs = []
+          trust_roots.each do |chain|
+            store.add_cert(chain.last.openssl)
+            chain[..-2].each do |cert|
+              intermediate_certs << cert.openssl
+            end
+          end
+          store_ctx = OpenSSL::X509::StoreContext.new(store, leaf.openssl, intermediate_certs)
+          store_ctx.time = time if time
+          unless store_ctx.verify
+            return nil, VerificationFailure.new(
+              "failed to validate certificate from fulcio cert chain: #{store_ctx.error_string}"
+            )
+          end
+
+          chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
+          chain.shift # remove the cert itself
+          [chain.map! { Certificate.new(_1) }, nil]
+        end
+      end
+
       class Certificate
         extend Forwardable
 
@@ -149,7 +217,7 @@ module Sigstore
           extended_key_usage = extension(Extension::ExtendedKeyUsage)
           return false unless extended_key_usage
 
-          extended_key_usage.purposes.include?(OpenSSL::ASN1::ObjectId.new("1.3.6.1.4.1.11129.2.4.4"))
+          extended_key_usage.precert?
         end
       end
 
@@ -248,9 +316,14 @@ module Sigstore
           end
 
           CODE_SIGNING = OpenSSL::ASN1::ObjectId.new("1.3.6.1.5.5.7.3.3")
+          PRECERT_PURPOSE = OpenSSL::ASN1::ObjectId.new("1.3.6.1.4.1.11129.2.4.4")
 
           def code_signing?
             purposes.any? { |purpose| purpose.oid == CODE_SIGNING.oid }
+          end
+
+          def precert?
+            purposes.any? { |purpose| purpose.oid == PRECERT_PURPOSE.oid }
           end
         end
 
@@ -309,11 +382,15 @@ module Sigstore
             @general_names = value.map do |general_name|
               tag = general_name.tag
 
+              value = general_name.value
+              value = value.first if value.is_a?(Array) && value.size == 1
+              value = value.value if value.is_a?(OpenSSL::ASN1::OctetString)
+
               case tag
               when 1
-                [:otherName, general_name.value]
+                [:otherName, value]
               when 6
-                [:uniformResourceIdentifier, general_name.value]
+                [:uniformResourceIdentifier, value]
               else
                 raise Error::Unimplemented,
                       "Unhandled general name tag: #{tag}"
@@ -384,35 +461,17 @@ module Sigstore
 
           private
 
-          if RUBY_VERSION >= "3.1"
-            def unpack_at(string, format, offset:)
-              string.unpack(format, offset:)
-            end
-
-            def unpack1_at(string, format, offset:)
-              string.unpack1(format, offset:)
-            end
-          else
-            def unpack_at(string, format, offset:)
-              string[offset..].unpack(format)
-            end
-
-            def unpack1_at(string, format, offset:)
-              string[offset..].unpack1(format)
-            end
-          end
-
           # https://letsencrypt.org/2018/04/04/sct-encoding.html
           def unpack_sct_list(string)
             offset = 0
             len = string.bytesize
             list = []
             while offset < len
-              sct_version, sct_log_id, sct_timestamp, sct_extensions_len = unpack_at(string, "Ca32Q>n", offset:)
+              sct_version, sct_log_id, sct_timestamp, sct_extensions_len = string.unpack("Ca32Q>n", offset:)
               offset += 1 + 32 + 8 + 2
               raise Error::Unimplemented, "expect sct version to be 0, got #{sct_version}" unless sct_version.zero?
 
-              sct_extensions_bytes = unpack1_at(string, "a#{sct_extensions_len}", offset:).b
+              sct_extensions_bytes = string.unpack1("a#{sct_extensions_len}", offset:).b
               offset += sct_extensions_len
 
               unless sct_extensions_len.zero?
@@ -420,10 +479,9 @@ module Sigstore
                       "sct_extensions_len=#{sct_extensions_len} not supported"
               end
 
-              sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = unpack_at(string, "CCn",
-                                                                                            offset:)
+              sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = string.unpack("CCn", offset:)
               offset += 1 + 1 + 2
-              sct_signature_bytes = unpack1_at(string, "a#{sct_signature_len}", offset:).b
+              sct_signature_bytes = string.unpack1("a#{sct_signature_len}", offset:).b
               offset += sct_signature_len
               list << Timestamp.new(
                 version: sct_version,

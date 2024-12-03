@@ -133,17 +133,20 @@ module Sigstore
       # Perform certification path validation (RFC 5280 §6) of the returned certificate chain with the pre-distributed
       # Fulcio root certificate(s) as a trust anchor.
 
-      x509_store = OpenSSL::X509::Store.new
-      expected_chain = @trusted_root.fulcio_cert_chain
+      now = Time.now
+      if leaf.not_before > now
+        unless leaf.not_before - now < 60
+          raise Error::Signing, "leaf certificate not yet valid: #{leaf.not_before.inspect} vs #{now.inspect}"
+        end
 
-      x509_store.add_cert expected_chain.last.openssl
-      unless x509_store.verify(leaf.openssl, expected_chain[..-2].map(&:openssl))
-        raise Error::Signing, "returned certificate does not validate: #{x509_store.error_string}"
+        logger.warn do
+          "leaf certificate not yet valid: #{leaf.not_before.inspect} vs #{now.inspect}, sleeping until valid"
+        end
+        sleep(leaf.not_before - now)
       end
 
-      chain = x509_store.chain
-      chain.shift # remove the leaf cert
-      chain.map! { |cert| Internal::X509::Certificate.new(cert) }
+      chain, err = Internal::X509.validate_chain(@trusted_root.fulcio_cert_chains, leaf, nil)
+      raise Error::Signing, "failed to validate returned certificate chain: #{err.reason}" if err
 
       logger.debug { "verified chain" }
 
@@ -175,7 +178,7 @@ module Sigstore
               "certificate does not contain expected SAN #{expected_san}, got #{general_names}"
       end
 
-      [leaf, x509_store.chain]
+      [leaf, chain.unshift(leaf)]
     end
 
     def sign_payload(payload, key)

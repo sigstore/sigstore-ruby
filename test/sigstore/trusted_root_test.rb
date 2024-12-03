@@ -18,7 +18,8 @@ class Sigstore::TrustedRootTest < Test::Unit::TestCase
                       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiPSlFi0CmFTfEjCUqF9HuCEc\n" \
                       "YXNKAaYalIJmBZ8yyezPjTqhxrKBpMnaocVtLJBI1eM3uXnQzQGAJdJ4gs9F\n" \
                       "yw==\n"], production.ctfe_keys.map { [_1.to_der].pack("m") }
-        assert_equal "-----BEGIN CERTIFICATE-----\n" \
+        assert_equal "chain 0\n" \
+                     "-----BEGIN CERTIFICATE-----\n" \
                      "MIIB+DCCAX6gAwIBAgITNVkDZoCiofPDsy7dfm6geLbuhzAKBggqhkjOPQQDAzAq\n" \
                      "MRUwEwYDVQQKEwxzaWdzdG9yZS5kZXYxETAPBgNVBAMTCHNpZ3N0b3JlMB4XDTIx\n" \
                      "MDMwNzAzMjAyOVoXDTMxMDIyMzAzMjAyOVowKjEVMBMGA1UEChMMc2lnc3RvcmUu\n" \
@@ -31,6 +32,7 @@ class Sigstore::TrustedRootTest < Test::Unit::TestCase
                      "Ve/83WrFomwmNf056y1X48F9c4m3a3ozXAIxAKjRay5/aj/jsKKGIkmQatjI8uup\n" \
                      "Hr/+CxFvaJWmpYqNkLDGRU+9orzh5hI2RrcuaQ==\n" \
                      "-----END CERTIFICATE-----\n" \
+                     "chain 1\n" \
                      "-----BEGIN CERTIFICATE-----\n" \
                      "MIICGjCCAaGgAwIBAgIUALnViVfnU0brJasmRkHrn/UnfaQwCgYIKoZIzj0EAwMw\n" \
                      "KjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y\n" \
@@ -57,7 +59,9 @@ class Sigstore::TrustedRootTest < Test::Unit::TestCase
                      "KsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCM\n" \
                      "WP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9\n" \
                      "TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ\n" \
-                     "-----END CERTIFICATE-----\n", production.fulcio_cert_chain.map(&:to_pem).join
+                     "-----END CERTIFICATE-----\n", production.fulcio_cert_chains.map.with_index { |chain, i|
+                                                      "chain #{i}\n" + chain.map(&:to_pem).join
+                                                    }.join
       end
     end
   end
