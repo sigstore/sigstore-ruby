@@ -82,13 +82,13 @@ jobs:
           bundler-cache: true
 
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@d4049eaf8f860f52bde2b61617cb5487d2401e9c
+        uses: sigstore/sigstore-conformance@6bd1c54e236c9517da56f7344ad16cc00439fe19
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@d4049eaf8f860f52bde2b61617cb5487d2401e9c
+        uses: sigstore/sigstore-conformance@6bd1c54e236c9517da56f7344ad16cc00439fe19
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           xfail: "${{ matrix.ruby != 'head' && 'test_verify_rejects_bad_tsa_timestamp' }}"
