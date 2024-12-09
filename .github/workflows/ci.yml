@@ -14,7 +14,7 @@ jobs:
   ruby-versions:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@3fbf038d6f0d8043b914f923764c61bc2a114a77
     with:
-      engine: cruby-truffleruby
+      engine: all
       min_version: 3.1
 
   test:
