@@ -14,7 +14,8 @@ module Sigstore
     rescue Sigstore::Error => e
       raise if config[:debug] || ENV["THOR_DEBUG"] == "1"
 
-      config[:shell].error(e.detailed_message)
+      detailed_message = e.respond_to?(:detailed_message) ? e.detailed_message : e.message
+      config[:shell].error(detailed_message)
 
       exit(false)
     end
