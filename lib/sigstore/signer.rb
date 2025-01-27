@@ -267,7 +267,7 @@ module Sigstore
       bundle.media_type = BundleType::BUNDLE_0_3.media_type
       bundle.verification_material = Bundle::V1::VerificationMaterial.new
       bundle.verification_material.certificate = Common::V1::X509Certificate.new
-      bundle.verification_material.certificate.raw_bytes = leaf_certificate.to_pem
+      bundle.verification_material.certificate.raw_bytes = leaf_certificate.to_der
       bundle.verification_material.tlog_entries = tlog_entries
       bundle.verification_material.timestamp_verification_data = timestamp_verification_data
       bundle.message_signature = Sigstore::Common::V1::MessageSignature.new.tap do |ms|
