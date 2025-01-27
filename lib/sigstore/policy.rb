@@ -38,8 +38,16 @@ module Sigstore
         VerificationSuccess.new
       end
 
-      def ext_value(ext)
-        ext.value
+      if RUBY_ENGINE == "jruby"
+        def ext_value(ext)
+          der = ext.to_der
+          seq = OpenSSL::ASN1.decode(der)
+          seq.value.last.value
+        end
+      else
+        def ext_value(ext)
+          ext.value
+        end
       end
 
       def oid
