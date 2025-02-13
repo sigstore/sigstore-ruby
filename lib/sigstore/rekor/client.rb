@@ -109,12 +109,17 @@ module Sigstore
         raise ArgumentError, "Received multiple entries in response" if response.size != 1
 
         _, result = response.first
+        canonicalized_body = Internal::Util.base64_decode(result.fetch("body"))
+        body = JSON.parse(canonicalized_body)
         entry = V1::TransparencyLogEntry.new
-        entry.canonicalized_body = Internal::Util.base64_decode(result.fetch("body"))
-        entry.integrated_time = result.fetch("integratedTime")
+        entry.log_index = result.fetch("logIndex")
         entry.log_id = Common::V1::LogId.new
         entry.log_id.key_id = Internal::Util.hex_decode(result.fetch("logID"))
-        entry.log_index = result.fetch("logIndex")
+        entry.kind_version = V1::KindVersion.new
+        entry.kind_version.kind = body.fetch("kind")
+        entry.kind_version.version = body.fetch("apiVersion")
+        entry.integrated_time = result.fetch("integratedTime")
+        entry.canonicalized_body = canonicalized_body
         if (set = result.dig("verification", "signedEntryTimestamp"))
           entry.inclusion_promise = V1::InclusionPromise.new
           entry.inclusion_promise.signed_entry_timestamp = Internal::Util.base64_decode(set)
