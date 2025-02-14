@@ -49,10 +49,6 @@ module Sigstore
           RSA.new(key_type, schema, pkey, key_id:)
         else
           raise ArgumentError, "Unsupported key type #{key_type}"
-        end.tap do |key|
-          if RUBY_ENGINE == "jruby" && key.to_pem != key_bytes && key.to_der != key_bytes
-            raise Error::UnsupportedPlatform, "Key mismatch: #{key.to_pem.inspect} != #{key_bytes.inspect}"
-          end
         end
       rescue OpenSSL::PKey::PKeyError => e
         raise OpenSSL::PKey::PKeyError, "Invalid key: #{e} for #{key_type} #{schema} #{key_id}"

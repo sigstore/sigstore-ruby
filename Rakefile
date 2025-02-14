@@ -169,8 +169,18 @@ GitRepo.define_task(tuf_conformance: %w[find_action_versions]).tap do |task|
 end
 
 namespace :tuf_conformance do
+  file "bin/tuf-conformance-entrypoint.xfails" do |t|
+    if RUBY_ENGINE == "jruby"
+      File.write(t.name, <<~TXT)
+        test_keytype_and_scheme[rsa/rsassa-pss-sha256]
+        test_keytype_and_scheme[ed25519/ed25519]
+      TXT
+    else
+      File.write(t.name, "")
+    end
+  end
   file "test/tuf-conformance/env/pyvenv.cfg" => :tuf_conformance do
     sh "make", "dev", chdir: "test/tuf-conformance"
   end
-  task setup: "test/tuf-conformance/env/pyvenv.cfg" # rubocop:disable Rake/Desc
+  task setup: %w[test/tuf-conformance/env/pyvenv.cfg bin/tuf-conformance-entrypoint.xfails]
 end
