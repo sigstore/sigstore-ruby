@@ -141,7 +141,7 @@ jobs:
         run: bin/rake bin/tuf-conformance-entrypoint.xfails
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@dee4e23533d7a12a6394d96b59b3ea0aa940f9bf
+        uses: theupdateframework/tuf-conformance@9bfc222a371e30ad5511eb17449f68f855fb9d8f # v2.3.0
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
