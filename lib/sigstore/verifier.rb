@@ -28,9 +28,9 @@ module Sigstore
 
     attr_reader :rekor_client
 
-    def initialize(rekor_client:, fulcio_cert_chain:, timestamp_authorities:, rekor_keyring:, ct_keyring:)
+    def initialize(rekor_client:, fulcio_cert_chains:, timestamp_authorities:, rekor_keyring:, ct_keyring:)
       @rekor_client = rekor_client
-      @fulcio_cert_chain = fulcio_cert_chain
+      @fulcio_cert_chains = fulcio_cert_chains
       @timestamp_authorities = timestamp_authorities
       @rekor_keyring = rekor_keyring
       @ct_keyring = ct_keyring
@@ -39,7 +39,7 @@ module Sigstore
     def self.for_trust_root(trust_root:)
       new(
         rekor_client: Rekor::Client.new(url: trust_root.tlog_for_signing.base_url),
-        fulcio_cert_chain: trust_root.fulcio_cert_chain,
+        fulcio_cert_chains: trust_root.fulcio_cert_chains,
         timestamp_authorities: trust_root.timestamp_authorities,
         rekor_keyring: Internal::Keyring.new(keys: trust_root.rekor_keys),
         ct_keyring: Internal::Keyring.new(keys: trust_root.ctfe_keys)
@@ -97,14 +97,6 @@ module Sigstore
 
       timestamps << Time.at(entry.integrated_time).utc
 
-      # TODO: implement this step
-
-      store = OpenSSL::X509::Store.new
-
-      @fulcio_cert_chain.each do |cert|
-        store.add_cert(cert.openssl)
-      end
-
       # 3)
       # The Verifier MUST perform certification path validation (RFC 5280 §6) of the certificate chain with the
       # pre-distributed Fulcio root certificate(s) as a trust anchor, but with a fake “current time.”
@@ -112,19 +104,12 @@ module Sigstore
       # timestamp from the Timestamping Service. If a timestamp from the Transparency Service is available, the Verifier
       # MUST perform path validation using the timestamp from the Transparency Service. If both are available, the
       # Verifier performs path validation twice. If either fails, verification fails.
+
       chains = timestamps.map do |ts|
-        store_ctx = OpenSSL::X509::StoreContext.new(store, bundle.leaf_certificate.openssl)
-        store_ctx.time = ts
+        chain, err = Internal::X509.validate_chain(@fulcio_cert_chains, bundle.leaf_certificate, ts)
+        return err if err
 
-        unless store_ctx.verify
-          return VerificationFailure.new(
-            "failed to validate certificate from fulcio cert chain: #{store_ctx.error_string}"
-          )
-        end
-
-        chain = store_ctx.chain || raise(Error::InvalidCertificate, "no valid cert chain found")
-        chain.shift # remove the cert itself
-        chain.map! { Internal::X509::Certificate.new(_1) }
+        chain
       end
 
       chains.uniq! { |chain| chain.map(&:to_der) }
@@ -280,13 +265,15 @@ module Sigstore
         issuer_cert = find_issuer_cert(chain)
         issuer_pubkey = issuer_cert.public_key
         unless issuer_cert.ca?
-          raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_text}"
+          raise Error::InvalidCertificate, "Invalid issuer pubkey basicConstraint (not a CA): #{issuer_cert.to_pem}"
         end
 
-        issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.public_to_der)
+        # TODO: use public_to_der when available
+        issuer_key_id = OpenSSL::Digest::SHA256.digest(issuer_pubkey.to_der)
       end
 
       digitally_signed = pack_digitally_signed(sct, certificate, issuer_key_id).b
+
       ct_keyring.verify(key_id: sct.log_id, signature: sct.signature, data: digitally_signed)
     end
 
@@ -328,7 +315,7 @@ module Sigstore
 
           [issuer_key_id, len1, len2, len3, tbs_cert].pack("a32 CCC a#{tbs_cert_len}")
         else
-          raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct[:entry_type].inspect}"
+          raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct.entry_type.inspect}"
         end
 
       [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
