@@ -20,7 +20,8 @@ module Sigstore
       "https://accounts.google.com" => "email",
       "https://oauth2.sigstore.dev/auth" => "email",
       "https://oauth2.sigstage.dev/auth" => "email",
-      "https://token.actions.githubusercontent.com" => "job_workflow_ref"
+      "https://token.actions.githubusercontent.com" => "job_workflow_ref",
+      "https://agent.buildkite.com" => "pipeline_slug"
     }.freeze
     private_constant :KNOWN_OIDC_ISSUERS
 
@@ -47,8 +48,20 @@ module Sigstore
           end
 
           @identity = @unverified_claims[identity_claim]
-          # https://github.com/sigstore/fulcio/blob/8311f93c01ea5b068a86d37c4bb51573289bfd69/pkg/identity/github/principal.go#L92
-          @identity = "https://github.com/#{@identity}" if issuer == "https://token.actions.githubusercontent.com"
+          case issuer
+          when "https://token.actions.githubusercontent.com"
+            # https://github.com/sigstore/fulcio/blob/8311f93c01ea5b068a86d37c4bb51573289bfd69/pkg/identity/github/principal.go#L92
+            @identity = "https://github.com/#{@identity}"
+          when "https://agent.buildkite.com"
+            # https://github.com/sigstore/fulcio/blob/ec8a1d7a96125a1a624b9e69df892f987bebc41c/config/identity/config.yaml#L241
+            org_slug = @unverified_claims["organization_slug"]
+            if org_slug.nil?
+              raise Error::InvalidIdentityToken,
+                    "identity token is missing required claim: organization_slug"
+            end
+
+            @identity = "https://buildkite.com/#{org_slug}/#{@identity}"
+          end
         else
           @identity = @unverified_claims["sub"]
         end
