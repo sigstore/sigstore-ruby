@@ -10,7 +10,7 @@ gem "base64", "~> 0.2.0" # Until https://github.com/vcr/vcr/commit/5c9230b43b6a5
 gem "rake", "~> 13.2"
 gem "rubocop", "~> 1.67"
 gem "rubocop-performance", "~> 1.23"
-gem "rubocop-rake", "~> 0.6.0"
+gem "rubocop-rake", "~> 0.7.1"
 gem "simplecov", "~> 0.22.0"
 gem "test-unit", "~> 3.6"
 gem "thor", "~> 1.3"
