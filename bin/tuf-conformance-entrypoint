@@ -44,5 +44,14 @@ end
 ARGV.prepend("tuf")
 ARGV[2, 0] = args
 
+if ENV.fetch("FAKETIME", nil) &&
+   !ENV["DYLD_INSERT_LIBRARIES"].to_s.include?("libfaketime") && !ENV["LD_PRELOAD"].to_s.include?("libfaketime")
+  Time.singleton_class.prepend(Module.new do
+    def now
+      super + ENV["FAKETIME"].to_f
+    end
+  end)
+end
+
 require "sigstore/cli"
 Sigstore::CLI.start(ARGV)
