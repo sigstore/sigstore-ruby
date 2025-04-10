@@ -21,8 +21,6 @@ require_relative "snapshot"
 require_relative "targets"
 require_relative "timestamp"
 
-require "set"
-
 module Sigstore::TUF
   class Updater
     include Sigstore::Loggable
