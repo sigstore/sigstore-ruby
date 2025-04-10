@@ -15,7 +15,7 @@ jobs:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@3fbf038d6f0d8043b914f923764c61bc2a114a77
     with:
       engine: all
-      min_version: 3.1
+      min_version: 3.2
 
   test:
     needs: ruby-versions
@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f2f42b7848feff522ffa488a5236ba0a73bccbdd # v1.219.0
+        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -80,7 +80,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f2f42b7848feff522ffa488a5236ba0a73bccbdd # v1.219.0
+        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -129,7 +129,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f2f42b7848feff522ffa488a5236ba0a73bccbdd # v1.219.0
+        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -176,7 +176,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f2f42b7848feff522ffa488a5236ba0a73bccbdd # v1.219.0
+        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
           ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
@@ -228,7 +228,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@f2f42b7848feff522ffa488a5236ba0a73bccbdd # v1.219.0
+        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
           ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
