@@ -72,6 +72,10 @@ module Sigstore::TUF
       target_base_url ||= @target_base_url
       raise ArgumentError, "No target_base_url set" unless target_base_url
 
+      if (cached_target = find_cached_target(target_info, filepath))
+        return cached_target
+      end
+
       filepath ||= generate_target_file_path(target_info)
 
       target_filepath = target_info.path

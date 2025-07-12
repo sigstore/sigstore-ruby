@@ -6,7 +6,7 @@ source "https://rubygems.org"
 gemspec
 gemspec path: "cli"
 
-gem "base64", "~> 0.2.0" # Until https://github.com/vcr/vcr/commit/5c9230b43b6a51dec78941d16bf8e2954042964c is released
+gem "cgi", "~> 0.5.0" # Used by webmock
 gem "rake", "~> 13.2"
 gem "rubocop", "~> 1.67"
 gem "rubocop-performance", "~> 1.23"
