@@ -47,7 +47,7 @@ module Sigstore
 
     def rekor_keys
       keys = tlog_keys(tlogs).to_a
-      raise Error::InvalidBundle, "Did not find one Rekor key" if keys.size != 1
+      raise Error::InvalidBundle, "Did not find any Rekor keys" if keys.empty?
 
       keys
     end
