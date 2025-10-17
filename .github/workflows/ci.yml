@@ -155,8 +155,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: sigstore/sigstore-ruby
 
+  setup-oidc:
+    uses: ./.github/workflows/setup-oidc.yml
+    with:
+      workflow_name: ci
+
   smoketest:
-    needs: ruby-versions
+    needs:
+      - ruby-versions
+      - setup-oidc
     runs-on: ubuntu-latest
     name: Smoketest
     permissions:
@@ -191,7 +198,8 @@ jobs:
           ./bin/smoketest ${BUILT_GEMS}
         env:
           BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
-          WORKFLOW_NAME: ci
+          SIGSTORE_ID_TOKEN_ARGS: ${{ needs.setup-oidc.outputs.identity-token-args }}
+          SIGSTORE_CERT_IDENTITY: ${{ needs.setup-oidc.outputs.cert-identity }}
 
   all-tests-pass:
     if: always()

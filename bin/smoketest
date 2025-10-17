@@ -22,8 +22,12 @@ env = {
   "BUNDLE_GEMFILE" => "smoketest-gem-home/Gemfile"
 }
 
-cert_identity = "#{ENV.fetch("GITHUB_SERVER_URL")}/#{ENV.fetch("GITHUB_REPOSITORY")}" \
-                "/.github/workflows/#{ENV.fetch("WORKFLOW_NAME", "release")}.yml@#{ENV.fetch("GITHUB_REF")}"
+# Get cert identity and identity token args from environment (set by setup-oidc workflow)
+cert_identity = ENV.fetch("SIGSTORE_CERT_IDENTITY")
+
+# Parse identity token args from environment
+# They come as a single string like "--identity-token TOKEN" or empty string
+identity_token_args = ENV.fetch("SIGSTORE_ID_TOKEN_ARGS", "").split.compact
 
 sh(env, "gem", "install", *dists, "--no-document", exception: true)
 
@@ -34,6 +38,7 @@ RUBY
 dists.each do |dist|
   sh(env, File.expand_path("sigstore-cli", __dir__),
      "sign", dist,
+     *identity_token_args,
      "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
      "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
      "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",

@@ -1,0 +1,51 @@
+name: Setup OIDC Token
+
+on:
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: Name of the workflow file to use in the certificate identity (without .yml extension)
+        type: string
+        default: ci
+    outputs:
+      cert-identity:
+        description: The certificate identity to use for verification
+        value: ${{ jobs.setup.outputs.cert-identity }}
+      identity-token-args:
+        description: Command-line arguments for the identity token (empty if using native OIDC)
+        value: ${{ jobs.setup.outputs.identity-token-args }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cert-identity: ${{ steps.configure.outputs.cert-identity }}
+      identity-token-args: ${{ steps.configure.outputs.identity-token-args }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      # For fork PRs, fetch a public OIDC token from the beacon since forks don't get id-token: write
+      - name: Get public OIDC token for fork PRs
+        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@main
+        if: github.event.pull_request.head.repo.fork == true
+
+      - name: Configure OIDC environment
+        id: configure
+        run: |
+          if [ -f ./oidc-token.txt ]; then
+            # Using beacon token from fork PR
+            TOKEN=$(cat ./oidc-token.txt)
+            echo "identity-token-args=--identity-token ${TOKEN}" >> $GITHUB_OUTPUT
+            echo "cert-identity=https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/beacon.yml@refs/heads/main" >> $GITHUB_OUTPUT
+          else
+            # Using native OIDC from GitHub Actions
+            echo "identity-token-args=" >> $GITHUB_OUTPUT
+            echo "cert-identity=${{ github.server_url }}/${{ github.repository }}/.github/workflows/${{ inputs.workflow_name }}.yml@${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
