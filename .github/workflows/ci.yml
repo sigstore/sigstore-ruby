@@ -186,7 +186,7 @@ jobs:
         run: |
           echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
       - name: Fetch testing OIDC token
-        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@main
+        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@d4bd4052866939de30ca438db71d781243d07f61 # main
       - name: Run the smoketest
         run: |
           ./bin/smoketest ${BUILT_GEMS}
