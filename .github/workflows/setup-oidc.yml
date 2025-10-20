@@ -38,14 +38,19 @@ jobs:
 
       - name: Configure OIDC environment
         id: configure
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_NAME: ${{ inputs.workflow_name }}
+          REF: ${{ github.ref }}
         run: |
           if [ -f ./oidc-token.txt ]; then
             # Using beacon token from fork PR
             TOKEN=$(cat ./oidc-token.txt)
-            echo "identity-token-args=--identity-token ${TOKEN}" >> $GITHUB_OUTPUT
-            echo "cert-identity=https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/beacon.yml@refs/heads/main" >> $GITHUB_OUTPUT
+            printf '%s\n' "identity-token-args=--identity-token ${TOKEN}" >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'cert-identity=https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/beacon.yml@refs/heads/main' >> "$GITHUB_OUTPUT"
           else
             # Using native OIDC from GitHub Actions
-            echo "identity-token-args=" >> $GITHUB_OUTPUT
-            echo "cert-identity=${{ github.server_url }}/${{ github.repository }}/.github/workflows/${{ inputs.workflow_name }}.yml@${{ github.ref }}" >> $GITHUB_OUTPUT
+            printf '%s\n' 'identity-token-args=' >> "$GITHUB_OUTPUT"
+            printf '%s\n' "cert-identity=${SERVER_URL}/${REPOSITORY}/.github/workflows/${WORKFLOW_NAME}.yml@${REF}" >> "$GITHUB_OUTPUT"
           fi
