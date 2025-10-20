@@ -30,7 +30,11 @@ module Sigstore
           key_type = "rsa"
           key_schema = "rsa-pkcs1v15-sha256"
         else
-          raise Error::UnsupportedKeyType, "Unsupported key type #{key_details}"
+          # Skip unrecognized key types instead of raising an error.
+          # This allows the library to work with newer trusted roots that include
+          # key types we don't yet support (e.g., PKIX_ED25519 for Rekor v2).
+          logger.warn { "Skipping unrecognized key type: #{key_details}" }
+          return nil
         end
 
         read(key_type, key_schema, key_bytes, key_id: OpenSSL::Digest::SHA256.hexdigest(key_bytes))
