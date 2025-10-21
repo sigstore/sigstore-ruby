@@ -64,6 +64,7 @@ jobs:
           ./bin/smoketest ${BUILT_GEMS}
         env:
           BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
+          SIGSTORE_CERT_IDENTITY: ${{ github.server_url }}/${{ github.repository }}/.github/workflows/release.yml@${{ github.ref }}
 
       - name: Generate hashes for provenance
         shell: bash

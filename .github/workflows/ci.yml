@@ -159,8 +159,7 @@ jobs:
     needs: ruby-versions
     runs-on: ubuntu-latest
     name: Smoketest
-    permissions:
-      id-token: write
+    permissions: {}
     strategy:
       fail-fast: false
       matrix:
@@ -186,12 +185,15 @@ jobs:
         id: list-gems
         run: |
           echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
+      - name: Fetch testing OIDC token
+        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@4a8befcc16064dac9e97f210948d226e5c869bdc # v1.0.0
       - name: Run the smoketest
         run: |
           ./bin/smoketest ${BUILT_GEMS}
         env:
           BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
-          WORKFLOW_NAME: ci
+          OIDC_TOKEN_FILE: ./oidc-token.txt
+          SIGSTORE_CERT_IDENTITY: https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main
 
   all-tests-pass:
     if: always()
