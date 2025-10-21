@@ -304,7 +304,7 @@ module Sigstore
 
           def parse_value(value)
             unless value.is_a?(OpenSSL::ASN1::Sequence)
-              rasie ArgumentError,
+              raise ArgumentError,
                     "Invalid extended key usage: #{value.inspect}"
             end
 
