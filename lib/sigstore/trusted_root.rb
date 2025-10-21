@@ -87,7 +87,8 @@ module Sigstore
 
       tlogs.each do |transparency_log_instance|
         key = transparency_log_instance.public_key
-        yield Internal::Key.from_key_details(key.key_details, key.raw_bytes)
+        parsed_key = Internal::Key.from_key_details(key.key_details, key.raw_bytes)
+        yield parsed_key if parsed_key
       end
     end
 

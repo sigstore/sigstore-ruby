@@ -22,8 +22,12 @@ env = {
   "BUNDLE_GEMFILE" => "smoketest-gem-home/Gemfile"
 }
 
-cert_identity = "#{ENV.fetch("GITHUB_SERVER_URL")}/#{ENV.fetch("GITHUB_REPOSITORY")}" \
-                "/.github/workflows/#{ENV.fetch("WORKFLOW_NAME", "release")}.yml@#{ENV.fetch("GITHUB_REF")}"
+# Get cert identity from environment
+cert_identity = ENV.fetch("SIGSTORE_CERT_IDENTITY")
+
+# Read OIDC token from file if available
+oidc_token_file = ENV.fetch("OIDC_TOKEN_FILE", nil)
+oidc_token = (File.read(oidc_token_file).strip if oidc_token_file && File.exist?(oidc_token_file))
 
 sh(env, "gem", "install", *dists, "--no-document", exception: true)
 
@@ -32,12 +36,22 @@ File.write("smoketest-gem-home/Gemfile", <<~RUBY)
 RUBY
 
 dists.each do |dist|
-  sh(env, File.expand_path("sigstore-cli", __dir__),
-     "sign", dist,
-     "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
-     "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-     "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-     exception: true)
+  # Build sign command with optional identity token
+  sign_cmd = [
+    File.expand_path("sigstore-cli", __dir__),
+    "sign",
+    dist
+  ]
+
+  sign_cmd.push("--identity-token", oidc_token) if oidc_token
+
+  sign_cmd.push(
+    "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
+    "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
+    "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json"
+  )
+
+  sh(env, *sign_cmd, exception: true)
 
   sh(env, File.expand_path("sigstore-cli", __dir__),
      "verify",
