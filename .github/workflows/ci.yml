@@ -98,12 +98,6 @@ jobs:
           xfail: "${{ matrix.ruby != 'head' && matrix.ruby != '3.4' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           environment: staging
         if: ${{ matrix.os }} == "ubuntu-latest"
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
-        if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: sigstore/sigstore-ruby
 
   tuf-conformance:
     needs: ruby-versions
@@ -147,13 +141,6 @@ jobs:
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
         if: |
           ${{ matrix.os }} == "ubuntu-latest"
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
-        if: ${{ matrix.ruby }} == ${{ fromJson(needs.ruby-versions.outputs.latest) }} && ${{ matrix.os }} == "ubuntu-latest" && always()
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: sigstore/sigstore-ruby
 
   smoketest:
     needs: ruby-versions
