@@ -5,6 +5,10 @@ updates:
     directory: /
     schedule:
       interval: daily
+    groups:
+      rubocop:
+        patterns:
+          - "rubocop*"
 
   - package-ecosystem: github-actions
     directory: /
