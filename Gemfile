@@ -9,7 +9,7 @@ gemspec path: "cli"
 gem "cgi", "~> 0.5.0" # Used by webmock
 gem "rake", "~> 13.3"
 gem "rubocop", "~> 1.67"
-gem "rubocop-performance", "~> 1.23"
+gem "rubocop-performance", "~> 1.26"
 gem "rubocop-rake", "~> 0.6.0"
 gem "simplecov", "~> 0.22.0"
 gem "test-unit", "~> 3.7"
