@@ -4,26 +4,36 @@ updates:
   - package-ecosystem: bundler
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+    groups:
+      rubocop:
+        patterns:
+          - "rubocop*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
     open-pull-requests-limit: 99
     rebase-strategy: "disabled"
     groups:
       actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: .github/actions/upload-coverage/
     schedule:
-      interval: daily
+      interval: weekly
     open-pull-requests-limit: 99
     rebase-strategy: "disabled"
     groups:
       actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
