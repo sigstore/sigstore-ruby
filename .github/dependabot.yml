@@ -9,6 +9,8 @@ updates:
       rubocop:
         patterns:
           - "rubocop*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: /
@@ -20,6 +22,8 @@ updates:
       actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: .github/actions/upload-coverage/
@@ -31,3 +35,5 @@ updates:
       actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
