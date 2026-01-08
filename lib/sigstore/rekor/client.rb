@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require "net/http"
+require_relative "../version"
 
 module Sigstore
   module Rekor
@@ -66,7 +67,8 @@ module Sigstore
 
       def post(entry)
         resp = @session.post2(@url.path.chomp("/"), entry.to_json,
-                              { "Content-Type" => "application/json", "Accept" => "application/json" })
+                              { "Content-Type" => "application/json", "Accept" => "application/json",
+                                "User-Agent" => Sigstore::USER_AGENT })
 
         unless resp.code == "201"
           raise Error::FailedRekorPost,
@@ -89,7 +91,8 @@ module Sigstore
         def post(expected_entry)
           data = { entries: [expected_entry] }
           resp = @session.post2(@url.path, data.to_json,
-                                { "Content-Type" => "application/json", "Accept" => "application/json" })
+                                { "Content-Type" => "application/json", "Accept" => "application/json",
+                                  "User-Agent" => Sigstore::USER_AGENT })
 
           if resp.code != "200"
             raise Error::FailedRekorLookup,
