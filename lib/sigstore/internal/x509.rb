@@ -474,11 +474,6 @@ module Sigstore
               sct_extensions_bytes = string.unpack1("a#{sct_extensions_len}", offset:).b
               offset += sct_extensions_len
 
-              unless sct_extensions_len.zero?
-                raise Error::Unimplemented,
-                      "sct_extensions_len=#{sct_extensions_len} not supported"
-              end
-
               sct_signature_alg_hash, sct_signature_alg_sign, sct_signature_len = string.unpack("CCn", offset:)
               offset += 1 + 1 + 2
               sct_signature_bytes = string.unpack1("a#{sct_signature_len}", offset:).b
