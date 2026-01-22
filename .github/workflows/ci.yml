@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        uses: ruby/setup-ruby@d5f787ce339eb0767271bc01d922e85644c2c8ab # v1.280.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -80,7 +80,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        uses: ruby/setup-ruby@d5f787ce339eb0767271bc01d922e85644c2c8ab # v1.280.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -89,13 +89,13 @@ jobs:
         uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != '3.4' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
         uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != '3.4' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
           environment: staging
         if: ${{ matrix.os }} == "ubuntu-latest"
 
@@ -123,7 +123,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        uses: ruby/setup-ruby@d5f787ce339eb0767271bc01d922e85644c2c8ab # v1.280.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
@@ -162,7 +162,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        uses: ruby/setup-ruby@d5f787ce339eb0767271bc01d922e85644c2c8ab # v1.280.0
         with:
           ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
@@ -217,7 +217,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        uses: ruby/setup-ruby@d5f787ce339eb0767271bc01d922e85644c2c8ab # v1.280.0
         with:
           ruby-version: ${{ fromJson(needs.ruby-versions.outputs.latest) }}
           bundler-cache: true
