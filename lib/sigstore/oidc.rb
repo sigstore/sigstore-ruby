@@ -30,10 +30,10 @@ module Sigstore
     class IdentityToken
       attr_reader :raw_token, :identity
 
-      def initialize(raw_token)
+      def initialize(raw_token, audience: DEFAULT_AUDIENCE)
         @raw_token = raw_token
 
-        @unverified_claims = self.class.decode_jwt(raw_token)
+        @unverified_claims = self.class.decode_jwt(raw_token, audience: audience)
         @iss = @unverified_claims["iss"]
         @nbf = @unverified_claims["nbf"]
         @exp = @unverified_claims["exp"]
@@ -58,12 +58,11 @@ module Sigstore
         @iss
       end
 
-      def self.decode_jwt(raw_token)
+      def self.decode_jwt(raw_token, audience: DEFAULT_AUDIENCE)
         # These claims are required by OpenID Connect, so
         # we can strongly enforce their presence.
         # See: https://openid.net/specs/openid-connect-basic-1_0.html#IDToken
         required = %w[aud sub iat exp iss]
-        audience = DEFAULT_AUDIENCE
         leeway = 5
 
         _header, payload, _signature =

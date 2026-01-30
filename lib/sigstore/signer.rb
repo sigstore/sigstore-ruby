@@ -26,8 +26,8 @@ module Sigstore
   class Signer
     include Loggable
 
-    def initialize(jwt:, trusted_root:)
-      @identity_token = OIDC::IdentityToken.new(jwt)
+    def initialize(jwt:, trusted_root:, oidc_audience: OIDC::DEFAULT_AUDIENCE)
+      @identity_token = OIDC::IdentityToken.new(jwt, audience: oidc_audience)
       @trusted_root = trusted_root
 
       @verifier = Verifier.for_trust_root(trust_root: @trusted_root)
