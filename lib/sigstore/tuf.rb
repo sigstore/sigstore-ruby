@@ -19,6 +19,7 @@ require "tempfile"
 require "uri"
 require "net/http"
 require "rubygems/remote_fetcher"
+require_relative "version"
 
 module Sigstore
   module TUF
@@ -133,8 +134,8 @@ module Sigstore
 
         fetcher = Gem::RemoteFetcher.fetcher
         begin
-          response = fetcher.request(uri, Net::HTTP::Get, nil) do
-            nil
+          response = fetcher.request(uri, Net::HTTP::Get, nil) do |req|
+            req["User-Agent"] = Sigstore::USER_AGENT
           end
           response.uri = uri
           case response

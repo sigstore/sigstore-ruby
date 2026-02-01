@@ -16,4 +16,5 @@
 
 module Sigstore
   VERSION = "0.2.2"
+  USER_AGENT = "sigstore-ruby/#{VERSION}".freeze
 end

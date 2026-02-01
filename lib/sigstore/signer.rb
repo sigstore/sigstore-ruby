@@ -20,6 +20,7 @@ require_relative "models"
 require_relative "oidc"
 require_relative "policy"
 require_relative "verifier"
+require_relative "version"
 
 module Sigstore
   class Signer
@@ -109,7 +110,7 @@ module Sigstore
       resp = Net::HTTP.post(
         uri,
         JSON.dump(csr),
-        { "Content-Type" => "application/json" }
+        { "Content-Type" => "application/json", "User-Agent" => Sigstore::USER_AGENT }
       )
 
       unless resp.code == "200"
