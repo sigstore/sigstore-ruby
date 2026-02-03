@@ -318,13 +318,22 @@ module Sigstore
           raise Error::Unimplemented, "only x509_entry and precert_entry supported, given #{sct.entry_type.inspect}"
         end
 
-      [sct.version, 0, sct.timestamp, sct.entry_type, signed_entry, 0].pack(<<~PACK)
+      [
+        sct.version,
+        0,
+        sct.timestamp,
+        sct.entry_type,
+        signed_entry,
+        sct.extensions_bytes&.bytesize.to_i,
+        sct.extensions_bytes
+      ].pack(<<~PACK)
         C # version
         C # signature_type
         Q> # timestamp
         n # entry_type
         a#{signed_entry.bytesize} # signed_entry
         n # extensions length
+        a#{sct.extensions_bytes&.bytesize.to_i} # extension
       PACK
     end
 
