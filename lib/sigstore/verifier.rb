@@ -173,7 +173,7 @@ module Sigstore
           rescue JSON::ParserError
             raise Error::InvalidBundle, "invalid JSON for in-toto statement in DSSE payload"
           end
-          if result = verify_in_toto(input, in_toto)
+          if (result = verify_in_toto(input, in_toto))
             return result
           end
         else
