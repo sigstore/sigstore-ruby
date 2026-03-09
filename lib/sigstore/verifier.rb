@@ -173,7 +173,9 @@ module Sigstore
           rescue JSON::ParserError
             raise Error::InvalidBundle, "invalid JSON for in-toto statement in DSSE payload"
           end
-          verify_in_toto(input, in_toto)
+          if (result = verify_in_toto(input, in_toto))
+            return result
+          end
         else
           raise Sigstore::Error::Unimplemented,
                 "unsupported DSSE payload type: #{bundle.dsse_envelope.payloadType.inspect}"
@@ -216,25 +218,27 @@ module Sigstore
     end
 
     def verify_in_toto(input, in_toto_payload)
-      type = in_toto_payload.fetch("_type")
+      type = in_toto_payload["_type"]
       raise Error::InvalidBundle, "Expected in-toto statement, got #{type.inspect}" unless type == "https://in-toto.io/Statement/v1"
 
-      subject = in_toto_payload.fetch("subject")
-      raise Error::InvalidBundle, "Expected in-toto statement with subject" unless subject && subject.size == 1
+      subjects = in_toto_payload["subject"]
+      raise Error::InvalidBundle, "Expected in-toto statement with subject" if !subjects || subjects.empty?
 
-      subject = subject.first
-      digest = subject.fetch("digest")
-      raise Error::InvalidBundle, "Expected in-toto statement with digest" if !digest || digest.empty?
-
+      expected_algorithm = Internal::Util.hash_algorithm_name(input.hashed_input.algorithm)
       expected_hexdigest = Internal::Util.hex_encode(input.hashed_input.digest)
-      digest.each do |name, value|
-        next if expected_hexdigest == value
 
-        return VerificationFailure.new(
-          "in-toto subject does not match for #{input.hashed_input.algorithm} of #{subject.fetch("name")}: " \
-          "expected #{name} to be #{value}, got #{expected_hexdigest}"
+      matched = subjects.map do |subject|
+        digest = subject["digest"]
+        raise Error::InvalidBundle, "Expected in-toto statement with digest" if !digest || digest.empty?
+
+        digest[expected_algorithm] == expected_hexdigest
+      end.any?
+
+      return if matched
+
+        VerificationFailure.new(
+          "None of in-toto subjects matches artifact for #{expected_algorithm}: #{expected_hexdigest}"
         )
-      end
     end
 
     public
