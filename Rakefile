@@ -61,8 +61,8 @@ task :find_action_versions do # rubocop:disable Rake/Desc
   require "yaml"
   gh = YAML.load_file(".github/workflows/ci.yml")
   actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
-              .uniq.map { |x| x.split("@", 2) }
-              .group_by(&:first).transform_values { |v| v.map(&:last) }
+                            .uniq.map { |x| x.split("@", 2) }
+                                 .group_by(&:first).transform_values { |v| v.map(&:last) }
   if actions.any? { |_, v| v.size > 1 }
     raise StandardError, "conflicts: #{actions.select { |_, v| v.size > 1 }.inspect}"
   end

@@ -69,7 +69,7 @@ module Sigstore
 
         intermediate_result = chain_inner(
           leaf_hash,
-          (proof[...inner] || raise(MissingHashError, "missing left hashes")),
+          proof[...inner] || raise(MissingHashError, "missing left hashes"),
           log_index
         )
 
@@ -93,7 +93,7 @@ module Sigstore
 
       def self.chain_inner(seed, hashes, log_index)
         hashes.each_with_index do |hash, i|
-          seed = if ((log_index >> i) & 1).zero?
+          seed = if (log_index >> i).nobits?(1)
                    hash_children(seed, hash)
                  else
                    hash_children(hash, seed)

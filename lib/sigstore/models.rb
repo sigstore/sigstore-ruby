@@ -19,7 +19,7 @@ require_relative "error"
 require_relative "trusted_root"
 
 module Sigstore
-  VerificationResult = Struct.new(:success, keyword_init: true) do
+  VerificationResult = Struct.new(:success) do
     # @implements VerificationResult
 
     alias_method :verified?, :success
