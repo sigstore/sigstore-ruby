@@ -438,7 +438,7 @@ module Sigstore
                     signature_algorithm
                     entry_type
                     signature]
-          Timestamp = defined?(Data.define) ? Data.define(*args) : Struct.new(*args, keyword_init: true) # rubocop:disable Naming/ConstantName
+          Timestamp = defined?(Data.define) ? Data.define(*args) : Struct.new(*args) # rubocop:disable Naming/ConstantName
 
           HASHES = {
             0 => "none",

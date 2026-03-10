@@ -17,9 +17,9 @@
 module Sigstore
   module Rekor
     module Checkpoint
-      Signature = Struct.new(:name, :sig_hash, :signature, keyword_init: true)
+      Signature = Struct.new(:name, :sig_hash, :signature)
 
-      SignedCheckpoint = Struct.new(:signed_note, :checkpoint, keyword_init: true) do
+      SignedCheckpoint = Struct.new(:signed_note, :checkpoint) do
         # @implements SignedCheckpoint
 
         def self.from_text(text)
@@ -30,7 +30,7 @@ module Sigstore
         end
       end
 
-      SignedNote = Struct.new(:note, :signatures, keyword_init: true) do
+      SignedNote = Struct.new(:note, :signatures) do
         # @implements SignedNote
 
         def self.from_text(text)
@@ -77,7 +77,7 @@ module Sigstore
         end
       end
 
-      LogCheckpoint = Struct.new(:origin, :log_size, :log_hash, :other_content, keyword_init: true) do
+      LogCheckpoint = Struct.new(:origin, :log_size, :log_hash, :other_content) do
         # @implements LogCheckpoint
 
         def self.from_text(text)

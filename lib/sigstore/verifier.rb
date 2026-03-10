@@ -236,9 +236,9 @@ module Sigstore
 
       return if matched
 
-        VerificationFailure.new(
-          "None of in-toto subjects matches artifact for #{expected_algorithm}: #{expected_hexdigest}"
-        )
+      VerificationFailure.new(
+        "None of in-toto subjects matches artifact for #{expected_algorithm}: #{expected_hexdigest}"
+      )
     end
 
     public
