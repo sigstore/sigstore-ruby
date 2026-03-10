@@ -15,6 +15,6 @@
 # limitations under the License.
 
 module Sigstore
-  VERSION = "0.2.2"
+  VERSION = "0.2.3"
   USER_AGENT = "sigstore-ruby/#{VERSION}".freeze
 end
