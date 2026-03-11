@@ -80,6 +80,7 @@ module Sigstore
     desc "sign ARTIFACT", "Sign a file"
     option :staging, type: :boolean, desc: "Use the staging trusted root"
     option :identity_token, type: :string, desc: "Identity token to use for signing"
+    option :oidc_audience, type: :string, desc: "Expected audience for the OIDC token", default: "sigstore"
     option :bundle, type: :string, desc: "Path to write the signed bundle to"
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
@@ -95,7 +96,8 @@ module Sigstore
       contents = File.binread(file)
       bundle = Sigstore::Signer.new(
         jwt: options[:identity_token],
-        trusted_root:
+        trusted_root:,
+        oidc_audience: options[:oidc_audience]
       ).sign(contents)
 
       File.binwrite(options[:bundle], bundle.to_json) if options[:bundle]
