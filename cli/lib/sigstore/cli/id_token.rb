@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "open3"
+
 class Sigstore::CLI
   class IdToken
     include Sigstore::Loggable
@@ -9,9 +11,9 @@ class Sigstore::CLI
 
     def self.detect_credential
       [
-        GitHub
+        GitHub,
+        Buildkite
         # detect_gcp,
-        # detect_buildkite,
         # detect_gitlab,
         # detect_circleci
       ].each do |detector|
@@ -83,6 +85,34 @@ class Sigstore::CLI
         else
           body.fetch("value")
         end
+      end
+    end
+
+    class Buildkite < IdToken
+      def call
+        logger.debug { "looking for OIDC credentials" }
+        unless ENV["BUILDKITE"]
+          logger.debug { "environment doesn't look like Buildkite; giving up" }
+          return
+        end
+
+        raise AmbientCredentialError, "buildkite-agent executable not found" unless buildkite_agent_found?
+
+        request_token
+      end
+
+      private
+
+      def buildkite_agent_found?
+        _, status = Open3.capture2("which buildkite-agent")
+        status.success?
+      end
+
+      def request_token
+        token, status = Open3.capture2("buildkite-agent oidc request-token --audience sigstore")
+        raise AmbientCredentialError, "error requesting Buildkite OIDC token" unless status.success?
+
+        token.strip
       end
     end
   end
