@@ -386,7 +386,7 @@ module Sigstore
         req.message_imprint = resp.token_info.message_imprint
         req.algorithm = resp.token_info.algorithm
         req.policy_id = resp.token_info.policy_id
-        req.nonce = resp.token_info.nonce
+        req.nonce = resp.token_info.nonce unless resp.token_info.nonce.nil?
         req.version = resp.token_info.version
 
         # TODO: verify the hashed message in the message imprint
