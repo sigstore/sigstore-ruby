@@ -1,15 +1,128 @@
 # Sigstore
 
-This is a pure Ruby implementation of the `sigstore verify` command from the [sigstore/cosign](https://sigstore.dev/projects/cosign) project. It is intended to be used as a library in other Ruby projects or directly through a new `gem` subcommand. The project also contains a TUF client implementation, given TUF is a part of the sigstore verification flow.
+A pure Ruby implementation of [sigstore](https://www.sigstore.dev/) signing and verification.
+Used as a library in Ruby projects or through the `gem` subcommand for CLI verification.
+Includes a TUF client for trust root distribution.
 
-## Usage
+## Installation
+
+```ruby
+# Gemfile
+gem "sigstore"
+```
+
+Or install directly:
 
 ```shell
-$ gem sigstore_cosign_verify_bundle --bundle a.txt.sigstore \
-    --certificate-identity https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main \
-    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-    a.txt
+gem install sigstore
 ```
+
+Requires Ruby >= 3.2.0.
+
+## CLI Usage
+
+Verify a bundle from the command line:
+
+```shell
+gem sigstore_cosign_verify_bundle --bundle artifact.sigstore \
+    --certificate-identity https://github.com/owner/repo/.github/workflows/release.yml@refs/heads/main \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    artifact.tar.gz
+```
+
+## Library Usage
+
+### Verify with the public Sigstore instance
+
+```ruby
+require "sigstore"
+
+# Create a verifier using the public Sigstore trust root
+verifier = Sigstore::Verifier.production
+
+# Load the bundle (produced by cosign sign-blob --bundle)
+input = Sigstore::VerificationInput.new(
+  Sigstore::Verification::V1::Input.decode_json(
+    File.read("artifact.sigstore.json"),
+    registry: Sigstore::REGISTRY
+  )
+)
+
+# Define the expected certificate identity
+policy = Sigstore::Policy::Identity.new(
+  identity: "https://github.com/owner/repo/.github/workflows/release.yml@refs/heads/main",
+  issuer: "https://token.actions.githubusercontent.com"
+)
+
+# Verify
+result = verifier.verify(input: input, policy: policy, offline: false)
+if result.verified?
+  puts "Verification succeeded"
+else
+  puts "Verification failed: #{result.reason}"
+end
+```
+
+### Verify with a custom trust root
+
+For self-hosted Sigstore infrastructure, load a trust root from a local file
+instead of the public TUF repository:
+
+```ruby
+# Load trust root from a local trusted_root.json file
+trust_root = Sigstore::TrustedRoot.from_file("/path/to/trusted_root.json")
+
+# Create a verifier for your self-hosted stack
+verifier = Sigstore::Verifier.for_trust_root(trust_root: trust_root)
+
+# Verification works the same way
+result = verifier.verify(input: input, policy: policy, offline: true)
+```
+
+The `trusted_root.json` file contains your Fulcio CA certificate, Rekor
+public key, and CT log public key. Generate it with
+`cosign trusted-root create` or assemble it from the
+[protobuf specification](https://github.com/sigstore/protobuf-specs).
+
+### Offline verification
+
+Pass `offline: true` to skip Rekor lookups during verification. The bundle
+must contain an inclusion proof or inclusion promise:
+
+```ruby
+result = verifier.verify(input: input, policy: policy, offline: true)
+```
+
+### Policy
+
+The `Policy::Identity` class verifies that the signing certificate was issued
+for a specific OIDC identity and issuer:
+
+```ruby
+# Verify a specific CI workflow identity
+policy = Sigstore::Policy::Identity.new(
+  identity: "https://gitlab.example.com/my-group/my-project//.gitlab-ci.yml@refs/heads/main",
+  issuer: "https://gitlab.example.com"
+)
+```
+
+The identity is matched against the certificate's Subject Alternative Name,
+and the issuer is matched against the OIDC issuer extension
+(OID `1.3.6.1.4.1.57264.1.1` or `1.3.6.1.4.1.57264.1.8`).
+
+## Factory Methods
+
+| Method | Trust Root | Use Case |
+|--------|-----------|----------|
+| `Verifier.production` | Public Sigstore TUF root | Verify signatures from sigstore.dev |
+| `Verifier.staging` | Staging Sigstore TUF root | Test against staging infrastructure |
+| `Verifier.for_trust_root(trust_root:)` | Any `TrustedRoot` | Self-hosted or custom Sigstore |
+
+| Method | Source | Use Case |
+|--------|--------|----------|
+| `TrustedRoot.production` | Public TUF repository | Standard verification |
+| `TrustedRoot.production(offline: true)` | Cached TUF data | No network access |
+| `TrustedRoot.from_file(path)` | Local JSON file | Self-hosted Sigstore |
 
 ## Development
 
