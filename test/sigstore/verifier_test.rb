@@ -156,4 +156,18 @@ class Sigstore::VerifierTest < Test::Unit::TestCase
       ].map!(&:b).join, data, "precert_bytes_len=#{precert_bytes_len}"
     end
   end
+
+  def test_extract_timestamp_from_verification_data_without_rfc_3161_nonce
+    verifier = Sigstore::Verifier.production
+
+    timestamp = Sigstore::Common::V1::RFC3161SignedTimestamp.new
+    timestamp.signed_timestamp = Base64.decode64(<<~BASE64)
+      MIICyTADAgEAMIICwAYJKoZIhvcNAQcCoIICsTCCAq0CAQMxDTALBglghkgBZQMEAgEwgbgGCyqGSIb3DQEJEAEEoIGoBIGlMIGiAgEBBgkrBgEEAYO/MAIwMTANBglghkgBZQMEAgEFAAQgTKqbxePJ+CMrGBHbCJdNl3teazpMNV33uU8kNYjy92ICFQDHJBQaFf/zj3wr29ngtGyA4ySWVhgPMjAyNjAzMjgwMDA5NTlaMAMCAQGgMqQwMC4xFTATBgNVBAoTDHNpZ3N0b3JlLmRldjEVMBMGA1UEAxMMc2lnc3RvcmUtdHNhoAAxggHaMIIB1gIBATBRMDkxFTATBgNVBAoTDHNpZ3N0b3JlLmRldjEgMB4GA1UEAxMXc2lnc3RvcmUtdHNhLXNlbGZzaWduZWQCFDoTVC8MkGHuvMFDL8uKjosqI4sMMAsGCWCGSAFlAwQCAaCB/DAaBgkqhkiG9w0BCQMxDQYLKoZIhvcNAQkQAQQwHAYJKoZIhvcNAQkFMQ8XDTI2MDMyODAwMDk1OVowLwYJKoZIhvcNAQkEMSIEIHd3A50sJJyWXPJleY3p7eklwNNBmjXWyHwpZT31UrMbMIGOBgsqhkiG9w0BCRACLzF/MH0wezB5BCCF+Se8B6tiysO0Q1bBDvyBssaIP9p6uebYcNnROs0FtzBVMD2kOzA5MRUwEwYDVQQKEwxzaWdzdG9yZS5kZXYxIDAeBgNVBAMTF3NpZ3N0b3JlLXRzYS1zZWxmc2lnbmVkAhQ6E1QvDJBh7rzBQy/Lio6LKiOLDDAKBggqhkjOPQQDAgRmMGQCMHpk9rghxIn1pe2SglUQbCIWgbQKvPOoNzUQrEeAlH3jhFvZDV9PVGQ58uBt5qnszgIwL4seQSRmpcehSGi/yN4mearqVqhTewXDzdvP579e/rM9b93w1rAA2q1UYfCM3Bq2
+    BASE64
+
+    data = Sigstore::Bundle::V1::TimestampVerificationData.new
+    data.rfc3161_timestamps = [timestamp]
+
+    assert_equal verifier.send(:extract_timestamp_from_verification_data, data), [Time.parse("2026-03-28T00:09:59Z")]
+  end
 end
