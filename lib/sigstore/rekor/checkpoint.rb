@@ -65,15 +65,25 @@ module Sigstore
 
         def verify(rekor_keyring, key_id)
           data = note.encode("utf-8")
-          signatures.each do |signature|
-            sig_hash = key_id[0, 4]
-            if signature.sig_hash != sig_hash
-              raise Error::InvalidCheckpoint,
-                    "sig_hash hint #{signature.sig_hash.inspect} does not match key_id #{sig_hash.inspect}"
-            end
+          key_hint = key_id[0, 4]
 
+          # A checkpoint may also carry cosignatures from witnesses whose verification
+          # keys we do not yet know; their key hints differ from the log's, and the
+          # signed-note / Rekor v2 spec says to ignore those lines. We require that at
+          # least one signature made with the log's own key verifies.
+          candidates = signatures.select { |signature| signature.sig_hash == key_hint }
+          raise Error::InvalidCheckpoint, "no checkpoint signature matching the log key" if candidates.empty?
+
+          # Keyring#verify raises KeyError when the log key id is not in the keyring (an
+          # untrusted or unknown log); treat that as a non-verifying candidate so it fails
+          # closed via the check below rather than escaping as an uncaught exception.
+          verified = candidates.any? do |signature|
             rekor_keyring.verify(key_id: key_id.unpack1("H*"), signature: signature.signature, data:)
+          rescue Error::InvalidSignature, KeyError
+            false
           end
+
+          raise Error::InvalidCheckpoint, "no valid checkpoint signature from the log key" unless verified
         end
       end
 

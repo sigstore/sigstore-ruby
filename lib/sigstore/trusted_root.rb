@@ -46,8 +46,11 @@ module Sigstore
     end
 
     def rekor_keys
+      # A trusted root may list more than one transparency log (e.g. a Rekor v1
+      # instance alongside a Rekor v2 tiled log). The keyring selects the right
+      # key per entry by log id, so return all of them.
       keys = tlog_keys(tlogs).to_a
-      raise Error::InvalidBundle, "Did not find one Rekor key" if keys.size != 1
+      raise Error::InvalidBundle, "Did not find any Rekor keys" if keys.empty?
 
       keys
     end
@@ -87,7 +90,15 @@ module Sigstore
 
       tlogs.each do |transparency_log_instance|
         key = transparency_log_instance.public_key
-        parsed_key = Internal::Key.from_key_details(key.key_details, key.raw_bytes)
+        # Verification keyring: include keys whose validity window has started, allowing
+        # already-expired keys so historical entries still verify, but skipping keys that
+        # are not yet valid. This mirrors the signing-path window check in #tlog_for_signing
+        # and sigstore-python's verify-purpose keyring (allow_expired: true).
+        next unless timerange_valid?(key.valid_for, allow_expired: true)
+
+        declared_log_id = transparency_log_instance.log_id&.key_id
+        key_id = declared_log_id.unpack1("H*") if declared_log_id && !declared_log_id.empty?
+        parsed_key = Internal::Key.from_key_details(key.key_details, key.raw_bytes, key_id:)
         yield parsed_key if parsed_key
       end
     end

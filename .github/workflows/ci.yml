@@ -86,16 +86,21 @@ jobs:
           bundler-cache: true
 
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
+        uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          # In addition to the conditional TSA xfail, mark conformance cases for
+          # features sigstore-ruby does not yet support: managed-key (bring-your-own
+          # key) verification, and signing to a Rekor v2 instance. Verification of
+          # Rekor v2 bundles is supported and runs in the suite. The same set is reused
+          # for the staging step below via the YAML anchor.
+          xfail: &conformance_xfail "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }} *-managed-key-happy-path] *-managed-key-and-trusted-root] test_sign_verify_rekor2"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
+        uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          xfail: *conformance_xfail
           environment: staging
         if: ${{ matrix.os }} == "ubuntu-latest"
 
@@ -135,7 +140,7 @@ jobs:
         run: bin/rake bin/tuf-conformance-entrypoint.xfails
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@9bfc222a371e30ad5511eb17449f68f855fb9d8f # v2.3.0
+        uses: theupdateframework/tuf-conformance@500c525c9ce287a472fd334fe8d885cace667d32 # v2.4.0
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"

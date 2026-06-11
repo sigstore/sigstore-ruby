@@ -25,7 +25,20 @@ task default: %i[test conformance_staging conformance conformance_tuf rubocop]
 
 require "openssl"
 # Checks for https://github.com/ruby/openssl/pull/770
-xfail = OpenSSL::X509::Store.new.instance_variable_defined?(:@time) ? "test_verify_rejects_bad_tsa_timestamp" : ""
+tsa_xfail = OpenSSL::X509::Store.new.instance_variable_defined?(:@time) ? "test_verify_rejects_bad_tsa_timestamp" : ""
+
+# Conformance test cases that exercise features sigstore-ruby does not yet
+# support: verification with a managed (bring-your-own) key, and signing to a
+# Rekor v2 instance (verification of Rekor v2 bundles is supported). Patterns are
+# fnmatch-ed against pytest node names; the trailing "]" anchors to the positive
+# cases without matching their "_fail" siblings, which we already reject.
+unsupported_conformance_xfails = %w(
+  *-managed-key-happy-path]
+  *-managed-key-and-trusted-root]
+  test_sign_verify_rekor2
+)
+
+xfail = ([tsa_xfail] + unsupported_conformance_xfails).reject(&:empty?).join(" ")
 
 desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
@@ -59,7 +72,8 @@ end
 
 task :find_action_versions do # rubocop:disable Rake/Desc
   require "yaml"
-  gh = YAML.load_file(".github/workflows/ci.yml")
+  # ci.yml uses a YAML anchor (&conformance_xfail) to share the conformance xfail set.
+  gh = YAML.load_file(".github/workflows/ci.yml", aliases: true)
   actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
                             .uniq.map { |x| x.split("@", 2) }
                                  .group_by(&:first).transform_values { |v| v.map(&:last) }
@@ -171,9 +185,11 @@ end
 namespace :tuf_conformance do
   file "bin/tuf-conformance-entrypoint.xfails" do |t|
     if RUBY_ENGINE == "jruby"
+      # jruby-openssl cannot verify RSASSA-PSS, so that key type still xfails. ed25519
+      # verification is routed through java.security and passes, so it must not be listed
+      # here or pytest's strict xfail turns the unexpected pass into a failure.
       File.write(t.name, <<~TXT)
         test_keytype_and_scheme[rsa/rsassa-pss-sha256]
-        test_keytype_and_scheme[ed25519/ed25519]
       TXT
     else
       File.write(t.name, "")

@@ -67,7 +67,12 @@ module Sigstore
       # of the signature as the timestamped data. The Verifier MUST then extract a timestamp from the timestamping
       # response. If verification or timestamp parsing fails, the Verifier MUST abort.
 
-      timestamps = extract_timestamp_from_verification_data(materials.timestamp_verification_data) || []
+      # Only resolve the data the timestamp binds to (and enforce its constraints) when
+      # there is a timestamp to verify; absent timestamp data there is nothing to bind.
+      timestamp_data = materials.timestamp_verification_data
+      timestamps = extract_timestamp_from_verification_data(
+        timestamp_data, timestamp_data && timestamped_data(bundle)
+      ) || []
 
       # 2)
       # If the verification policy uses timestamps from the Transparency Service, the Verifier MUST verify the signature
@@ -95,7 +100,16 @@ module Sigstore
 
       Internal::SET.verify_set(keyring: @rekor_keyring, entry:) if entry.inclusion_promise
 
-      timestamps << Time.at(entry.integrated_time).utc
+      # Rekor v1 entries carry an integrated time signed by the log; Rekor v2 (tiled)
+      # entries do not, and rely on a Timestamping Service response for the signing time.
+      integrated_time = entry.integrated_time
+      timestamps << Time.at(integrated_time).utc if integrated_time&.positive?
+
+      if timestamps.empty?
+        return VerificationFailure.new(
+          "no trusted signing time available (no timestamp authority response and no log integrated time)"
+        )
+      end
 
       # 3)
       # The Verifier MUST perform certification path validation (RFC 5280 §6) of the certificate chain with the
@@ -160,6 +174,13 @@ module Sigstore
 
       case bundle.content
       when :message_signature
+        # The messageDigest is an unauthenticated hint, but when present it must be
+        # consistent with the artifact being verified.
+        message_digest = bundle.message_signature.message_digest
+        if message_digest && !message_digest.digest.empty? && message_digest.digest != input.hashed_input.digest
+          return VerificationFailure.new("message digest does not match the artifact")
+        end
+
         verified = verify_raw(signing_key, bundle.message_signature.signature, input.hashed_input.digest)
         return VerificationFailure.new("Signature verification failed") unless verified
       when :dsse_envelope
@@ -203,18 +224,21 @@ module Sigstore
     end
 
     def verify_dsse(dsse_envelope, public_key)
-      payload = dsse_envelope.payload
-      payload_type = dsse_envelope.payloadType
       signatures = dsse_envelope.signatures
 
-      pae = "DSSEv1 #{payload_type.bytesize} #{payload_type} " \
-            "#{payload.bytesize} #{payload}".b
+      pae = dsse_pae(dsse_envelope)
 
       raise Error::InvalidBundle, "DSSEv1 envelope missing signatures" if signatures.empty?
 
       signatures.all? do |signature|
         public_key.verify("SHA256", signature.sig, pae)
       end
+    end
+
+    def dsse_pae(dsse_envelope)
+      payload = dsse_envelope.payload
+      payload_type = dsse_envelope.payloadType
+      "DSSEv1 #{payload_type.bytesize} #{payload_type} #{payload.bytesize} #{payload}".b
     end
 
     def verify_in_toto(input, in_toto_payload)
@@ -349,7 +373,24 @@ module Sigstore
       issuer
     end
 
-    def extract_timestamp_from_verification_data(data)
+    # The raw bytes a Timestamping Service response is expected to be computed over: the
+    # signature in the bundle (RFC 3161 message imprint covers these bytes).
+    def timestamped_data(bundle)
+      case bundle.content
+      when :message_signature
+        bundle.message_signature.signature
+      when :dsse_envelope
+        # The timestamp binds to a single signature; with more than one envelope
+        # signature it is ambiguous which one the imprint covers, so refuse to bind
+        # only the first (mirrors the v2 consistency path, which requires exactly one).
+        signatures = bundle.dsse_envelope.signatures
+        raise Error::InvalidBundle, "expected exactly one DSSE signature to bind a timestamp to" if signatures.size > 1
+
+        signatures.first&.sig
+      end
+    end
+
+    def extract_timestamp_from_verification_data(data, signed_data)
       # TODO: allow requiring a verified timestamp
       unless data
         logger.debug { "no timestamp verification data" }
@@ -363,6 +404,13 @@ module Sigstore
             "this breaks TSA verification"
         end
         return
+      end
+
+      # The timestamp MUST be computed over the bundle signature (the RFC 3161 message
+      # imprint covers it). Without signature bytes to bind it to we cannot perform that
+      # binding, so fail closed rather than accept a timestamp over arbitrary data.
+      if signed_data.nil? || signed_data.empty?
+        raise Error::InvalidTimestamp, "no signature available to bind the timestamp to"
       end
 
       authorities = @timestamp_authorities.map do |ta|
@@ -381,19 +429,37 @@ module Sigstore
         resp = OpenSSL::Timestamp::Response.new(ts.signed_timestamp)
 
         req = OpenSSL::Timestamp::Request.new
-        req.cert_requested = !resp.token.certificates.empty?
-        # TODO: verify the message imprint against the signature in the bundle
+        req.cert_requested = !(resp.token.certificates.nil? || resp.token.certificates.empty?)
         req.message_imprint = resp.token_info.message_imprint
         req.algorithm = resp.token_info.algorithm
-        req.policy_id = resp.token_info.policy_id
-        req.nonce = resp.token_info.nonce
+        req.policy_id = resp.token_info.policy_id if resp.token_info.policy_id
+        req.nonce = resp.token_info.nonce if resp.token_info.nonce
         req.version = resp.token_info.version
 
-        # TODO: verify the hashed message in the message imprint
-        # against the signature in the bundle
+        # The message imprint must cover the bundle's signature; otherwise the timestamp
+        # attests to unrelated data and must be rejected.
+        expected_imprint =
+          begin
+            OpenSSL::Digest.new(resp.token_info.algorithm).digest(signed_data)
+          rescue StandardError => e
+            raise Error::InvalidTimestamp,
+                  "unsupported timestamp digest algorithm #{resp.token_info.algorithm.inspect}: #{e}"
+          end
+        unless resp.token_info.message_imprint == expected_imprint
+          raise Error::InvalidTimestamp, "timestamp message imprint does not match the bundle signature"
+        end
 
-        authorities.any? do |ta, chain, store|
-          store.time = resp.token_info.gen_time
+        verified = authorities.any? do |ta, chain, store|
+          # The timestamp must fall within the window the trusted root says this
+          # Timestamping Service was valid for, independent of cert-chain validity.
+          gen_time = resp.token_info.gen_time
+          valid_for = ta.valid_for
+          if valid_for
+            next false if valid_for.start && gen_time < valid_for.start.to_time
+            next false if valid_for.end && gen_time > valid_for.end.to_time
+          end
+
+          store.time = gen_time
 
           resp.verify(req, store, chain) &&
             (logger.debug do
@@ -402,8 +468,9 @@ module Sigstore
         rescue OpenSSL::Timestamp::TimestampError => e
           logger.error { "timestamp verification failed (#{e})" }
           false
-        end ||
-          raise(OpenSSL::Timestamp::TimestampError, "timestamp verification failed")
+        end
+        raise Error::InvalidTimestamp, "timestamp verification failed" unless verified
+
         resp.token_info.gen_time
       end
     end
@@ -418,6 +485,23 @@ module Sigstore
       logger.debug do
         "Looking for rekor entry, " \
           "has_inclusion_promise=#{has_inclusion_promise} has_inclusion_proof=#{has_inclusion_proof}"
+      end
+
+      # Rekor v2 (tiled) entries always ship an inclusion proof in the bundle and have no
+      # online retrieval API; detect them from the embedded entry and verify consistency
+      # against the bundle directly, rather than reconstructing a v1 canonicalized body.
+      if rekor_entry && (v2_body = rekor_v2_body(rekor_entry))
+        # A v2 entry has no integrated time and no online retrieval API, so the only
+        # binding to the log is the Merkle inclusion proof and its checkpoint signature.
+        # Require them here so the v2 path can never reach the offline warn-and-skip
+        # branch in #verify (even though #validate_version! also enforces this for
+        # non-0.1 bundles): without a checkpoint there is nothing to verify against.
+        unless rekor_entry.inclusion_proof&.checkpoint
+          raise Error::InvalidBundle, "Rekor v2 entry must contain an inclusion proof with a checkpoint"
+        end
+
+        verify_rekor_v2_entry_consistency(bundle, hashed_input, v2_body)
+        return rekor_entry
       end
 
       expected_entry = bundle.expected_tlog_entry(hashed_input)
@@ -437,11 +521,7 @@ module Sigstore
 
       logger.debug { "Found rekor entry: #{entry}" }
 
-      actual_body = begin
-        JSON.parse(entry.canonicalized_body)
-      rescue JSON::ParserError
-        raise Error::InvalidRekorEntry, "invalid JSON in rekor entry canonicalized_body"
-      end
+      actual_body = parse_canonicalized_body(entry)
       if bundle.dsse_envelope?
         # since the hash is over the uncanonicalized envelope, we need to remove it
         #
@@ -469,6 +549,86 @@ module Sigstore
       end
 
       entry
+    end
+
+    # Parsed canonicalized body if this is a Rekor v2 (hashedrekord 0.0.2) entry, else nil.
+    # A body that is not JSON returns nil so the v1 reconstruction path handles it.
+    def rekor_v2_body(entry)
+      body = parse_canonicalized_body(entry)
+      body if body.values_at("kind", "apiVersion") == ["hashedrekord", "0.0.2"]
+    rescue Error::InvalidRekorEntry
+      nil
+    end
+
+    def parse_canonicalized_body(entry)
+      JSON.parse(entry.canonicalized_body)
+    rescue JSON::ParserError
+      raise Error::InvalidRekorEntry, "invalid JSON in rekor entry canonicalized_body"
+    end
+
+    # Verify that a Rekor v2 hashedrekord (0.0.2) entry corresponds to the artifact,
+    # signature, and signing certificate in the bundle. The Merkle inclusion proof and
+    # checkpoint signature bind this body to the log; #find_rekor_entry has already
+    # confirmed both are present, and #verify performs that verification. Here we bind
+    # the body to the inputs we are verifying.
+    def verify_rekor_v2_entry_consistency(bundle, hashed_input, body)
+      spec = body.dig("spec", "hashedRekordV002")
+      raise Error::InvalidRekorEntry, "missing hashedRekordV002 spec" unless spec
+
+      logged_algorithm = spec.dig("data", "algorithm")
+      logged_digest = decode_base64_field(spec.dig("data", "digest"), "data.digest")
+      logged_signature = decode_base64_field(spec.dig("signature", "content"), "signature.content")
+      logged_cert = decode_base64_field(
+        spec.dig("signature", "verifier", "x509Certificate", "rawBytes"),
+        "signature.verifier.x509Certificate.rawBytes"
+      )
+
+      unless logged_cert == bundle.leaf_certificate.to_der
+        raise Error::InvalidRekorEntry, "rekor entry certificate does not match the bundle certificate"
+      end
+
+      expected_algorithm, expected_digest, expected_signature =
+        rekor_v2_expected_data_and_signature(bundle, hashed_input)
+
+      unless logged_algorithm == expected_algorithm
+        raise Error::InvalidRekorEntry,
+              "rekor entry data algorithm #{logged_algorithm.inspect} does not match " \
+              "expected #{expected_algorithm.inspect}"
+      end
+      unless logged_digest == expected_digest
+        raise Error::InvalidRekorEntry, "rekor entry data digest does not match the artifact"
+      end
+      return if logged_signature == expected_signature
+
+      raise Error::InvalidRekorEntry, "rekor entry signature does not match the bundle signature"
+    end
+
+    # The expected [data.algorithm, data.digest, signature] for the bundle, named to match
+    # the Rekor v2 `hashedRekordV002` spec fields (algorithm uses the proto enum name).
+    def rekor_v2_expected_data_and_signature(bundle, hashed_input)
+      case bundle.content
+      when :message_signature
+        [hashed_input.algorithm.name, hashed_input.digest, bundle.message_signature.signature]
+      when :dsse_envelope
+        # "hashedrekord-over-DSSE": the logged data is SHA2-256 of PAE(payloadType, payload)
+        # and the logged signature is the (single) DSSE envelope signature.
+        signatures = bundle.dsse_envelope.signatures
+        unless signatures.size == 1
+          raise Error::InvalidRekorEntry, "expected exactly one DSSE signature for a Rekor v2 entry"
+        end
+
+        ["SHA2_256", OpenSSL::Digest::SHA256.digest(dsse_pae(bundle.dsse_envelope)), signatures.first.sig]
+      else
+        raise Error::InvalidBundle, "expected either message_signature or dsse_envelope"
+      end
+    end
+
+    def decode_base64_field(value, name)
+      raise Error::InvalidRekorEntry, "missing #{name} in rekor entry" unless value
+
+      Internal::Util.base64_decode(value)
+    rescue ArgumentError
+      raise Error::InvalidRekorEntry, "invalid base64 in #{name} of rekor entry"
     end
 
     def diff_json(a, b) # rubocop:disable Naming/MethodParameterName
