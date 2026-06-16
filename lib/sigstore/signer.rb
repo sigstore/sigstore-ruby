@@ -26,9 +26,10 @@ module Sigstore
   class Signer
     include Loggable
 
-    def initialize(jwt:, trusted_root:)
+    def initialize(jwt:, trusted_root:, signing_config: nil)
       @identity_token = OIDC::IdentityToken.new(jwt)
       @trusted_root = trusted_root
+      @signing_config = signing_config
 
       @verifier = Verifier.for_trust_root(trust_root: @trusted_root)
     end
@@ -104,8 +105,14 @@ module Sigstore
       }
     end
 
+    def fulcio_url
+      return @signing_config.fulcio.url if @signing_config
+
+      @trusted_root.certificate_authority_for_signing.uri
+    end
+
     def fetch_cert(csr)
-      uri = URI.parse @trusted_root.certificate_authority_for_signing.uri
+      uri = URI.parse fulcio_url
       uri = URI.join(uri, "api/v2/signingCert")
       resp = Net::HTTP.post(
         uri,
@@ -188,13 +195,57 @@ module Sigstore
       key.sign("SHA256", payload)
     end
 
-    # TODO: implement
-    def submit_signature_hash_to_timstamping_service(_signature)
+    def submit_signature_hash_to_timstamping_service(signature)
       # The Signer sends a hash of the signature as the messageImprint in a TimeStampReq to the Timestamping Service and
       # receives a TimeStampResp including a `TimeStampToken`.
       # The signer MUST verify the TimeStampToken against the payload and Timestamping Service root certificate.
+      #
+      # Timestamping is driven by the signing config: a Rekor v2 entry carries no
+      # integrated time, so a TSA timestamp is the only trusted signing time. The
+      # returned tokens are verified below in #verify (against the trusted root).
+      tsa_urls = @signing_config&.tsa_urls || []
+      return nil if tsa_urls.empty?
 
-      nil
+      timestamps = tsa_urls.map { |url| request_timestamp(url, signature) }
+
+      Bundle::V1::TimestampVerificationData.new.tap do |data|
+        data.rfc3161_timestamps = timestamps
+      end
+    end
+
+    def request_timestamp(url, signature)
+      # The message imprint is a hash of the signature (RFC 3161 §2.4.1); the
+      # Verifier binds the timestamp back to the bundle signature via this imprint.
+      req = OpenSSL::Timestamp::Request.new
+      req.algorithm = "SHA256"
+      req.message_imprint = OpenSSL::Digest::SHA256.digest(signature)
+      req.cert_requested = true
+      req.version = 1
+      req.nonce = OpenSSL::BN.rand(64)
+
+      uri = URI.parse(url)
+      resp = Net::HTTP.post(
+        uri, req.to_der,
+        { "Content-Type" => "application/timestamp-query", "User-Agent" => Sigstore::USER_AGENT }
+      )
+      unless resp.code == "200"
+        raise Error::InvalidTimestamp, "TSA #{url} returned #{resp.code} #{resp.message}\n#{resp.body}"
+      end
+
+      # Parse the response to fail fast on a malformed token and confirm the TSA
+      # actually granted a timestamp (PKIStatus GRANTED / GRANTED_WITH_MODS); a token
+      # is only present for those statuses. Cryptographic verification of the token is
+      # deferred to the verification step.
+      response = OpenSSL::Timestamp::Response.new(resp.body)
+      unless [OpenSSL::Timestamp::Response::GRANTED,
+              OpenSSL::Timestamp::Response::GRANTED_WITH_MODS].include?(response.status)
+        raise Error::InvalidTimestamp,
+              "TSA #{url} did not grant a timestamp (status #{response.status}): #{response.status_text.inspect}"
+      end
+
+      Common::V1::RFC3161SignedTimestamp.new.tap do |ts|
+        ts.signed_timestamp = resp.body
+      end
     end
 
     def build_proposed_hashed_rekord_entry(signature, cert, hashed_input)
@@ -238,6 +289,13 @@ module Sigstore
       # The signing metadata might contain additional, application-specific metadata according to the format used.
       # The Signer then canonically encodes the metadata (according to the chosen format).
 
+      # A Rekor v2 (tiled) instance speaks a different API and a different entry
+      # format (hashedrekord 0.0.2). When the signing config selects one, submit
+      # there; otherwise fall back to the v1 hashedrekord flow.
+      if @signing_config && @signing_config.tlog.major_api_version == 2
+        return submit_rekor_v2_entry(signature, cert, hashed_input)
+      end
+
       # TODO: allow configuring the entry kind?
       proposed_entry = build_proposed_hashed_rekord_entry(signature, cert, hashed_input)
 
@@ -246,6 +304,52 @@ module Sigstore
 
       # The signer MUST verify the log entry as in Spec: Transparency Service.
       @verifier.rekor_client.log.entries.post(proposed_entry)
+    end
+
+    def submit_rekor_v2_entry(signature, cert, hashed_input)
+      tlog_url = @signing_config.tlog.url
+      logger.info { "Submitting to #{tlog_url} (Rekor v2)" }
+
+      request = build_create_entry_request(signature, cert, hashed_input)
+      Rekor::V2Client.new(url: tlog_url).create_entry(request)
+    end
+
+    # A Rekor v2 CreateEntryRequest for a hashedrekord 0.0.2 entry. The request
+    # carries only the prehash digest and the signature + verifier; the log fills
+    # in the data.algorithm (derived from the verifier key details) itself.
+    def build_create_entry_request(signature, cert, hashed_input)
+      {
+        "hashedRekordRequestV002" => {
+          "digest" => Internal::Util.base64_encode(hashed_input.digest),
+          "signature" => {
+            "content" => Internal::Util.base64_encode(signature),
+            "verifier" => {
+              "x509Certificate" => {
+                "rawBytes" => Internal::Util.base64_encode(cert.to_der)
+              },
+              "keyDetails" => key_details(cert)
+            }
+          }
+        }
+      }
+    end
+
+    # The Sigstore PublicKeyDetails enum name for the leaf certificate's key,
+    # used as the Rekor v2 verifier key_details. Only the algorithms this signer
+    # can produce are mapped.
+    def key_details(cert)
+      public_key = cert.openssl.public_key
+      unless public_key.is_a?(OpenSSL::PKey::EC)
+        raise Error::Signing, "unsupported signing key type: #{public_key.class}"
+      end
+
+      case public_key.group.curve_name
+      when "prime256v1" then "PKIX_ECDSA_P256_SHA_256"
+      when "secp384r1" then "PKIX_ECDSA_P384_SHA_384"
+      when "secp521r1" then "PKIX_ECDSA_P521_SHA_512"
+      else
+        raise Error::Signing, "unsupported EC curve: #{public_key.group.curve_name}"
+      end
     end
 
     def verify(artifact, bundle)

@@ -28,14 +28,13 @@ require "openssl"
 tsa_xfail = OpenSSL::X509::Store.new.instance_variable_defined?(:@time) ? "test_verify_rejects_bad_tsa_timestamp" : ""
 
 # Conformance test cases that exercise features sigstore-ruby does not yet
-# support: verification with a managed (bring-your-own) key, and signing to a
-# Rekor v2 instance (verification of Rekor v2 bundles is supported). Patterns are
-# fnmatch-ed against pytest node names; the trailing "]" anchors to the positive
-# cases without matching their "_fail" siblings, which we already reject.
+# support: verification with a managed (bring-your-own) key. Signing to (and
+# verification of) Rekor v2 instances is supported. Patterns are fnmatch-ed
+# against pytest node names; the trailing "]" anchors to the positive cases
+# without matching their "_fail" siblings, which we already reject.
 unsupported_conformance_xfails = %w(
   *-managed-key-happy-path]
   *-managed-key-and-trusted-root]
-  test_sign_verify_rekor2
 )
 
 xfail = ([tsa_xfail] + unsupported_conformance_xfails).reject(&:empty?).join(" ")

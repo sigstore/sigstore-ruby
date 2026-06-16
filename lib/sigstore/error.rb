@@ -30,6 +30,7 @@ module Sigstore
 
     class Signing < Error; end
     class InvalidIdentityToken < Error; end
+    class InvalidSigningConfig < Error; end
 
     class InvalidTimestamp < Error; end
 

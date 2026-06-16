@@ -91,10 +91,10 @@ jobs:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
           # In addition to the conditional TSA xfail, mark conformance cases for
           # features sigstore-ruby does not yet support: managed-key (bring-your-own
-          # key) verification, and signing to a Rekor v2 instance. Verification of
-          # Rekor v2 bundles is supported and runs in the suite. The same set is reused
-          # for the staging step below via the YAML anchor.
-          xfail: &conformance_xfail "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }} *-managed-key-happy-path] *-managed-key-and-trusted-root] test_sign_verify_rekor2"
+          # key) verification. Signing to and verification of Rekor v2 instances is
+          # supported and runs in the suite. The same set is reused for the staging
+          # step below via the YAML anchor.
+          xfail: &conformance_xfail "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }} *-managed-key-happy-path] *-managed-key-and-trusted-root]"
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
         uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29

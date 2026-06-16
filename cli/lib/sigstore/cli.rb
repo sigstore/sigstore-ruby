@@ -84,6 +84,7 @@ module Sigstore
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
+    option :signing_config, type: :string, desc: "Path to the signing config"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     def sign(file)
       self.options = options.merge(identity_token: IdToken.detect_credential).freeze if options[:identity_token].nil?
@@ -95,7 +96,8 @@ module Sigstore
       contents = File.binread(file)
       bundle = Sigstore::Signer.new(
         jwt: options[:identity_token],
-        trusted_root:
+        trusted_root:,
+        signing_config:
       ).sign(contents)
 
       File.binwrite(options[:bundle], bundle.to_json) if options[:bundle]
@@ -190,6 +192,12 @@ module Sigstore
       else
         Sigstore::TrustedRoot.production(offline: !options[:update_trusted_root])
       end
+    end
+
+    def signing_config
+      return unless options[:signing_config]
+
+      Sigstore::SigningConfig.from_file(options[:signing_config])
     end
 
     def collect_verification_state(files)
