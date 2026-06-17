@@ -93,9 +93,12 @@ module Sigstore
         end
       end
 
-      Internal::SET.verify_set(keyring: @rekor_keyring, entry:) if entry.inclusion_promise
+      if entry.inclusion_promise
+        Internal::SET.verify_set(keyring: @rekor_keyring, entry:)
+        timestamps << Time.at(entry.integrated_time).utc
+      end
 
-      timestamps << Time.at(entry.integrated_time).utc
+      return VerificationFailure.new("No verified timestamp") if timestamps.empty?
 
       # 3)
       # The Verifier MUST perform certification path validation (RFC 5280 §6) of the certificate chain with the
