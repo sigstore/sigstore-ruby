@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require_relative "trusted_root"
+require_relative "policy"
 require_relative "internal/keyring"
 require_relative "internal/merkle"
 require_relative "internal/set"
@@ -54,12 +55,23 @@ module Sigstore
       for_trust_root(trust_root:)
     end
 
-    def verify(input:, policy:, offline:)
+    # +key+ is an out-of-band public key (an OpenSSL::PKey) used to verify "managed"
+    # (bring-your-own-key) bundles, which carry a public key hint instead of a Fulcio
+    # certificate. It must be supplied for, and only for, such bundles.
+    def verify(input:, policy:, offline:, key: nil)
       # First, establish a time for the signature. This timestamp is required to validate the certificate chain,
       # so this step comes first.
 
       bundle = input.sbundle
       materials = bundle.verification_material
+
+      if bundle.key_based?
+        unless key
+          return VerificationFailure.new("bundle is signed with a managed key but no verifying key was provided")
+        end
+      elsif key
+        return VerificationFailure.new("a verifying key was provided but the bundle contains a signing certificate")
+      end
 
       # 1)
       # If the verification policy uses the Timestamping Service, the Verifier MUST verify the timestamping response
@@ -84,7 +96,7 @@ module Sigstore
       begin
         # TODO: should this instead be an input to the verify method?
         # See https://docs.google.com/document/d/1kbhK2qyPPk8SLavHzYSDM8-Ueul9_oxIMVFuWMWKz0E/edit?disco=AAABQVV-gT0
-        entry = find_rekor_entry(bundle, input.hashed_input, offline:)
+        entry = find_rekor_entry(bundle, input.hashed_input, offline:, signing_key: key)
       rescue Sigstore::Error::MissingRekorEntry
         return VerificationFailure.new("Rekor entry not found")
       else
@@ -118,44 +130,60 @@ module Sigstore
       # timestamp from the Timestamping Service. If a timestamp from the Transparency Service is available, the Verifier
       # MUST perform path validation using the timestamp from the Transparency Service. If both are available, the
       # Verifier performs path validation twice. If either fails, verification fails.
+      #
+      # Steps 3-5 are certificate-specific: a managed-key bundle has no certificate to do
+      # path validation, SCT verification, or identity-policy checks against, so they are
+      # skipped. The signature (and its binding to the Rekor entry) is still verified below
+      # against the supplied key.
 
-      chains = timestamps.map do |ts|
-        chain, err = Internal::X509.validate_chain(@fulcio_cert_chains, bundle.leaf_certificate, ts)
-        return err if err
-
-        chain
+      if bundle.key_based? && !policy.is_a?(Policy::UnsafeNoOp)
+        logger.warn do
+          "ignoring identity policy #{policy.class} for managed-key bundle: managed-key " \
+            "verification trusts the supplied key, not a certificate identity"
+        end
       end
 
-      chains.uniq! { |chain| chain.map(&:to_der) }
-      unless chains.size == 1
-        raise "expected exactly one certificate chain, got #{chains.size} chains:\n" +
-              chains.map do |chain|
-                chain.map(&:to_text).join("\n")
-              end.join("\n\n")
+      unless bundle.key_based?
+        chains = timestamps.map do |ts|
+          chain, err = Internal::X509.validate_chain(@fulcio_cert_chains, bundle.leaf_certificate, ts)
+          return err if err
+
+          chain
+        end
+
+        chains.uniq! { |chain| chain.map(&:to_der) }
+        unless chains.size == 1
+          raise "expected exactly one certificate chain, got #{chains.size} chains:\n" +
+                chains.map do |chain|
+                  chain.map(&:to_text).join("\n")
+                end.join("\n\n")
+        end
+
+        # 4)
+        # Unless performing online verification (see §Alternative Workflows), the Verifier MUST extract the
+        # SignedCertificateTimestamp embedded in the leaf certificate, and verify it as in RFC 9162 §8.1.3,
+        # using the verification key from the Certificate Transparency Log.
+        chain = chains.first
+        if (result = verify_scts(bundle.leaf_certificate, chain)) && !result.verified?
+          return result
+        end
+
+        # 5)
+        # The Verifier MUST then check the certificate against the verification policy.
+
+        usage_ext = bundle.leaf_certificate.extension(Internal::X509::Extension::KeyUsage)
+        unless usage_ext.digital_signature
+          return VerificationFailure.new("Key usage is not of type `digital signature`")
+        end
+
+        extended_key_usage = bundle.leaf_certificate.extension(Internal::X509::Extension::ExtendedKeyUsage)
+        unless extended_key_usage.code_signing?
+          return VerificationFailure.new("Extended key usage is not of type `code signing`")
+        end
+
+        policy_check = policy.verify(bundle.leaf_certificate)
+        return policy_check unless policy_check.verified?
       end
-
-      # 4)
-      # Unless performing online verification (see §Alternative Workflows), the Verifier MUST extract the
-      # SignedCertificateTimestamp embedded in the leaf certificate, and verify it as in RFC 9162 §8.1.3,
-      # using the verification key from the Certificate Transparency Log.
-      chain = chains.first
-      if (result = verify_scts(bundle.leaf_certificate, chain)) && !result.verified?
-        return result
-      end
-
-      # 5)
-      # The Verifier MUST then check the certificate against the verification policy.
-
-      usage_ext = bundle.leaf_certificate.extension(Internal::X509::Extension::KeyUsage)
-      return VerificationFailure.new("Key usage is not of type `digital signature`") unless usage_ext.digital_signature
-
-      extended_key_usage = bundle.leaf_certificate.extension(Internal::X509::Extension::ExtendedKeyUsage)
-      unless extended_key_usage.code_signing?
-        return VerificationFailure.new("Extended key usage is not of type `code signing`")
-      end
-
-      policy_check = policy.verify(bundle.leaf_certificate)
-      return policy_check unless policy_check.verified?
 
       # 6)
       # By this point, the Verifier has already verified the signature by the Transparency Service (§Establishing a Time
@@ -170,7 +198,7 @@ module Sigstore
       #  * The key or certificate from the parsed body is the same as in the input certificate.
       #  * The “subject” of the parsed body matches the artifact.
 
-      signing_key = bundle.leaf_certificate.public_key
+      signing_key = bundle.key_based? ? key : bundle.leaf_certificate.public_key
 
       case bundle.content
       when :message_signature
@@ -475,7 +503,7 @@ module Sigstore
       end
     end
 
-    def find_rekor_entry(bundle, hashed_input, offline:)
+    def find_rekor_entry(bundle, hashed_input, offline:, signing_key: nil)
       raise Error::InvalidBundle, "multiple tlog entries" if bundle.verification_material.tlog_entries.size > 1
 
       rekor_entry = bundle.verification_material.tlog_entries&.first
@@ -500,11 +528,12 @@ module Sigstore
           raise Error::InvalidBundle, "Rekor v2 entry must contain an inclusion proof with a checkpoint"
         end
 
-        verify_rekor_v2_entry_consistency(bundle, hashed_input, v2_body)
+        verify_rekor_v2_entry_consistency(bundle, hashed_input, v2_body, signing_key:)
         return rekor_entry
       end
 
-      expected_entry = bundle.expected_tlog_entry(hashed_input)
+      verifier_pem = signing_key&.public_to_pem || bundle.leaf_certificate&.to_pem
+      expected_entry = bundle.expected_tlog_entry(hashed_input, verifier_pem:)
 
       entry = if offline
                 logger.debug { "Offline verification, skipping rekor" }
@@ -571,20 +600,30 @@ module Sigstore
     # checkpoint signature bind this body to the log; #find_rekor_entry has already
     # confirmed both are present, and #verify performs that verification. Here we bind
     # the body to the inputs we are verifying.
-    def verify_rekor_v2_entry_consistency(bundle, hashed_input, body)
+    def verify_rekor_v2_entry_consistency(bundle, hashed_input, body, signing_key: nil)
       spec = body.dig("spec", "hashedRekordV002")
       raise Error::InvalidRekorEntry, "missing hashedRekordV002 spec" unless spec
 
       logged_algorithm = spec.dig("data", "algorithm")
       logged_digest = decode_base64_field(spec.dig("data", "digest"), "data.digest")
       logged_signature = decode_base64_field(spec.dig("signature", "content"), "signature.content")
-      logged_cert = decode_base64_field(
-        spec.dig("signature", "verifier", "x509Certificate", "rawBytes"),
-        "signature.verifier.x509Certificate.rawBytes"
-      )
 
-      unless logged_cert == bundle.leaf_certificate.to_der
-        raise Error::InvalidRekorEntry, "rekor entry certificate does not match the bundle certificate"
+      if bundle.key_based?
+        logged_key = decode_base64_field(
+          spec.dig("signature", "verifier", "publicKey", "rawBytes"),
+          "signature.verifier.publicKey.rawBytes"
+        )
+        unless logged_key == signing_key.public_to_der
+          raise Error::InvalidRekorEntry, "rekor entry public key does not match the supplied key"
+        end
+      else
+        logged_cert = decode_base64_field(
+          spec.dig("signature", "verifier", "x509Certificate", "rawBytes"),
+          "signature.verifier.x509Certificate.rawBytes"
+        )
+        unless logged_cert == bundle.leaf_certificate.to_der
+          raise Error::InvalidRekorEntry, "rekor entry certificate does not match the bundle certificate"
+        end
       end
 
       expected_algorithm, expected_digest, expected_signature =

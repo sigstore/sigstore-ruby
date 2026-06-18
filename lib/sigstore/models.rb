@@ -118,7 +118,14 @@ module Sigstore
   end
 
   class SBundle < DelegateClass(Bundle::V1::Bundle)
-    attr_reader :bundle_type, :leaf_certificate
+    attr_reader :bundle_type, :leaf_certificate, :signing_key_hint
+
+    # A bundle whose signing identity is a bare public key (a "managed" /
+    # bring-your-own-key signature) rather than a Fulcio-issued certificate.
+    # The key itself is supplied out-of-band; the bundle only carries a hint.
+    def key_based?
+      !@signing_key_hint.nil?
+    end
 
     def initialize(*)
       super
@@ -138,11 +145,24 @@ module Sigstore
       new(bundle)
     end
 
-    def expected_tlog_entry(hashed_input)
+    # +verifier_pem+ is the PEM of the public key the entry should be bound to. For
+    # certificate bundles it defaults to the leaf certificate's PEM; for managed-key
+    # bundles the caller passes the supplied key's SubjectPublicKeyInfo PEM.
+    def expected_tlog_entry(hashed_input, verifier_pem: leaf_certificate&.to_pem)
       case content
       when :message_signature
-        expected_hashed_rekord_tlog_entry(hashed_input)
+        expected_hashed_rekord_tlog_entry(hashed_input, verifier_pem)
       when :dsse_envelope
+        # The DSSE-v1 (Rekor v1) expected-entry builders embed the signing leaf
+        # certificate. Key-based (managed-key) DSSE is only supported on Rekor v2, whose
+        # consistency check runs before this method; reaching here without a leaf
+        # certificate means a key-based bundle carries a v1 DSSE entry, which we cannot
+        # build an expected entry for. Fail cleanly rather than dereferencing a nil cert.
+        if leaf_certificate.nil?
+          raise Error::InvalidBundle,
+                "key-based DSSE bundles are only supported with Rekor v2 entries"
+        end
+
         rekor_entry = verification_material.tlog_entries.first
         canonicalized_body = begin
           JSON.parse(rekor_entry.canonicalized_body)
@@ -152,9 +172,9 @@ module Sigstore
 
         case kind_version = canonicalized_body.values_at("kind", "apiVersion")
         when %w[dsse 0.0.1]
-          expected_dsse_0_0_1_tlog_entry
+          expected_dsse_0_0_1_tlog_entry(verifier_pem)
         when %w[intoto 0.0.2]
-          expected_intoto_0_0_2_tlog_entry
+          expected_intoto_0_0_2_tlog_entry(verifier_pem)
         else
           raise Error::InvalidRekorEntry, "Unhandled rekor entry kind/version: #{kind_version.inspect}"
         end
@@ -193,7 +213,10 @@ module Sigstore
 
       case verification_material.content
       when :public_key
-        raise Error::Unimplemented, "public_key content of bundle"
+        # Managed key: the verifying key is provided out-of-band; the bundle only
+        # carries a hint identifying it. There is no certificate to anchor.
+        @signing_key_hint = verification_material.public_key.hint
+        return
       when :x509_certificate_chain
         certs = verification_material.x509_certificate_chain.certificates.map do |cert|
           Internal::X509::Certificate.read(cert.raw_bytes)
@@ -211,13 +234,13 @@ module Sigstore
       raise Error::InvalidBundle, "expected certificate to be leaf" unless @leaf_certificate.leaf?
     end
 
-    def expected_hashed_rekord_tlog_entry(hashed_input)
+    def expected_hashed_rekord_tlog_entry(hashed_input, verifier_pem)
       {
         "spec" => {
           "signature" => {
             "content" => Internal::Util.base64_encode(message_signature.signature),
             "publicKey" => {
-              "content" => Internal::Util.base64_encode(leaf_certificate.to_pem)
+              "content" => Internal::Util.base64_encode(verifier_pem)
             }
           },
           "data" => {
@@ -232,7 +255,7 @@ module Sigstore
       }
     end
 
-    def expected_intoto_0_0_2_tlog_entry
+    def expected_intoto_0_0_2_tlog_entry(_verifier_pem)
       {
         "apiVersion" => "0.0.2",
         "kind" => "intoto",
@@ -263,7 +286,7 @@ module Sigstore
       }
     end
 
-    def expected_dsse_0_0_1_tlog_entry
+    def expected_dsse_0_0_1_tlog_entry(verifier_pem)
       {
         "apiVersion" => "0.0.1",
         "kind" => "dsse",
@@ -276,7 +299,7 @@ module Sigstore
             dsse_envelope.signatures.map do |sig|
               {
                 "signature" => Internal::Util.base64_encode(sig.sig),
-                "verifier" => Internal::Util.base64_encode(leaf_certificate.to_pem)
+                "verifier" => Internal::Util.base64_encode(verifier_pem)
               }
             end
         }

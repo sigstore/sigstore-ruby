@@ -90,4 +90,44 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
       assert_equal 1, e.status
     end
   end
+
+  # Managed-key ("bring your own key") verification: the bundle carries a public key
+  # hint instead of a Fulcio certificate, and the verifying key is supplied out-of-band
+  # via --key. There is no identity to check, so certificate-path/SCT/identity steps are
+  # skipped; the signature and the Rekor entry are still bound to the supplied key.
+  def verify_key(case_name, trusted_root: PROD_TRUSTED_ROOT, key: "#{ASSETS}/#{case_name}/key.pub")
+    args = ["verify", "--offline", "--trusted-root", trusted_root,
+            "--bundle", "#{ASSETS}/#{case_name}/bundle.sigstore.json", "#{ASSETS}/a.txt"]
+    args.push("--key", key) if key
+    Sigstore::CLI.start(args)
+  end
+
+  def test_verify_managed_key_happy_path
+    capture_output do
+      assert_nothing_raised { verify_key("managed-key-happy-path") }
+    end
+  end
+
+  def test_verify_managed_key_with_trusted_root
+    case_name = "managed-key-and-trusted-root"
+    capture_output do
+      assert_nothing_raised do
+        verify_key(case_name, trusted_root: "#{ASSETS}/#{case_name}/trusted_root.json")
+      end
+    end
+  end
+
+  def test_verify_managed_key_no_key_fails
+    capture_output do
+      e = assert_raise(SystemExit) { verify_key("managed-key-no-key_fail", key: nil) }
+      assert_equal 1, e.status
+    end
+  end
+
+  def test_verify_managed_key_wrong_key_fails
+    capture_output do
+      e = assert_raise(SystemExit) { verify_key("managed-key-wrong-key_fail") }
+      assert_equal 1, e.status
+    end
+  end
 end
