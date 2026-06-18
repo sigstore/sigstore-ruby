@@ -48,21 +48,29 @@ module Sigstore
     option :certificate, type: :string, desc: "Path to the public certificate"
     option :certificate_identity, type: :string, desc: "The identity of the certificate"
     option :certificate_oidc_issuer, type: :string, desc: "The OIDC issuer of the certificate"
+    option :key, type: :string, desc: "Path to a PEM public key for managed-key (bring-your-own-key) verification"
     option :offline, type: :boolean, desc: "Do not fetch the latest timestamp from the Rekor server"
     option :bundle, type: :string, desc: "Path to the signed bundle"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     exclusive :bundle, :signature
     exclusive :bundle, :certificate
+    exclusive :key, :certificate
+    exclusive :key, :certificate_identity
     def verify(*files)
       verifier, files_with_materials = collect_verification_state(files)
-      policy = Sigstore::Policy::Identity.new(
-        identity: options[:certificate_identity],
-        issuer: options[:certificate_oidc_issuer]
-      )
+      key = load_verification_key
+      policy = if key
+                 Sigstore::Policy::UnsafeNoOp.new
+               else
+                 Sigstore::Policy::Identity.new(
+                   identity: options[:certificate_identity],
+                   issuer: options[:certificate_oidc_issuer]
+                 )
+               end
 
       verified = files_with_materials.all? do |file, input|
-        result = verifier.verify(input:, policy:, offline: options[:offline])
+        result = verifier.verify(input:, policy:, offline: options[:offline], key:)
 
         if result.verified?
           say "OK: #{file}"
@@ -116,7 +124,11 @@ module Sigstore
 
         say "--- Bundle #{file} ---"
         say "Media Type: #{bundle.media_type}"
-        say bundle.leaf_certificate.to_text
+        if bundle.key_based?
+          say "Public Key (hint): #{bundle.signing_key_hint}"
+        else
+          say bundle.leaf_certificate.to_text
+        end
 
         case bundle.content
         when :message_signature
@@ -198,6 +210,16 @@ module Sigstore
       return unless options[:signing_config]
 
       Sigstore::SigningConfig.from_file(options[:signing_config])
+    end
+
+    def load_verification_key
+      return unless options[:key]
+
+      raise Thor::InvocationError, "Key file not found: #{options[:key]}" unless File.exist?(options[:key])
+
+      OpenSSL::PKey.read(Gem.read_binary(options[:key]))
+    rescue OpenSSL::OpenSSLError => e
+      raise Error::InvalidKey, "could not parse verification key #{options[:key].inspect}: #{e.message}"
     end
 
     def collect_verification_state(files)
