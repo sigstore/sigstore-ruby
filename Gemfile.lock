@@ -4,7 +4,7 @@ PATH
     sigstore (0.2.3)
       logger
       net-http
-      protobug_sigstore_protos (~> 0.1.0)
+      protobug_sigstore_protos (~> 0.2.0)
       uri
 
 PATH
@@ -48,16 +48,16 @@ GEM
       racc
     power_assert (2.0.5)
     prism (1.9.0)
-    protobug (0.1.0)
-    protobug_googleapis_field_behavior_protos (0.1.0)
-      protobug (= 0.1.0)
-      protobug_well_known_protos (= 0.1.0)
-    protobug_sigstore_protos (0.1.0)
-      protobug (= 0.1.0)
-      protobug_googleapis_field_behavior_protos (= 0.1.0)
-      protobug_well_known_protos (= 0.1.0)
-    protobug_well_known_protos (0.1.0)
-      protobug (= 0.1.0)
+    protobug (0.2.0)
+    protobug_googleapis_field_behavior_protos (0.2.0)
+      protobug (= 0.2.0)
+      protobug_well_known_protos (= 0.2.0)
+    protobug_sigstore_protos (0.2.0)
+      protobug (= 0.2.0)
+      protobug_googleapis_field_behavior_protos (= 0.2.0)
+      protobug_well_known_protos (= 0.2.0)
+    protobug_well_known_protos (0.2.0)
+      protobug (= 0.2.0)
     public_suffix (6.0.1)
     racc (1.8.1)
     racc (1.8.1-java)
@@ -153,10 +153,10 @@ CHECKSUMS
   parser (3.3.10.2) sha256=6f60c84aa4bdcedb6d1a2434b738fe8a8136807b6adc8f7f53b97da9bc4e9357
   power_assert (2.0.5) sha256=63b511b85bb8ea57336d25156864498644f5bbf028699ceda27949e0125bc323
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
-  protobug (0.1.0) sha256=5bf1356cedf99dcf311890743b78f5e602f62ca703e574764337f1996b746bf2
-  protobug_googleapis_field_behavior_protos (0.1.0) sha256=db48ef6a5913b2355b4a6931ab400a9e3e995fb48499977a3ad0be6365f9e265
-  protobug_sigstore_protos (0.1.0) sha256=4ad1eebaf6454131b6f432dda50ad0e513773613474b92470847614a5acacce1
-  protobug_well_known_protos (0.1.0) sha256=356757f562453bb34a28f12e8e9fa357346cca35a6807a549837c3fe256bb5b3
+  protobug (0.2.0) sha256=eb154bdbe2a3afe796711e0c16e89b2ed59efee0f172a10b634400471299b3f2
+  protobug_googleapis_field_behavior_protos (0.2.0) sha256=5d4ddcdcfd8616a74ac100de893e3768feee631579a777e23498d3a0ba45b893
+  protobug_sigstore_protos (0.2.0) sha256=b094cbb2ceadc9ffe6e34ec217613dd7a8e78b6411bf4404bd686f7343514e25
+  protobug_well_known_protos (0.2.0) sha256=89dd4965ed80ed9355b575e9243e7762487de581a8e2b34a97af6bef60fe3b3f
   public_suffix (6.0.1) sha256=61d44e1cab5cbbbe5b31068481cf16976dd0dc1b6b07bd95617ef8c5e3e00c6f
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   racc (1.8.1-java) sha256=54f2e6d1e1b91c154013277d986f52a90e5ececbe91465d29172e49342732b98

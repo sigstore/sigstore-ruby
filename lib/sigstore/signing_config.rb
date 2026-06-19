@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "json"
-require "time"
+require "protobug_sigstore_protos"
 
 require_relative "error"
 
@@ -24,46 +23,50 @@ module Sigstore
   # services (Fulcio CA, OIDC provider, Rekor transparency log, Timestamping
   # Authority) a client should use to sign.
   #
-  # The protobuf-specs gem does not yet ship the v0.2 SigningConfig message
-  # (only the obsolete v0.1 flat-URL form), so this parses the JSON directly.
-  # The service-selection algorithm mirrors sigstore-python's
-  # SigningConfig._get_valid_services: per kind, keep services whose major API
-  # version is supported and whose validity window covers now, collapse to one
-  # service per operator (highest supported version), then apply the
-  # ServiceConfiguration selector (ANY/EXACT/ALL).
+  # The document is decoded through the protobuf-specs SigningConfig message
+  # (shipped since protobug_sigstore_protos 0.2.0). The service-selection
+  # algorithm mirrors sigstore-python's SigningConfig._get_valid_services: per
+  # kind, keep services whose major API version is supported and whose validity
+  # window covers now, collapse to one service per operator (highest supported
+  # version), then apply the ServiceConfiguration selector (ANY/EXACT/ALL).
   class SigningConfig
     MEDIA_TYPE = "application/vnd.dev.sigstore.signingconfig.v0.2+json"
+
+    REGISTRY = Protobug::Registry.new do |registry|
+      Sigstore::TrustRoot::V1.register_sigstore_trustroot_protos(registry)
+    end
+
+    Selector = Sigstore::TrustRoot::V1::ServiceSelector
 
     REKOR_VERSIONS = [1, 2].freeze
     TSA_VERSIONS = [1].freeze
     FULCIO_VERSIONS = [1].freeze
     OIDC_VERSIONS = [1].freeze
 
-    Service = Struct.new(:url, :major_api_version, :valid_for, :operator)
-
     def self.from_file(path)
       from_json(Gem.read_binary(path))
     end
 
     def self.from_json(contents)
-      new(JSON.parse(contents))
+      new(Sigstore::TrustRoot::V1::SigningConfig.decode_json(contents, registry: REGISTRY))
+    rescue Protobug::Error => e
+      raise Error::InvalidSigningConfig, "invalid signing config: #{e.message}"
     end
 
-    def initialize(raw)
-      media_type = raw["mediaType"]
-      unless media_type == MEDIA_TYPE
-        raise Error::InvalidSigningConfig, "unsupported signing config format: #{media_type.inspect}"
+    def initialize(config)
+      unless config.media_type == MEDIA_TYPE
+        raise Error::InvalidSigningConfig, "unsupported signing config format: #{config.media_type.inspect}"
       end
 
-      @fulcios = select_services(raw["caUrls"], FULCIO_VERSIONS, nil)
+      @fulcios = select_services(config.ca_urls, FULCIO_VERSIONS, nil)
       raise Error::InvalidSigningConfig, "No valid Fulcio CA found in signing config" if @fulcios.empty?
 
-      @oidcs = select_services(raw["oidcUrls"], OIDC_VERSIONS, nil)
+      @oidcs = select_services(config.oidc_urls, OIDC_VERSIONS, nil)
 
-      @tlogs = select_services(raw["rekorTlogUrls"], REKOR_VERSIONS, raw["rekorTlogConfig"])
+      @tlogs = select_services(config.rekor_tlog_urls, REKOR_VERSIONS, config.rekor_tlog_config)
       raise Error::InvalidSigningConfig, "No valid Rekor transparency log found in signing config" if @tlogs.empty?
 
-      @tsas = select_services(raw["tsaUrls"], TSA_VERSIONS, raw["tsaConfig"])
+      @tsas = select_services(config.tsa_urls, TSA_VERSIONS, config.tsa_config)
     end
 
     # The Rekor transparency log to submit the signing metadata to.
@@ -87,8 +90,6 @@ module Sigstore
     private
 
     def select_services(services, supported_versions, config)
-      services = parse_services(services)
-
       by_operator = Hash.new { |h, k| h[k] = [] }
       services.each do |service|
         next unless supported_versions.include?(service.major_api_version)
@@ -102,11 +103,17 @@ module Sigstore
         op_services.max_by(&:major_api_version)
       end
 
-      selector = config && config["selector"]
-      return result if selector.nil? || selector == "ALL"
+      # An absent ServiceConfiguration (or the ALL selector) imposes no count
+      # constraint, so every per-operator service is returned.
+      return result if config.nil? || config.selector == Selector::ALL
 
-      if selector == "EXACT"
-        count = exact_count(config)
+      if config.selector == Selector::EXACT
+        count = config.count
+        unless count.is_a?(Integer) && count.positive?
+          raise Error::InvalidSigningConfig,
+                "EXACT selector requires a positive integer count, got #{count.inspect}"
+        end
+
         # EXACT means exactly `count` services must remain after filtering and
         # per-operator collapsing; neither too few nor too many is acceptable.
         unless result.size == count
@@ -119,34 +126,12 @@ module Sigstore
       result.first(1)
     end
 
-    def exact_count(config)
-      Integer(config["count"])
-    rescue TypeError, ArgumentError
-      raise Error::InvalidSigningConfig,
-            "EXACT selector requires an integer count, got #{config["count"].inspect}"
-    end
-
-    def parse_services(services)
-      Array(services).map do |service|
-        valid_for = service["validFor"]
-        Service.new(
-          url: service.fetch("url"),
-          major_api_version: service["majorApiVersion"] || 0,
-          valid_for: valid_for && {
-            start: valid_for["start"] && Time.iso8601(valid_for["start"]),
-            end: valid_for["end"] && Time.iso8601(valid_for["end"])
-          },
-          operator: service["operator"] || ""
-        )
-      end
-    end
-
     def timerange_valid?(period)
       return true unless period
 
       now = Time.now.utc
-      return false if period[:start] && now < period[:start]
-      return false if period[:end] && now > period[:end]
+      return false if period.start && now < period.start.to_time
+      return false if period.end && now > period.end.to_time
 
       true
     end
