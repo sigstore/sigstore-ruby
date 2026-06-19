@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "logger"
   spec.add_dependency "net-http"
-  spec.add_dependency "protobug_sigstore_protos", "~> 0.1.0"
+  spec.add_dependency "protobug_sigstore_protos", "~> 0.2.0"
   spec.add_dependency "uri"
 
   spec.metadata["rubygems_mfa_required"] = "true"

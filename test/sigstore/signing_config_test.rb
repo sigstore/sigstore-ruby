@@ -92,18 +92,20 @@ class Sigstore::SigningConfigTest < Test::Unit::TestCase
   end
 
   def test_exact_selector_missing_count_raises_invalid_signing_config
+    # The proto defaults an unset count to 0, which the spec forbids for EXACT.
     raw = STAGING_LIKE.merge("rekorTlogConfig" => { "selector" => "EXACT" })
     Timecop.freeze(Time.utc(2026, 1, 1)) do
       error = assert_raise(Sigstore::Error::InvalidSigningConfig) { config(raw) }
-      assert_include error.message, "EXACT selector requires an integer count"
+      assert_include error.message, "EXACT selector requires a positive integer count"
     end
   end
 
   def test_exact_selector_non_numeric_count_raises_invalid_signing_config
+    # A non-integer count is rejected when decoding the uint32 proto field.
     raw = STAGING_LIKE.merge("rekorTlogConfig" => { "selector" => "EXACT", "count" => "two" })
     Timecop.freeze(Time.utc(2026, 1, 1)) do
       error = assert_raise(Sigstore::Error::InvalidSigningConfig) { config(raw) }
-      assert_include error.message, "EXACT selector requires an integer count"
+      assert_include error.message, "invalid signing config"
     end
   end
 
