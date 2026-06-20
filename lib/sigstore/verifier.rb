@@ -264,9 +264,7 @@ module Sigstore
     end
 
     def dsse_pae(dsse_envelope)
-      payload = dsse_envelope.payload
-      payload_type = dsse_envelope.payloadType
-      "DSSEv1 #{payload_type.bytesize} #{payload_type} #{payload.bytesize} #{payload}".b
+      Internal::Util.dsse_pae(dsse_envelope.payloadType, dsse_envelope.payload)
     end
 
     def verify_in_toto(input, in_toto_payload)
