@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "protobug_in_toto_attestation_protos"
+
 require_relative "internal/util"
 require_relative "internal/x509"
 require_relative "models"
@@ -25,6 +27,10 @@ require_relative "version"
 module Sigstore
   class Signer
     include Loggable
+
+    STATEMENT_REGISTRY = Protobug::Registry.new do |registry|
+      InTotoAttestation::V1.register_statement_protos(registry)
+    end
 
     def initialize(jwt:, trusted_root:, signing_config: nil)
       @identity_token = OIDC::IdentityToken.new(jwt)
@@ -427,11 +433,11 @@ module Sigstore
     # is matched against an artifact, so verify against the first subject's
     # SHA2-256 digest (the only artifact reference available at signing time).
     def verify_dsse_statement(statement, bundle)
-      statement = JSON.parse(statement)
-      subject = Array(statement["subject"]).find { |s| s.dig("digest", "sha256") }
+      statement = InTotoAttestation::V1::Statement.decode_json(statement, registry: STATEMENT_REGISTRY)
+      subject = statement.subject.find { |s| s.digest["sha256"] }
       raise Error::Signing, "in-toto statement has no sha256 subject to verify against" unless subject
 
-      input = Verification::V1::Artifact.new.tap { |a| a.artifact_uri = "sha256:#{subject.dig("digest", "sha256")}" }
+      input = Verification::V1::Artifact.new.tap { |a| a.artifact_uri = "sha256:#{subject.digest["sha256"]}" }
       verify_bundle(input, bundle)
     end
 

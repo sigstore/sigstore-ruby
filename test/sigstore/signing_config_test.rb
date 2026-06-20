@@ -39,6 +39,13 @@ class Sigstore::SigningConfigTest < Test::Unit::TestCase
     Sigstore::SigningConfig.from_json(JSON.dump(raw))
   end
 
+  # Offline there is no vendored signing config (unlike the trusted root), so the
+  # TUF helpers return nil and the caller falls back to the legacy v1 flow.
+  data("production" => :production, "staging" => :staging)
+  def test_from_tuf_returns_nil_offline(method)
+    assert_nil Sigstore::SigningConfig.public_send(method, offline: true)
+  end
+
   def test_rejects_unknown_media_type
     raw = STAGING_LIKE.merge("mediaType" => "application/vnd.dev.sigstore.signingconfig.v0.1+json")
     error = assert_raise(Sigstore::Error::InvalidSigningConfig) { config(raw) }
@@ -48,8 +55,15 @@ class Sigstore::SigningConfigTest < Test::Unit::TestCase
   def test_any_selector_prefers_current_highest_version_tlog
     Timecop.freeze(Time.utc(2026, 1, 1)) do
       tlog = config.tlog
-      assert_equal "https://log-alpha3.example", tlog.url
-      assert_equal 2, tlog.major_api_version
+      if OpenSSL::X509::Store.new.instance_variable_defined?(:@time)
+        # OpenSSL builds that cannot verify RFC 3161 timestamps (ruby/openssl#770) can't use
+        # Rekor v2 entries — they have no integrated time — so the config prefers the v1 log.
+        assert_equal "https://rekor-v1.example", tlog.url
+        assert_equal 1, tlog.major_api_version
+      else
+        assert_equal "https://log-alpha3.example", tlog.url
+        assert_equal 2, tlog.major_api_version
+      end
     end
   end
 
@@ -109,9 +123,10 @@ class Sigstore::SigningConfigTest < Test::Unit::TestCase
     end
   end
 
-  def test_exact_selector_rejects_more_services_than_count
+  def test_exact_selector_accepts_more_services_than_count
     # Two distinct operators each contribute one valid v2 tlog, so the result has two
-    # services; EXACT count=1 must reject the over-match rather than truncating to one.
+    # services; EXACT count=1 means "at least one available", so selection succeeds and
+    # returns the first service rather than rejecting the over-supply.
     raw = STAGING_LIKE.merge(
       "rekorTlogUrls" => [
         { "url" => "https://log-a.example", "majorApiVersion" => 2,
@@ -122,8 +137,22 @@ class Sigstore::SigningConfigTest < Test::Unit::TestCase
       "rekorTlogConfig" => { "selector" => "EXACT", "count" => 1 }
     )
     Timecop.freeze(Time.utc(2026, 1, 1)) do
+      assert_equal "https://log-a.example", config(raw).tlog.url
+    end
+  end
+
+  def test_exact_selector_rejects_fewer_services_than_count
+    # Only one operator contributes a valid tlog, so EXACT count=2 cannot be satisfied.
+    raw = STAGING_LIKE.merge(
+      "rekorTlogUrls" => [
+        { "url" => "https://log-a.example", "majorApiVersion" => 2,
+          "validFor" => { "start" => "2025-01-01T00:00:00Z" }, "operator" => "a.dev" }
+      ],
+      "rekorTlogConfig" => { "selector" => "EXACT", "count" => 2 }
+    )
+    Timecop.freeze(Time.utc(2026, 1, 1)) do
       error = assert_raise(Sigstore::Error::InvalidSigningConfig) { config(raw) }
-      assert_include error.message, "Expected 1 services in signing config, found 2"
+      assert_include error.message, "Expected 2 services in signing config, found 1"
     end
   end
 
