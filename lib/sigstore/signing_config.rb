@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "openssl"
 require "protobug_sigstore_protos"
 
 require_relative "error"
+require_relative "tuf"
 
 module Sigstore
   # Parses a SigningConfig (signingconfig.v0.2) document and selects the
@@ -43,6 +45,30 @@ module Sigstore
     FULCIO_VERSIONS = [1].freeze
     OIDC_VERSIONS = [1].freeze
 
+    # The signing config published by the public-good (or staging) Sigstore
+    # instance via TUF, or nil if the repository does not publish one. Mirrors
+    # TrustedRoot.production/.staging.
+    def self.production(offline: false)
+      from_tuf(TUF::DEFAULT_TUF_URL, offline)
+    end
+
+    def self.staging(offline: false)
+      from_tuf(TUF::STAGING_TUF_URL, offline)
+    end
+
+    def self.from_tuf(url, offline)
+      updater = TUF::TrustUpdater.new(url, offline)
+      updater.refresh unless offline
+      from_tuf_updater(updater)
+    end
+
+    # Build from an already-refreshed TrustUpdater, so a caller that also needs
+    # the trusted root can share one updater (and one refresh).
+    def self.from_tuf_updater(updater)
+      path = updater.signing_config_path
+      path && from_file(path)
+    end
+
     def self.from_file(path)
       from_json(Gem.read_binary(path))
     end
@@ -63,7 +89,8 @@ module Sigstore
 
       @oidcs = select_services(config.oidc_urls, OIDC_VERSIONS, nil)
 
-      @tlogs = select_services(config.rekor_tlog_urls, REKOR_VERSIONS, config.rekor_tlog_config)
+      @tlogs = select_services(config.rekor_tlog_urls, REKOR_VERSIONS, config.rekor_tlog_config,
+                               prefer_version: preferred_rekor_major_version)
       raise Error::InvalidSigningConfig, "No valid Rekor transparency log found in signing config" if @tlogs.empty?
 
       @tsas = select_services(config.tsa_urls, TSA_VERSIONS, config.tsa_config)
@@ -89,7 +116,18 @@ module Sigstore
 
     private
 
-    def select_services(services, supported_versions, config)
+    # On OpenSSL builds with a broken X509::Store#time (ruby/openssl#770) an RFC 3161
+    # timestamp cannot be verified, and Rekor v2 entries carry no integrated time, so a
+    # v2 bundle could never be verified there (even the signer's own self-verification
+    # would fail). Prefer a Rekor v1 log in that case, when the signing config offers one,
+    # so signing still produces a verifiable bundle.
+    def preferred_rekor_major_version
+      return nil unless OpenSSL::X509::Store.new.instance_variable_defined?(:@time)
+
+      1
+    end
+
+    def select_services(services, supported_versions, config, prefer_version: nil)
       by_operator = Hash.new { |h, k| h[k] = [] }
       services.each do |service|
         next unless supported_versions.include?(service.major_api_version)
@@ -98,9 +136,11 @@ module Sigstore
         by_operator[service.operator] << service
       end
 
-      # One service per operator, preferring the highest supported version.
+      # One service per operator. Normally prefer the highest supported version; when
+      # +prefer_version+ is supplied and an operator offers it, pick that version instead.
       result = by_operator.values.map do |op_services|
-        op_services.max_by(&:major_api_version)
+        (prefer_version && op_services.find { |s| s.major_api_version == prefer_version }) ||
+          op_services.max_by(&:major_api_version)
       end
 
       # An absent ServiceConfiguration (or the ALL selector) imposes no count
@@ -114,13 +154,15 @@ module Sigstore
                 "EXACT selector requires a positive integer count, got #{count.inspect}"
         end
 
-        # EXACT means exactly `count` services must remain after filtering and
-        # per-operator collapsing; neither too few nor too many is acceptable.
-        unless result.size == count
+        # EXACT means at least `count` services must remain after filtering and
+        # per-operator collapsing; select the first `count` of them. Fewer than
+        # `count` is a misconfiguration; more is acceptable (mirrors
+        # sigstore-python's SigningConfig._get_valid_services).
+        if result.size < count
           raise Error::InvalidSigningConfig, "Expected #{count} services in signing config, found #{result.size}"
         end
 
-        return result
+        return result.first(count)
       end
 
       result.first(1)

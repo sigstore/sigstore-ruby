@@ -208,17 +208,27 @@ module Sigstore
     def trusted_root
       return Sigstore::TrustedRoot.from_file(options[:trusted_root]) if options[:trusted_root]
 
-      if options[:staging]
-        Sigstore::TrustedRoot.staging(offline: !options[:update_trusted_root])
-      else
-        Sigstore::TrustedRoot.production(offline: !options[:update_trusted_root])
-      end
+      Sigstore::TrustedRoot.from_tuf_updater(tuf_updater)
     end
 
     def signing_config
-      return unless options[:signing_config]
+      return Sigstore::SigningConfig.from_file(options[:signing_config]) if options[:signing_config]
 
-      Sigstore::SigningConfig.from_file(options[:signing_config])
+      # With no explicit config, fall back to the one the Sigstore instance
+      # publishes via TUF, so signing targets the current Rekor (v2 where the
+      # config selects it). Returns nil offline or when none is published, in
+      # which case the Signer uses the legacy v1 flow from the trusted root.
+      Sigstore::SigningConfig.from_tuf_updater(tuf_updater)
+    end
+
+    # One refreshed TUF updater per command invocation, shared by the trusted
+    # root and signing config so signing refreshes the repository only once.
+    def tuf_updater
+      @tuf_updater ||= begin
+        url = options[:staging] ? Sigstore::TUF::STAGING_TUF_URL : Sigstore::TUF::DEFAULT_TUF_URL
+        offline = !options[:update_trusted_root]
+        Sigstore::TUF::TrustUpdater.new(url, offline).tap { _1.refresh unless offline }
+      end
     end
 
     def load_verification_key

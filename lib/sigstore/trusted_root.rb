@@ -36,8 +36,13 @@ module Sigstore
     end
 
     def self.from_tuf(url, offline)
-      path = TUF::TrustUpdater.new(url, offline).tap { _1.refresh unless offline }.trusted_root_path
-      from_file(path)
+      from_tuf_updater(TUF::TrustUpdater.new(url, offline).tap { _1.refresh unless offline })
+    end
+
+    # Build from an already-refreshed TrustUpdater, so a caller that also needs
+    # the signing config can share one updater (and one refresh).
+    def self.from_tuf_updater(updater)
+      from_file(updater.trusted_root_path)
     end
 
     def self.from_file(path)
