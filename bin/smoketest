@@ -10,7 +10,11 @@ include FileUtils # rubocop:disable Style/MixinUsage
 
 raise(StandardError, "Usage: #{$PROGRAM_NAME} <dists...>") if ARGV.empty?
 
-dists = ARGV
+# Install the base library gem before any gem that depends on it. sigstore-cli pins
+# an exact sigstore version that is not yet published when smoketesting a release, so
+# `gem install sigstore-cli-x.y.z.gem` would otherwise fail to resolve the dependency
+# unless the local sigstore-x.y.z.gem is installed first.
+dists = ARGV.sort_by { |d| File.basename(d).start_with?("sigstore-cli") ? 1 : 0 }
 mkdir_p %w[smoketest-gem-home smoketest-artifacts]
 
 at_exit { rm_rf "smoketest-gem-home" }
