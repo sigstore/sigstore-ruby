@@ -34,25 +34,20 @@ module Sigstore
       @verifier = Verifier.for_trust_root(trust_root: @trusted_root)
     end
 
+    IN_TOTO_PAYLOAD_TYPE = "application/vnd.in-toto+json"
+
     def sign(payload)
-      # 2) generate a keypair
-      keypair = generate_keypair
-      # 3) generate a CreateSigningCertificateRequest
-      csr = generate_csr(keypair)
-      # 4) get a cert chain from fulcio
-      leaf = fetch_cert(csr)
-      # 5) verify returned cert chain
-      verify_chain(leaf)
-      # 6) sign the payload
+      keypair, leaf = issue_signing_certificate
+
+      # Sign the payload, then submit a hash of the signature to the TSA and the
+      # signing metadata (a hashedrekord) to the transparency log.
       signature = sign_payload(payload, keypair)
-      # 7) send hash of signature to timestamping service
       timestamp_verification_data = submit_signature_hash_to_timstamping_service(signature)
-      # 8) submit signed metadata to transparency service
+
       hashed_input = Common::V1::HashOutput.new
       hashed_input.algorithm = Common::V1::HashAlgorithm::SHA2_256
       hashed_input.digest = OpenSSL::Digest("SHA256").digest(payload)
-      tlog_entry = submit_signed_metadata_to_transparency_service(signature, leaf, hashed_input)
-      # 9) perform verification
+      tlog_entry = submit_message_signature_entry(signature, leaf, hashed_input)
 
       bundle = collect_bundle(leaf, [tlog_entry], timestamp_verification_data, hashed_input, signature)
       verify(payload, bundle)
@@ -60,7 +55,38 @@ module Sigstore
       bundle
     end
 
+    # Sign +payload+ (an in-toto statement) as a DSSE envelope, returning a
+    # bundle whose content is the envelope rather than a message signature.
+    def sign_dsse(payload, payload_type: IN_TOTO_PAYLOAD_TYPE)
+      keypair, leaf = issue_signing_certificate
+
+      # DSSE signs the Pre-Authentication Encoding of the payload, not the
+      # payload itself.
+      pae = Internal::Util.dsse_pae(payload_type, payload)
+      signature = sign_payload(pae, keypair)
+      envelope = build_dsse_envelope(payload, payload_type, signature)
+
+      timestamp_verification_data = submit_signature_hash_to_timstamping_service(signature)
+      tlog_entry = submit_dsse_entry(envelope, leaf, pae)
+
+      bundle = collect_dsse_bundle(leaf, [tlog_entry], timestamp_verification_data, envelope)
+      verify_dsse_statement(payload, bundle)
+
+      bundle
+    end
+
     private
+
+    # Generate an ephemeral keypair, obtain a Fulcio signing certificate bound to
+    # the identity token, and verify the returned chain. Shared by all signing
+    # flows; returns [keypair, leaf_certificate].
+    def issue_signing_certificate
+      keypair = generate_keypair
+      csr = generate_csr(keypair)
+      leaf = fetch_cert(csr)
+      verify_chain(leaf)
+      [keypair, leaf]
+    end
 
     def generate_keypair
       # maybe allow configuring?
@@ -277,23 +303,26 @@ module Sigstore
       }
     end
 
-    def submit_signed_metadata_to_transparency_service(signature, cert, hashed_input)
-      # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
-      # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
-      # * The signature.
-      # * The payload (possibly pre-hashed; if so, the entry also includes the identifier of the hash algorithm).
-      # * Verification material (signing certificate or verification key).
-      #   * If the verification material is a certificate, the client SHOULD upload only the signing certificate and
-      #     SHOULD NOT upload the CA certificate chain.
-      #
-      # The signing metadata might contain additional, application-specific metadata according to the format used.
-      # The Signer then canonically encodes the metadata (according to the chosen format).
-
+    # Submit a hashedrekord entry for a message signature: the prehash digest of
+    # the artifact, signed.
+    #
+    # The Signer chooses a format for signing metadata; this format MUST be in the supportedMetadataFormats in the
+    # Transparency Service configuration. The Signer prepares signing metadata containing at a minimum:
+    # * The signature.
+    # * The payload (possibly pre-hashed; if so, the entry also includes the identifier of the hash algorithm).
+    # * Verification material (signing certificate or verification key).
+    #   * If the verification material is a certificate, the client SHOULD upload only the signing certificate and
+    #     SHOULD NOT upload the CA certificate chain.
+    #
+    # The signing metadata might contain additional, application-specific metadata according to the format used.
+    # The Signer then canonically encodes the metadata (according to the chosen format).
+    def submit_message_signature_entry(signature, cert, hashed_input)
       # A Rekor v2 (tiled) instance speaks a different API and a different entry
       # format (hashedrekord 0.0.2). When the signing config selects one, submit
       # there; otherwise fall back to the v1 hashedrekord flow.
-      if @signing_config && @signing_config.tlog.major_api_version == 2
-        return submit_rekor_v2_entry(signature, cert, hashed_input)
+      if rekor_v2?
+        request = build_create_entry_request(hashed_input.digest, signature, cert)
+        return submit_rekor_v2_entry(request)
       end
 
       # TODO: allow configuring the entry kind?
@@ -306,21 +335,42 @@ module Sigstore
       @verifier.rekor_client.log.entries.post(proposed_entry)
     end
 
-    def submit_rekor_v2_entry(signature, cert, hashed_input)
+    # Submit a transparency log entry for a DSSE envelope. Rekor v1 stores a
+    # native `dsse` entry; Rekor v2 stores a hashedrekord over the DSSE PAE (the
+    # signed bytes), since v2 only supports the hashedrekord type.
+    def submit_dsse_entry(envelope, cert, pae)
+      if rekor_v2?
+        digest = OpenSSL::Digest::SHA256.digest(pae)
+        request = build_create_entry_request(digest, envelope.signatures.first.sig, cert)
+        return submit_rekor_v2_entry(request)
+      end
+
+      proposed_entry = build_proposed_dsse_entry(envelope, cert)
+
+      ctlog = @trusted_root.tlog_for_signing
+      logger.info { "Submitting to #{ctlog.base_url}" }
+
+      @verifier.rekor_client.log.entries.post(proposed_entry)
+    end
+
+    def rekor_v2?
+      @signing_config && @signing_config.tlog.major_api_version == 2
+    end
+
+    def submit_rekor_v2_entry(request)
       tlog_url = @signing_config.tlog.url
       logger.info { "Submitting to #{tlog_url} (Rekor v2)" }
 
-      request = build_create_entry_request(signature, cert, hashed_input)
       Rekor::V2Client.new(url: tlog_url).create_entry(request)
     end
 
     # A Rekor v2 CreateEntryRequest for a hashedrekord 0.0.2 entry. The request
     # carries only the prehash digest and the signature + verifier; the log fills
     # in the data.algorithm (derived from the verifier key details) itself.
-    def build_create_entry_request(signature, cert, hashed_input)
+    def build_create_entry_request(digest, signature, cert)
       {
         "hashedRekordRequestV002" => {
-          "digest" => Internal::Util.base64_encode(hashed_input.digest),
+          "digest" => Internal::Util.base64_encode(digest),
           "signature" => {
             "content" => Internal::Util.base64_encode(signature),
             "verifier" => {
@@ -329,6 +379,22 @@ module Sigstore
               },
               "keyDetails" => key_details(cert)
             }
+          }
+        }
+      }
+    end
+
+    # A Rekor v1 `dsse` 0.0.1 proposed entry: the full DSSE envelope (as JSON)
+    # plus the signing certificate as a verifier.
+    def build_proposed_dsse_entry(envelope, cert)
+      {
+        "apiVersion" => "0.0.1",
+        "kind" => "dsse",
+        "spec" => {
+          "proposedContent" => {
+            # Rekor expects the envelope as a JSON string nested in the request.
+            "envelope" => envelope.to_json,
+            "verifiers" => [Internal::Util.base64_encode(cert.to_pem)]
           }
         }
       }
@@ -353,10 +419,26 @@ module Sigstore
     end
 
     def verify(artifact, bundle)
+      input = Verification::V1::Artifact.new.tap { |a| a.artifact = artifact }
+      verify_bundle(input, bundle)
+    end
+
+    # Self-verify a freshly-signed DSSE bundle. The in-toto statement's subject
+    # is matched against an artifact, so verify against the first subject's
+    # SHA2-256 digest (the only artifact reference available at signing time).
+    def verify_dsse_statement(statement, bundle)
+      statement = JSON.parse(statement)
+      subject = Array(statement["subject"]).find { |s| s.dig("digest", "sha256") }
+      raise Error::Signing, "in-toto statement has no sha256 subject to verify against" unless subject
+
+      input = Verification::V1::Artifact.new.tap { |a| a.artifact_uri = "sha256:#{subject.dig("digest", "sha256")}" }
+      verify_bundle(input, bundle)
+    end
+
+    def verify_bundle(artifact, bundle)
       verification_input = Verification::V1::Input.new
       verification_input.bundle = bundle
-      verification_input.artifact = Verification::V1::Artifact.new
-      verification_input.artifact.artifact = artifact
+      verification_input.artifact = artifact
 
       result = @verifier.verify(
         input: VerificationInput.new(verification_input),
@@ -371,6 +453,21 @@ module Sigstore
     end
 
     def collect_bundle(leaf_certificate, tlog_entries, timestamp_verification_data, hashed_input, signature)
+      collect_base_bundle(leaf_certificate, tlog_entries, timestamp_verification_data).tap do |bundle|
+        bundle.message_signature = Sigstore::Common::V1::MessageSignature.new.tap do |ms|
+          ms.message_digest = hashed_input
+          ms.signature = signature
+        end
+      end
+    end
+
+    def collect_dsse_bundle(leaf_certificate, tlog_entries, timestamp_verification_data, envelope)
+      collect_base_bundle(leaf_certificate, tlog_entries, timestamp_verification_data).tap do |bundle|
+        bundle.dsse_envelope = envelope
+      end
+    end
+
+    def collect_base_bundle(leaf_certificate, tlog_entries, timestamp_verification_data)
       bundle = Bundle::V1::Bundle.new
       bundle.media_type = BundleType::BUNDLE_0_3.media_type
       bundle.verification_material = Bundle::V1::VerificationMaterial.new
@@ -378,11 +475,15 @@ module Sigstore
       bundle.verification_material.certificate.raw_bytes = leaf_certificate.to_der
       bundle.verification_material.tlog_entries = tlog_entries
       bundle.verification_material.timestamp_verification_data = timestamp_verification_data
-      bundle.message_signature = Sigstore::Common::V1::MessageSignature.new.tap do |ms|
-        ms.message_digest = hashed_input
-        ms.signature = signature
-      end
       bundle
+    end
+
+    def build_dsse_envelope(payload, payload_type, signature)
+      DSSE::Envelope.new.tap do |envelope|
+        envelope.payload = payload
+        envelope.payloadType = payload_type
+        envelope.signatures = [DSSE::Signature.new.tap { |s| s.sig = signature }]
+      end
     end
   end
 end

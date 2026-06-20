@@ -85,22 +85,24 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
+      # The xfail set depends on the OpenSSL build's behavior (ruby/openssl#770), so it is
+      # computed in the Rakefile (conformance_xfails) and shared with local `rake
+      # conformance` runs rather than duplicated as a Ruby-version guess here.
+      - name: Compute the conformance xfails for this Ruby/OpenSSL build
+        id: conformance_xfails
+        run: echo "xfail=$(bundle exec rake conformance_xfails)" >> "$GITHUB_OUTPUT"
+
       - name: Run the conformance tests
         uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          # In addition to the conditional TSA xfail, mark conformance cases for
-          # features sigstore-ruby does not yet support: managed-key (bring-your-own
-          # key) verification. Signing to and verification of Rekor v2 instances is
-          # supported and runs in the suite. The same set is reused for the staging
-          # step below via the YAML anchor.
-          xfail: &conformance_xfail "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }} *-managed-key-happy-path] *-managed-key-and-trusted-root]"
+          xfail: ${{ steps.conformance_xfails.outputs.xfail }}
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
         uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: *conformance_xfail
+          xfail: ${{ steps.conformance_xfails.outputs.xfail }}
           environment: staging
         if: ${{ matrix.os }} == "ubuntu-latest"
 

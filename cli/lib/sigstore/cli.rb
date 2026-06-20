@@ -94,7 +94,15 @@ module Sigstore
     option :trusted_root, type: :string, desc: "Path to the trusted root"
     option :signing_config, type: :string, desc: "Path to the signing config"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
+    option :in_toto, type: :boolean, desc: "Sign the file as an in-toto statement in a DSSE envelope"
     def sign(file)
+      # A DSSE bundle carries an envelope, not a message signature, so the
+      # detached --signature/--certificate outputs of the message-signature flow
+      # do not apply.
+      if options[:in_toto] && (options[:signature] || options[:certificate])
+        raise Thor::InvocationError, "--in-toto cannot be combined with --signature or --certificate"
+      end
+
       self.options = options.merge(identity_token: IdToken.detect_credential).freeze if options[:identity_token].nil?
       unless options[:identity_token]
         raise Error::InvalidIdentityToken,
@@ -102,11 +110,12 @@ module Sigstore
       end
 
       contents = File.binread(file)
-      bundle = Sigstore::Signer.new(
+      signer = Sigstore::Signer.new(
         jwt: options[:identity_token],
         trusted_root:,
         signing_config:
-      ).sign(contents)
+      )
+      bundle = options[:in_toto] ? signer.sign_dsse(contents) : signer.sign(contents)
 
       File.binwrite(options[:bundle], bundle.to_json) if options[:bundle]
       if options[:signature]

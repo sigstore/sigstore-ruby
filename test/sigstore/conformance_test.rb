@@ -16,6 +16,12 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
   # against the vendored production trusted root keeps the tests deterministic and network-free.
   PROD_TRUSTED_ROOT = "data/_store/prod/trusted_root.json"
 
+  # OpenSSL builds with a broken X509::Store#time (ruby/openssl#770) cannot verify RFC 3161
+  # timestamps. Rekor v2 entries have no integrated time, so a v2 bundle has no trusted
+  # signing time on those builds and cannot be verified at all — the happy-path cases below
+  # are skipped there, matching the verifier's fail-closed behavior.
+  BROKEN_STORE_TIME = OpenSSL::X509::Store.new.instance_variable_defined?(:@time)
+
   def verify(case_name, trusted_root: PROD_TRUSTED_ROOT, artifact: "#{ASSETS}/a.txt")
     Sigstore::CLI.start([
                           "verify",
@@ -66,12 +72,14 @@ class Sigstore::ConformanceTest < Test::Unit::TestCase
   end
 
   def test_verify_rekor2_message_signature_happy_path
+    omit_if(BROKEN_STORE_TIME, "openssl #{OpenSSL::VERSION} cannot verify TSA timestamps (ruby/openssl#770)")
     capture_output do
       assert_nothing_raised { verify_rekor2("rekor2-happy-path") }
     end
   end
 
   def test_verify_rekor2_dsse_happy_path
+    omit_if(BROKEN_STORE_TIME, "openssl #{OpenSSL::VERSION} cannot verify TSA timestamps (ruby/openssl#770)")
     capture_output do
       assert_nothing_raised { verify_rekor2("rekor2-dsse-happy-path") }
     end
