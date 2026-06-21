@@ -111,7 +111,12 @@ module Sigstore
         end
 
         def tbs_certificate_der
-          if openssl.respond_to?(:tbs_bytes)
+          # jruby-openssl < 0.19.0's X509::Certificate#tbs_bytes does not preserve
+          # extension order after reassigning extensions, yielding the wrong TBS and
+          # breaking SCT verification. Fall through to the manual ASN.1 path there,
+          # which manipulates the DER directly and is engine-independent.
+          if openssl.respond_to?(:tbs_bytes) &&
+             (RUBY_ENGINE != "jruby" || Gem::Version.new(JOpenSSL::VERSION) >= Gem::Version.new("0.19.0"))
             cert = openssl.dup
             short_name = Extension::PrecertificateSignedCertificateTimestamps.oid.short_name
             cert.extensions = cert.extensions.reject! do |ext|

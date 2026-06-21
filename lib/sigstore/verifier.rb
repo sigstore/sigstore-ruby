@@ -531,7 +531,7 @@ module Sigstore
       end
 
       verifier_pem = signing_key&.public_to_pem || bundle.leaf_certificate&.to_pem
-      expected_entry = bundle.expected_tlog_entry(hashed_input, verifier_pem:)
+      expected_entry = bundle.expected_tlog_entry(hashed_input, verifier_pem)
 
       entry = if offline
                 logger.debug { "Offline verification, skipping rekor" }
