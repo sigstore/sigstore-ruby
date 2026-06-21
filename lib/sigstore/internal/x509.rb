@@ -111,7 +111,11 @@ module Sigstore
         end
 
         def tbs_certificate_der
-          if openssl.respond_to?(:tbs_bytes)
+          # jruby-openssl's X509::Certificate#tbs_bytes does not honor removing the
+          # precertificate SCT extension (it re-encodes the original extensions), yielding
+          # the wrong TBS and breaking SCT verification. Fall through to the manual ASN.1
+          # path on JRuby, which manipulates the DER directly and is engine-independent.
+          if openssl.respond_to?(:tbs_bytes) && RUBY_ENGINE != "jruby"
             cert = openssl.dup
             short_name = Extension::PrecertificateSignedCertificateTimestamps.oid.short_name
             cert.extensions = cert.extensions.reject! do |ext|

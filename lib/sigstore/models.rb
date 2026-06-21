@@ -165,7 +165,7 @@ module Sigstore
     # +verifier_pem+ is the PEM of the public key the entry should be bound to. For
     # certificate bundles it defaults to the leaf certificate's PEM; for managed-key
     # bundles the caller passes the supplied key's SubjectPublicKeyInfo PEM.
-    def expected_tlog_entry(hashed_input, verifier_pem: leaf_certificate&.to_pem)
+    def expected_tlog_entry(hashed_input, verifier_pem = leaf_certificate&.to_pem)
       case content
       when :message_signature
         expected_hashed_rekord_tlog_entry(hashed_input, verifier_pem)
