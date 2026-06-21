@@ -26,8 +26,11 @@ env = {
   "BUNDLE_GEMFILE" => "smoketest-gem-home/Gemfile"
 }
 
-# Get cert identity from environment
+# Get the expected signing identity and its OIDC issuer from the environment. The issuer
+# defaults to GitHub Actions (the ambient identity used when releasing); CI overrides it
+# when signing with a test token from a different issuer.
 cert_identity = ENV.fetch("SIGSTORE_CERT_IDENTITY")
+cert_oidc_issuer = ENV.fetch("SIGSTORE_CERT_OIDC_ISSUER", "https://token.actions.githubusercontent.com")
 
 # Read OIDC token from file if available
 oidc_token_file = ENV.fetch("OIDC_TOKEN_FILE", nil)
@@ -61,14 +64,14 @@ dists.each do |dist|
      "verify",
      "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
      "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-oidc-issuer=#{cert_oidc_issuer}",
      "--certificate-identity=#{cert_identity}",
      dist,
      exception: true)
   sh(env, File.expand_path("sigstore-cli", __dir__),
      "verify",
      "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-oidc-issuer=#{cert_oidc_issuer}",
      "--certificate-identity=#{cert_identity}",
      dist,
      exception: true)

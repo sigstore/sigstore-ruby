@@ -179,15 +179,21 @@ jobs:
         id: list-gems
         run: |
           echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
+      # The smoketest job runs with no id-token permission (so it works on fork PRs), so it
+      # can't use ambient GitHub OIDC. It signs with sigstore-conformance's public test token
+      # instead. This replaces the deprecated extremely-dangerous-public-oidc-beacon action;
+      # the token now comes from a Google service account (issuer https://accounts.google.com).
+      # (The release workflow signs with the real ambient GitHub identity, not this token.)
       - name: Fetch testing OIDC token
-        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@4a8befcc16064dac9e97f210948d226e5c869bdc # v1.0.0
+        run: curl -sSfL --retry 3 https://storage.googleapis.com/sigstore-conformance-testing-token/untrusted-testing-token.txt -o oidc-token.txt
       - name: Run the smoketest
         run: |
           ./bin/smoketest ${BUILT_GEMS}
         env:
           BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
           OIDC_TOKEN_FILE: ./oidc-token.txt
-          SIGSTORE_CERT_IDENTITY: https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main
+          SIGSTORE_CERT_IDENTITY: untrusted-sa@sigstore-conformance.iam.gserviceaccount.com
+          SIGSTORE_CERT_OIDC_ISSUER: https://accounts.google.com
 
   all-tests-pass:
     if: always()
