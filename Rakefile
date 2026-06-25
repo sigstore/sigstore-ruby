@@ -2,6 +2,7 @@
 
 require "bundler/gem_tasks"
 require "rake/testtask"
+require "openssl"
 
 directory "pkg"
 namespace "cli" do
@@ -23,7 +24,6 @@ RuboCop::RakeTask.new
 
 task default: %i[test conformance_staging conformance conformance_tuf rubocop]
 
-require "openssl"
 # On OpenSSL builds with a broken X509::Store#time (ruby/openssl#770) RFC 3161 timestamps
 # cannot be verified. Rekor v2 (tiled) entries have no integrated time, so every positive
 # v2 case — and the v2 sign+verify roundtrip — fails closed there, and the negative TSA
@@ -202,16 +202,13 @@ end
 
 namespace :tuf_conformance do
   file "bin/tuf-conformance-entrypoint.xfails" do |t|
-    if RUBY_ENGINE == "jruby"
-      # jruby-openssl cannot verify RSASSA-PSS, so that key type still xfails. ed25519
-      # verification is routed through java.security and passes, so it must not be listed
-      # here or pytest's strict xfail turns the unexpected pass into a failure.
-      File.write(t.name, <<~TXT)
-        test_keytype_and_scheme[rsa/rsassa-pss-sha256]
-      TXT
-    else
-      File.write(t.name, "")
-    end
+    # RSASSA-PSS verification requires OpenSSL::PKey::RSA#verify_pss (see
+    # internal/key.rb); without it the rsa/rsassa-pss-sha256 key type xfails.
+    # Gate on the capability rather than the engine: older jruby-openssl lacks
+    # the method (stable jruby), while jruby-head and CRuby have it, so this
+    # self-corrects and avoids pytest's strict xfail turning a pass into a failure.
+    xfails = OpenSSL::PKey::RSA.method_defined?(:verify_pss) ? "" : "test_keytype_and_scheme[rsa/rsassa-pss-sha256]\n"
+    File.write(t.name, xfails)
   end
   file "test/tuf-conformance/env/pyvenv.cfg" => :tuf_conformance do
     sh "make", "dev", chdir: "test/tuf-conformance"
