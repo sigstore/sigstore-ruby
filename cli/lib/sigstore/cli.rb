@@ -48,21 +48,29 @@ module Sigstore
     option :certificate, type: :string, desc: "Path to the public certificate"
     option :certificate_identity, type: :string, desc: "The identity of the certificate"
     option :certificate_oidc_issuer, type: :string, desc: "The OIDC issuer of the certificate"
+    option :key, type: :string, desc: "Path to a PEM public key for managed-key (bring-your-own-key) verification"
     option :offline, type: :boolean, desc: "Do not fetch the latest timestamp from the Rekor server"
     option :bundle, type: :string, desc: "Path to the signed bundle"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
     exclusive :bundle, :signature
     exclusive :bundle, :certificate
+    exclusive :key, :certificate
+    exclusive :key, :certificate_identity
     def verify(*files)
       verifier, files_with_materials = collect_verification_state(files)
-      policy = Sigstore::Policy::Identity.new(
-        identity: options[:certificate_identity],
-        issuer: options[:certificate_oidc_issuer]
-      )
+      key = load_verification_key
+      policy = if key
+                 Sigstore::Policy::UnsafeNoOp.new
+               else
+                 Sigstore::Policy::Identity.new(
+                   identity: options[:certificate_identity],
+                   issuer: options[:certificate_oidc_issuer]
+                 )
+               end
 
       verified = files_with_materials.all? do |file, input|
-        result = verifier.verify(input:, policy:, offline: options[:offline])
+        result = verifier.verify(input:, policy:, offline: options[:offline], key:)
 
         if result.verified?
           say "OK: #{file}"
@@ -84,8 +92,17 @@ module Sigstore
     option :signature, type: :string, desc: "Path to write the signature to"
     option :certificate, type: :string, desc: "Path to the public certificate"
     option :trusted_root, type: :string, desc: "Path to the trusted root"
+    option :signing_config, type: :string, desc: "Path to the signing config"
     option :update_trusted_root, type: :boolean, desc: "Update the trusted root", default: true
+    option :in_toto, type: :boolean, desc: "Sign the file as an in-toto statement in a DSSE envelope"
     def sign(file)
+      # A DSSE bundle carries an envelope, not a message signature, so the
+      # detached --signature/--certificate outputs of the message-signature flow
+      # do not apply.
+      if options[:in_toto] && (options[:signature] || options[:certificate])
+        raise Thor::InvocationError, "--in-toto cannot be combined with --signature or --certificate"
+      end
+
       self.options = options.merge(identity_token: IdToken.detect_credential).freeze if options[:identity_token].nil?
       unless options[:identity_token]
         raise Error::InvalidIdentityToken,
@@ -93,10 +110,12 @@ module Sigstore
       end
 
       contents = File.binread(file)
-      bundle = Sigstore::Signer.new(
+      signer = Sigstore::Signer.new(
         jwt: options[:identity_token],
-        trusted_root:
-      ).sign(contents)
+        trusted_root:,
+        signing_config:
+      )
+      bundle = options[:in_toto] ? signer.sign_dsse(contents) : signer.sign(contents)
 
       File.binwrite(options[:bundle], bundle.to_json) if options[:bundle]
       if options[:signature]
@@ -114,7 +133,11 @@ module Sigstore
 
         say "--- Bundle #{file} ---"
         say "Media Type: #{bundle.media_type}"
-        say bundle.leaf_certificate.to_text
+        if bundle.key_based?
+          say "Public Key (hint): #{bundle.signing_key_hint}"
+        else
+          say bundle.leaf_certificate.to_text
+        end
 
         case bundle.content
         when :message_signature
@@ -185,11 +208,37 @@ module Sigstore
     def trusted_root
       return Sigstore::TrustedRoot.from_file(options[:trusted_root]) if options[:trusted_root]
 
-      if options[:staging]
-        Sigstore::TrustedRoot.staging(offline: !options[:update_trusted_root])
-      else
-        Sigstore::TrustedRoot.production(offline: !options[:update_trusted_root])
+      Sigstore::TrustedRoot.from_tuf_updater(tuf_updater)
+    end
+
+    def signing_config
+      return Sigstore::SigningConfig.from_file(options[:signing_config]) if options[:signing_config]
+
+      # With no explicit config, fall back to the one the Sigstore instance
+      # publishes via TUF, so signing targets the current Rekor (v2 where the
+      # config selects it). Returns nil offline or when none is published, in
+      # which case the Signer uses the legacy v1 flow from the trusted root.
+      Sigstore::SigningConfig.from_tuf_updater(tuf_updater)
+    end
+
+    # One refreshed TUF updater per command invocation, shared by the trusted
+    # root and signing config so signing refreshes the repository only once.
+    def tuf_updater
+      @tuf_updater ||= begin
+        url = options[:staging] ? Sigstore::TUF::STAGING_TUF_URL : Sigstore::TUF::DEFAULT_TUF_URL
+        offline = !options[:update_trusted_root]
+        Sigstore::TUF::TrustUpdater.new(url, offline).tap { _1.refresh unless offline }
       end
+    end
+
+    def load_verification_key
+      return unless options[:key]
+
+      raise Thor::InvocationError, "Key file not found: #{options[:key]}" unless File.exist?(options[:key])
+
+      OpenSSL::PKey.read(Gem.read_binary(options[:key]))
+    rescue OpenSSL::OpenSSLError => e
+      raise Error::InvalidKey, "could not parse verification key #{options[:key].inspect}: #{e.message}"
     end
 
     def collect_verification_state(files)

@@ -123,6 +123,9 @@ module Sigstore
         end
 
         def validate_nbf(nbf, now, leeway)
+          # The nbf ("not before") claim is optional (RFC 7519); skip validation when absent.
+          return if nbf.nil?
+
           raise Error::InvalidIdentityToken, "nbf claim must be an integer" unless nbf.is_a?(Integer)
           raise Error::InvalidIdentityToken, "nbf claim is in the future" if nbf > now + leeway
         end

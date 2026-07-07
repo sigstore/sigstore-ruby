@@ -10,7 +10,11 @@ include FileUtils # rubocop:disable Style/MixinUsage
 
 raise(StandardError, "Usage: #{$PROGRAM_NAME} <dists...>") if ARGV.empty?
 
-dists = ARGV
+# Install the base library gem before any gem that depends on it. sigstore-cli pins
+# an exact sigstore version that is not yet published when smoketesting a release, so
+# `gem install sigstore-cli-x.y.z.gem` would otherwise fail to resolve the dependency
+# unless the local sigstore-x.y.z.gem is installed first.
+dists = ARGV.sort_by { |d| File.basename(d).start_with?("sigstore-cli") ? 1 : 0 }
 mkdir_p %w[smoketest-gem-home smoketest-artifacts]
 
 at_exit { rm_rf "smoketest-gem-home" }
@@ -22,8 +26,11 @@ env = {
   "BUNDLE_GEMFILE" => "smoketest-gem-home/Gemfile"
 }
 
-# Get cert identity from environment
+# Get the expected signing identity and its OIDC issuer from the environment. The issuer
+# defaults to GitHub Actions (the ambient identity used when releasing); CI overrides it
+# when signing with a test token from a different issuer.
 cert_identity = ENV.fetch("SIGSTORE_CERT_IDENTITY")
+cert_oidc_issuer = ENV.fetch("SIGSTORE_CERT_OIDC_ISSUER", "https://token.actions.githubusercontent.com")
 
 # Read OIDC token from file if available
 oidc_token_file = ENV.fetch("OIDC_TOKEN_FILE", nil)
@@ -57,14 +64,14 @@ dists.each do |dist|
      "verify",
      "--signature=smoketest-artifacts/#{File.basename(dist)}.sig",
      "--certificate=smoketest-artifacts/#{File.basename(dist)}.crt",
-     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-oidc-issuer=#{cert_oidc_issuer}",
      "--certificate-identity=#{cert_identity}",
      dist,
      exception: true)
   sh(env, File.expand_path("sigstore-cli", __dir__),
      "verify",
      "--bundle=smoketest-artifacts/#{File.basename(dist)}.sigstore.json",
-     "--certificate-oidc-issuer=https://token.actions.githubusercontent.com",
+     "--certificate-oidc-issuer=#{cert_oidc_issuer}",
      "--certificate-identity=#{cert_identity}",
      dist,
      exception: true)

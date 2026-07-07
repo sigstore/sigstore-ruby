@@ -2,6 +2,7 @@
 
 require "bundler/gem_tasks"
 require "rake/testtask"
+require "openssl"
 
 directory "pkg"
 namespace "cli" do
@@ -23,9 +24,39 @@ RuboCop::RakeTask.new
 
 task default: %i[test conformance_staging conformance conformance_tuf rubocop]
 
-require "openssl"
-# Checks for https://github.com/ruby/openssl/pull/770
-xfail = OpenSSL::X509::Store.new.instance_variable_defined?(:@time) ? "test_verify_rejects_bad_tsa_timestamp" : ""
+# On OpenSSL builds with a broken X509::Store#time (ruby/openssl#770) RFC 3161 timestamps
+# cannot be verified. Rekor v2 (tiled) entries have no integrated time, so every positive
+# v2 case — and the v2 sign+verify roundtrip — fails closed there, and the negative TSA
+# cases that depend on the timestamp check no longer reject. Patched builds verify them,
+# so these xfails are conditional on the actual (broken) behavior rather than on the Ruby
+# version. Negative rekor2 *_fail cases are intentionally absent: they still reject (for
+# lack of trusted time) and would XPASS under pytest's strict xfail.
+xfail =
+  if OpenSSL::X509::Store.new.instance_variable_defined?(:@time)
+    %w[
+      test_verify_rejects_bad_tsa_timestamp
+      *rekor2-happy-path*
+      *rekor2-dsse-happy-path*
+      *rekor2-checkpoint-cosigned*
+      *rekor2-checkpoint-two-sigs-cosigned*
+      *rekor2-checkpoint-multiple-cosigs*
+      *rekor2-checkpoint-origin-not-first*
+      *rekor2-checkpoint-two-sigs-from-origin*
+      *rekor2-timestamp-with-embedded-cert*
+      *rekor2-timestamp-with-expired-cert-chain*
+      *rekor2-timestamp-without-embedded-cert*
+      *intoto-tsa-timestamp-outside-cert-validity_fail*
+      *bundle-with-sct-with-extensions*
+      test_sign_verify_rekor2
+    ].join(" ")
+  else
+    ""
+  end
+
+desc "Print the conformance xfail patterns for the current Ruby/OpenSSL build"
+task :conformance_xfails do
+  print xfail
+end
 
 desc "Run the conformance tests"
 task conformance: %w[conformance:setup] do
@@ -59,7 +90,8 @@ end
 
 task :find_action_versions do # rubocop:disable Rake/Desc
   require "yaml"
-  gh = YAML.load_file(".github/workflows/ci.yml")
+  # Enable aliases in case the workflow uses YAML anchors.
+  gh = YAML.load_file(".github/workflows/ci.yml", aliases: true)
   actions = gh.fetch("jobs").flat_map { |_, job| job.fetch("steps", []).filter_map { |step| step.fetch("uses", nil) } }
                             .uniq.map { |x| x.split("@", 2) }
                                  .group_by(&:first).transform_values { |v| v.map(&:last) }
@@ -170,14 +202,13 @@ end
 
 namespace :tuf_conformance do
   file "bin/tuf-conformance-entrypoint.xfails" do |t|
-    if RUBY_ENGINE == "jruby"
-      File.write(t.name, <<~TXT)
-        test_keytype_and_scheme[rsa/rsassa-pss-sha256]
-        test_keytype_and_scheme[ed25519/ed25519]
-      TXT
-    else
-      File.write(t.name, "")
-    end
+    # RSASSA-PSS verification requires OpenSSL::PKey::RSA#verify_pss (see
+    # internal/key.rb); without it the rsa/rsassa-pss-sha256 key type xfails.
+    # Gate on the capability rather than the engine: older jruby-openssl lacks
+    # the method (stable jruby), while jruby-head and CRuby have it, so this
+    # self-corrects and avoids pytest's strict xfail turning a pass into a failure.
+    xfails = OpenSSL::PKey::RSA.method_defined?(:verify_pss) ? "" : "test_keytype_and_scheme[rsa/rsassa-pss-sha256]\n"
+    File.write(t.name, xfails)
   end
   file "test/tuf-conformance/env/pyvenv.cfg" => :tuf_conformance do
     sh "make", "dev", chdir: "test/tuf-conformance"
