@@ -44,6 +44,39 @@ module Sigstore
       end
     end
 
+    # Client for the Rekor v2 (tiled / rekor-tiles) API. Unlike v1, creating an
+    # entry returns a fully-formed protobuf TransparencyLogEntry (including the
+    # inclusion proof and checkpoint) directly, so there is no separate retrieval
+    # step. See https://github.com/sigstore/rekor-tiles/blob/main/CLIENTS.md
+    class V2Client
+      def initialize(url:)
+        @url = URI.join("#{url.chomp("/")}/", "api/v2/")
+
+        net = defined?(Gem::Net) ? Gem::Net : Net
+        @session = net::HTTP.new(@url.host, @url.port)
+        @session.use_ssl = true
+      end
+
+      # Submit a proposed entry (a CreateEntryRequest, as a Hash) and return the
+      # integrated V1::TransparencyLogEntry. The log only responds once the entry
+      # has been included, so this call can take a while.
+      def create_entry(payload)
+        resp = @session.post2(URI.join(@url, "log/entries").path, payload.to_json,
+                              { "Content-Type" => "application/json", "Accept" => "application/json",
+                                "User-Agent" => Sigstore::USER_AGENT })
+
+        unless %w[200 201].include?(resp.code)
+          raise Error::FailedRekorPost,
+                "#{resp.code} #{resp.message.inspect}\n#{JSON.pretty_generate(payload)}\n#{resp.body}"
+        end
+        unless resp.content_type == "application/json"
+          raise Error::FailedRekorPost, "Unexpected content type: #{resp.content_type.inspect}"
+        end
+
+        V1::TransparencyLogEntry.decode_json(resp.body, registry: REGISTRY)
+      end
+    end
+
     class Log
       def initialize(url, session:)
         @url = url

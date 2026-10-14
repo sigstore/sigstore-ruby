@@ -87,6 +87,14 @@ module Sigstore
       end
     end
 
+    # No identity to check: used for managed-key (bring-your-own-key) verification,
+    # where trust comes from the supplied key rather than a certificate identity.
+    class UnsafeNoOp
+      def verify(_cert)
+        VerificationSuccess.new
+      end
+    end
+
     class Identity
       def initialize(identity:, issuer:)
         @identity = identity

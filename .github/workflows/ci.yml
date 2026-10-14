@@ -85,17 +85,24 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
+      # The xfail set depends on the OpenSSL build's behavior (ruby/openssl#770), so it is
+      # computed in the Rakefile (conformance_xfails) and shared with local `rake
+      # conformance` runs rather than duplicated as a Ruby-version guess here.
+      - name: Compute the conformance xfails for this Ruby/OpenSSL build
+        id: conformance_xfails
+        run: echo "xfail=$(bundle exec rake conformance_xfails)" >> "$GITHUB_OUTPUT"
+
       - name: Run the conformance tests
-        uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
+        uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          xfail: ${{ steps.conformance_xfails.outputs.xfail }}
         if: ${{ matrix.os }} == "ubuntu-latest"
       - name: Run the conformance tests against staging
-        uses: sigstore/sigstore-conformance@d658ea74a060aeabae78f8a379167f219dc38c38 # v0.0.16
+        uses: sigstore/sigstore-conformance@21533cde107c734ebc153c3e3a24d75fc9811a36 # v0.0.29
         with:
           entrypoint: ${{ github.workspace }}/bin/conformance-entrypoint
-          xfail: "${{ matrix.ruby != 'head' && matrix.ruby != 'truffleruby-head' && matrix.ruby != '3.4' && matrix.ruby != '4.0' && 'test_verify_rejects_bad_tsa_timestamp' }}"
+          xfail: ${{ steps.conformance_xfails.outputs.xfail }}
           environment: staging
         if: ${{ matrix.os }} == "ubuntu-latest"
 
@@ -135,7 +142,7 @@ jobs:
         run: bin/rake bin/tuf-conformance-entrypoint.xfails
 
       - name: Run the TUF conformance tests
-        uses: theupdateframework/tuf-conformance@9bfc222a371e30ad5511eb17449f68f855fb9d8f # v2.3.0
+        uses: theupdateframework/tuf-conformance@500c525c9ce287a472fd334fe8d885cace667d32 # v2.4.0
         with:
           entrypoint: ${{ github.workspace }}/bin/tuf-conformance-entrypoint
           artifact-name: "test repositories ${{ matrix.ruby }} ${{ matrix.os }}"
@@ -172,15 +179,21 @@ jobs:
         id: list-gems
         run: |
           echo "gems=$(find pkg -type f -name '*.gem' -print0 | xargs -0 jq --compact-output --null-input --args '[$ARGS.positional[]]')" >> $GITHUB_OUTPUT
+      # The smoketest job runs with no id-token permission (so it works on fork PRs), so it
+      # can't use ambient GitHub OIDC. It signs with sigstore-conformance's public test token
+      # instead. This replaces the deprecated extremely-dangerous-public-oidc-beacon action;
+      # the token now comes from a Google service account (issuer https://accounts.google.com).
+      # (The release workflow signs with the real ambient GitHub identity, not this token.)
       - name: Fetch testing OIDC token
-        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@4a8befcc16064dac9e97f210948d226e5c869bdc # v1.0.0
+        run: curl -sSfL --retry 3 https://storage.googleapis.com/sigstore-conformance-testing-token/untrusted-testing-token.txt -o oidc-token.txt
       - name: Run the smoketest
         run: |
           ./bin/smoketest ${BUILT_GEMS}
         env:
           BUILT_GEMS: ${{ join(fromJson(steps.list-gems.outputs.gems), ' ') }}
           OIDC_TOKEN_FILE: ./oidc-token.txt
-          SIGSTORE_CERT_IDENTITY: https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main
+          SIGSTORE_CERT_IDENTITY: untrusted-sa@sigstore-conformance.iam.gserviceaccount.com
+          SIGSTORE_CERT_OIDC_ISSUER: https://accounts.google.com
 
   all-tests-pass:
     if: always()
