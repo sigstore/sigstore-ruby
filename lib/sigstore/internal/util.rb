@@ -47,6 +47,13 @@ module Sigstore
       def base64_decode(string)
         string.unpack1("m0")
       end
+
+      # The DSSE Pre-Authentication Encoding over a payload and its type, as
+      # defined by the DSSE v1 spec. This is the byte string that is signed (and
+      # verified) for a DSSE envelope.
+      def dsse_pae(payload_type, payload)
+        "DSSEv1 #{payload_type.bytesize} #{payload_type} #{payload.bytesize} #{payload}".b
+      end
     end
   end
 end

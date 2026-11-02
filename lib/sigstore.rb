@@ -43,5 +43,6 @@ module Sigstore
   end
 end
 
+require_relative "sigstore/signing_config"
 require_relative "sigstore/verifier"
 require_relative "sigstore/signer"

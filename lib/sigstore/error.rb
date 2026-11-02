@@ -24,11 +24,15 @@ module Sigstore
     class NoBundle < Error; end
     class NoSignature < Error; end
     class InvalidKey < Error; end
+    class MissingLogId < Error; end
     class InvalidCheckpoint < Error; end
     class InvalidVerificationInput < Error; end
 
     class Signing < Error; end
     class InvalidIdentityToken < Error; end
+    class InvalidSigningConfig < Error; end
+
+    class InvalidTimestamp < Error; end
 
     class MissingRekorEntry < Error; end
     class InvalidRekorEntry < Error; end

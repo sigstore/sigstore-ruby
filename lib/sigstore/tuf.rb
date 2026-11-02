@@ -120,6 +120,19 @@ module Sigstore
         path
       end
 
+      # Path to the TUF-distributed v0.2 signing config, or nil if the repository
+      # does not publish one (older repositories, or offline mode where it is not
+      # vendored). Signing always requires network access, so there is no cached
+      # offline fallback as there is for the trusted root.
+      def signing_config_path
+        return unless @updater
+
+        info = @updater.get_targetinfo("signing_config.v0.2.json")
+        return unless info
+
+        @updater.find_cached_target(info) || @updater.download_target(info)
+      end
+
       def refresh
         raise ArgumentError, "Offline mode: cannot refresh" if @offline || !@updater
 
